@@ -1,0 +1,30 @@
+"Posters"
+{
+	"cs_office"
+	{
+	
+		"poster_minecraft1"
+		{
+			"texture"	"rxg/poster_dust2"
+			"position"	"-1040.031250 -1526.625854 -272.289672"
+		}
+		"poster_minecraft2"
+		{
+			"texture"	"rxg/poster_minecraft1"
+			"position"	"1696.031250 71.450523 -100.535537"
+		}
+
+		"poster_gungae"
+		{
+			"position"	"2230.215820 111.968750 -96.506141"
+			"texture"	"rxg/poster_fkcwinner"
+		}
+		"poster_gungae2"
+		{
+			"position"	"-1343.968750 -1541.031005 -264.883422"
+			"texture"	"rxg/poster_fkcwinner"
+		}
+	
+
+	}
+}

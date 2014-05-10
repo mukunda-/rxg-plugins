@@ -1,0 +1,169 @@
+///////////////////////////////
+//                           //
+//   Propper prop listing    //
+//                           //
+///////////////////////////////
+
+"Propper"
+{
+
+	"cs_office"
+	{
+		/////////////////////////////////////////////////////////////
+		//  offsets to get the door centered right in that shit
+		//
+		//		"position"	"-1200 -1900 -335 0.000000 0 0"
+		//		"position"	"-1173 -1917 -331.5 0.000000 0 0"
+		//		27 -17 -3.5
+
+		"props"
+		{
+			"porta1"
+			{
+				"model"		"models/props_urban/outhouse002.mdl"//"models/props/de_vertigo/portapotty01.mdl"
+
+
+				"position"	"990 -2052 -299 0 90 0"
+				"type"		"prop_physics_override"
+				"move"		"6"
+
+				"keyvalues"
+				{
+	//				"nodamageforces"	"1"
+	//				"spawnflags"	"4"
+				}
+				"inputstring"
+				{
+					"DisableMotion"	""
+				}
+			
+			}
+			"portadoor"
+			{
+				"model"		"models/props_urban/outhouse_door001.mdl" //"models/props_downtown/door_interior_112_01.mdl"// ////"models\props\de_vertigo\portapotty01_door.mdl"
+				"position"	"1007 -2025 -295.5 0 90 0"
+				"type"		"prop_door_rotating"
+				//"move"		"6"
+				"propperflags"	"1"				
+				"keyvalues"
+				{
+					"spawnpos"	"0"
+					"speed"		"200"
+					"returndelay"	"1"
+					"opendir"	"1"
+					"spawnflags"	"0"
+					"forceclosed"	"1"
+					"distance"	"90"
+					"health"	"5"
+				}
+				"inputstring"
+				{
+					"SetParent"	"propper_porta1"
+				}
+			}	
+			
+			"plant1base"
+			{
+				"model"		"models/props_foliage/mall_pot_large01.mdl"
+				"position"	"2315.748779 68 -159.968750 0 135 0"
+				"type"		"prop_physics_override"
+				"move"		"0"
+				"inputstring"
+				{
+					"DisableMotion"	""
+				}
+			}
+			"plant1"
+			{
+				"model"		"models/props_foliage/mall_bigleaves_plant01_medium.mdl"
+				"position"	"2315.748779 68  -144 0 135 0"
+				"type"		"prop_dynamic_override"
+				"inputstring"
+				{
+					"SetParent"	"propper_plant1base"
+				}
+			}
+			"plant2base"
+			{
+				"model"		"models/props_foliage/mall_pot_large01.mdl"
+				"position"	"2315.748779 -341.025238 -159.968750 0 180 0"
+				"type"		"prop_physics_override"
+				"move"		"0"
+				"inputstring"
+				{
+					"DisableMotion"	""
+				}
+			}
+			"plant2"
+			{
+				"model"		"models/props_foliage/mall_bigleaves_plant01_medium.mdl"
+				"position"	"2315.748779 -341.025238 -144 0 180 0"
+				"type"		"prop_dynamic_override"
+				"inputstring"
+				{
+					"SetParent"	"propper_plant2base"
+				}
+			}
+			
+		}
+	}
+	
+	"de_dust2"
+	{
+		/////////////////////////////////////////////////////////////
+		//  offsets to get the door centered right in that shit
+		//
+		//		"position"	"-1200 -1900 -335 0.000000 0 0"
+		//		"position"	"-1173 -1917 -331.5 0.000000 0 0"
+		//		27 -17 -3.5
+
+		"props"
+		{
+			"porta1"
+			{
+				"model"		"models/props_urban/outhouse002.mdl"//"models/props/de_vertigo/portapotty01.mdl"
+
+
+				"position"	"1698 381 64 0 90 0"
+				"type"		"prop_physics_override"
+				"move"		"6"
+
+				"keyvalues"
+				{
+	//				"nodamageforces"	"1"
+	//				"spawnflags"	"4"
+				}
+				"inputstring"
+				{
+					"DisableMotion"	""
+				}
+			
+			}
+			"portadoor"
+			{
+				"model"		"models/props_urban/outhouse_door001.mdl" //"models/props_downtown/door_interior_112_01.mdl"// ////"models\props\de_vertigo\portapotty01_door.mdl"
+				"position"	"1715 408 67.5 0 90 0"
+				"type"		"prop_door_rotating"
+				//"move"		"6"
+				"propperflags"	"1"				
+				"keyvalues"
+				{
+					"spawnpos"	"0"
+					"speed"		"200"
+					"returndelay"	"1"
+					"opendir"	"1"
+					"spawnflags"	"0"
+					"forceclosed"	"1"
+					"distance"	"90"
+					"health"	"5"
+				}
+				"inputstring"
+				{
+					"SetParent"	"propper_porta1"
+				}
+			}	
+			
+			
+		}
+	}
+}

@@ -1,0 +1,68 @@
+"Radio" {
+	"permap"	"5"	//how many songs to load each map
+	"change"	"3"	//change every 3 rounds
+	"spawnonmap"	"1"	
+	"maphealth"	"400"
+
+	"mapspawns" {
+		"cs_office" "2170.5 -159.7 -114.96"
+	}
+
+	"songs" {
+		"lightemup" {
+			"file" "lightemup.mp3"
+			"title" "Light Em Up"
+			"artist" "Fall Out Boy"
+			"duration" "70.129"
+		}
+
+//		"gangnam" {
+//			"file"	"gangnam.mp3"
+//			"title" "Gangnam Style"
+//			"artist" "Psy"
+//			"duration" "0.0"
+//		}
+		"harlemshake" {
+			"file"	"harlmeshake.mp3"
+			"title" "Harlem Shake"
+			"artist" "Baauer"
+			"duration" "43.19"
+		}
+		"turndown" {
+			"file"	"turndown.mp3"
+			"title"	"Turn Down For What"
+			"artist" "Lil Jon"
+			"duration" "58.243"
+		}
+//		"cutiecute" {
+//			"file"	"cutiecute.mp3"
+//			"title" "Cutie Cute Kitty Cat"
+//			"artist" "Hatsune Miku"
+//			"duration" "0.0"
+//		}
+		"powerrangers" {
+			"file" "pr.mp3"
+			"title" "Go Go Power Rangers"
+			"artist" "Ron Wasserman"
+			"duration" "60.542"
+		}
+//		"chacarron" {
+//			"file" "chacarron.mp3"
+//			"title" "chacarron mocaron"
+//			"artist" "el chombo"
+//			"duration" "0.0"
+//		}
+		"lowrider" {
+			"file" "lowrider.mp3"
+			"title" "Low Rider"
+			"artist" "War"
+			"duration" "67.3"
+		}
+		"rushrush" {
+			"file" "rushrush.mp3"
+			"title" "Rush Rush"
+			"artist" "Debbie Harry"
+			"duration" "67.8"
+		}
+	}
+}

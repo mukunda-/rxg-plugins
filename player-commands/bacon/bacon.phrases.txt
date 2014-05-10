@@ -1,0 +1,278 @@
+"Phrases"
+{
+
+// color codes are:
+//  {DEF} : default
+//  {PLAYER} : color for player
+//  {BACON} : color for bacon
+//  
+//
+// German translation provided by micazoid
+//
+//-------------------------------------------------------------------------------------------------
+	"NOBACON USAGE"		
+	{
+		// message printed when someone uses !nobacon without an argument
+		"en"		"{DEF}Usage: {CMD}sm_nobacon{DEF} <player>"
+		"de"		"{DEF}Benutzung: {CMD}sm_nobacon{DEF} <Spieler>"
+	}
+	
+//-------------------------------------------------------------------------------------------------
+// messages printed when someone uses !bacon without an argument to see how much they have
+//-------------------------------------------------------------------------------------------------
+	"YOU HAVE ___ BACON"	
+	{
+		"#format"	"{1:d}"
+		"en"		"{DEF}You have {1} bacon."
+		"de"		"Du besitzt {1} Speck."
+	}
+	"YOU HAVE NO BACON"
+	{
+		"en"		"You have no bacon!"
+		"de"		"Du besitzt keinen Speck!"
+	}
+//-------------------------------------------------------------------------------------------------
+// error messages
+//-------------------------------------------------------------------------------------------------
+	"TOO MUCH BACON"	// printed when someone uses a bacon command before their cooldown expires
+	{
+		"en"		"Please wait before issuing more bacon commands."
+		"de"		"Bitte warte, bevor Du weitere Speckkommandos gibst."
+	}
+	"BACON DATABASE ERROR"	// printed when an SQL error happens
+	{
+		"en"		"A database error occurred. Please try again later."
+		"de"		"Es trat ein Datenbankfehler auf. Bitte versuche es spaeter wieder."
+	}
+//-------------------------------------------------------------------------------------------------
+// message when someone tries to !bacon someone who they have already treated
+//-------------------------------------------------------------------------------------------------
+	"ALREADY GAVE BACON"
+	{
+		"en"		"You have given them bacon already."
+		"de"		"Du hast ihm bereits Speck gegeben."
+	}
+	"ALREADY GAVE SERVER"
+	{
+		"en"		"You gave the server some bacon already."
+		"de"		"Du hast dem Server bereits Speck gegeben."
+	}
+//-------------------------------------------------------------------------------------------------
+// messages when !bacon or !nobacon is used on a client that happens to disconnect mid-process
+//-------------------------------------------------------------------------------------------------
+	"GIVEBACON DISCONNECTED"
+	{
+		"en"		"You tried to give them bacon, but they disconnected!"
+		"de"		"Du hast verucht jemandem Speck zu geben, aber er hat die Verbindung getrennt!"
+	}
+	"TAKEBACON DISCONNECTED"
+	{
+		"en"		"You tried to take their bacon, but they disconnected!"
+		"de"		"Du hast versucht jemanden seinen Speck zu nehmen, aber er hat die Verbindung getrennt!"
+	}
+//-------------------------------------------------------------------------------------------------
+// messages when using !bacon and succeeding
+//-------------------------------------------------------------------------------------------------
+	"YOU GAVE SERVER SOME BACON" // target is the server
+	{
+		"en"		"You gave the server some bacon."
+		"de"		"Du hast dem Server Speck gegeben."
+	}
+	"YOU GAVE ___ SOME BACON" // target is a player
+	{
+		"#format"	"{1:s}"
+		"en"		"You gave {1} some bacon."
+		"de"		"Du hast {1} Speck gegeben."
+	}
+
+//-------------------------------------------------------------------------------------------------
+// message seen by !bacon target when sm_bacon_notify is "1"
+//-------------------------------------------------------------------------------------------------
+	"GOT BACON FROM SERVER" // user is the server
+	{
+		"en"		"The server gave you some bacon."
+		"de"		"Der Server hat Dir Speck gegeben."
+	}
+	"GOT BACON" // user is a player
+	{
+		"#format"	"{1:s}"
+		"en"		"{1} gave you some bacon."
+		"de"		"{1} hat Dir Speck gegeben."
+	}
+	
+//-------------------------------------------------------------------------------------------------
+// message seen by all when !bacon <target> is used and sm_bacon_notify is "2"
+//-------------------------------------------------------------------------------------------------
+	"SOMEONE GAVE SERVER BACON" // user is a player, target is the server
+	{
+		"#format"	"{1:s}"
+		"en"		"{1} gave the server some bacon."
+		"de"		"{1} hat dem Server Speck gegeben."
+	}
+	"SERVER GAVE SOMEONE BACON" // user is the server, target is a player
+	{
+		"#format"	"{1:s}"
+		"en"		"The server gave {1} some bacon."
+		"de"		"Der Server hat {1} Speck gegeben."
+	}
+	"SOMEONE GAVE BACON" // user and target are players
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{1} gave some bacon to {2}."
+		"de"		"{1} hat {2} Speck gegeben."
+	}
+	
+//-------------------------------------------------------------------------------------------------
+// message seen by all when !bacon <target> is used and sm_bacon_notify is "3"
+//-------------------------------------------------------------------------------------------------
+	"RECEIVED BACON GIFT" // target is a player
+	{
+		"#format"	"{1:s}"
+		"en"		"{PLAYER}{1}{DEF} has received a gift: {BACON}Bacon"
+		"de"		"{PLAYER}{1}{DEF} hat ein Geschenk erhalten: {BACON}Speck"
+	}
+	"SERVER RECEIVED BACON GIFT" // target is the server
+	{
+		"en"		"The server has received a gift: {BACON}Bacon"
+		"de"		"Der Server hat ein Geschenk erhalten: {BACON}Speck"
+	}
+	
+//-------------------------------------------------------------------------------------------------
+// message seen by !nobacon target when sm_bacon_notify is "1"
+//-------------------------------------------------------------------------------------------------
+	"SERVER TOOK YOUR BACON" // user is the server
+	{
+		"en"		"The server took some of your bacon."
+		"de"		"Der Server hat Dir Speck weggenommen."
+	}
+	"SOMEONE TOOK YOUR BACON" // user is a player
+	{
+		"#format"	"{1:s}"
+		"en"		"{1} took some of your bacon."
+		"de"		"{1} hat Dir was von Deinem Speck weggenommen."
+	}
+	
+//-------------------------------------------------------------------------------------------------
+// message seen by everyone when !nobacon <target> is used and sm_bacon_notify is "2"
+//-------------------------------------------------------------------------------------------------
+	"SOMEONE TOOK SERVER BACON" // user is a player, target is the server
+	{
+		"#format"	"{1:s}"
+		"en"		"{1} took some of the server's bacon."
+		"de"		"{1} hat dem Server Speck weggenommen."
+	}
+	"SERVER TOOK SOMEONES BACON" // user is the server, target is a player
+	{
+		"#format"	"{1:s}"
+		"en"		"The server took some bacon from {1}."
+		"de"		"Der Server hat {1} Speck weggenommen."
+	}
+	"SOMEONE TOOK BACON" // user and target are players
+	{
+		"#format"	"{1:s},{2:s}"
+		"en"		"{1} took some bacon from {2}."
+		"de"		"{1} hat {2} Speck weggenommen." 
+	}
+	
+//-------------------------------------------------------------------------------------------------
+// message seen by everyone when !nobacon <target> is used and sm_bacon_notify is "3"
+//-------------------------------------------------------------------------------------------------
+	"LOST BACON" // target is a player
+	{
+		"#format"	"{1:s}"
+		"en"		"{PLAYER}{1}{DEF} has lost: {BACON}Bacon"
+		"de"		"{PLAYER}{1}{DEF} hat verloren: {BACON}Speck"
+	}
+	
+	"SERVER LOST BACON" // target is the server
+	{
+		"en"		"The server has lost: {BACON}Bacon"
+		"de"		"Der Server hat verloren: {BACON}Speck"
+	}
+	
+//-------------------------------------------------------------------------------------------------
+// message seen when !nobacon is used on a person who doesn't have any of the user's bacon
+//-------------------------------------------------------------------------------------------------
+	"NO BACON TO TAKE" // target is a player
+	{
+		"en"		"They don't have any of your bacon!"
+		"de"		"Er hat nie Speck von Dir bekommen!"
+	}
+	"NO SERVER BACON TO TAKE" // target is the server
+	{
+		"en"		"The server doesn't have any of your bacon!"
+		"de"		"Der Server hat nie Speck von Dir bekommen!"
+	}
+	
+//-------------------------------------------------------------------------------------------------
+// message seen by user of !nobacon upon success
+//-------------------------------------------------------------------------------------------------
+	"YOU TOOK YOUR BACON AWAY FROM ___" // target is a person
+	{
+		"#format"	"{1:s}"
+		"en"		"You took your bacon away from {1}."
+		"de"		"Du hast {1} Deinen Speck weggenommen."
+	}
+	"YOU TOOK YOUR BACON AWAY FROM SERVER" // target is the server
+	{
+		"en"		"You took your bacon away from the server."
+		"de"		"Du hast Dem Server Deinen Speck weggenommen."
+	}
+//-------------------------------------------------------------------------------------------------
+// !mostbacon messages when sm_bacon_topcount is "1"
+//-------------------------------------------------------------------------------------------------
+	"NOBODY HAS BACON" // bacon database is empty!
+	{
+		"en"		"Nobody has bacon!!!"
+		"de"		"Niemand hat Speck!!!"
+	}
+	"SERVER MOST BACON" // the server has the most bacon
+	{
+		"#format"	"{1:d}"
+		"en"		"The server has the most bacon! ({1})"
+		"de"		"Der Server hat den meisten Speck! ({1})"
+	}
+	"MOST BACON" // a player has the most bacon
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{1} has the most bacon. ({2})"
+		"de"		"{1} hat den meisten Speck. ({2})"
+	}
+//-------------------------------------------------------------------------------------------------
+// !mostbacon messages when sm_bacon_topcount is not "1"
+//-------------------------------------------------------------------------------------------------
+	"SERVER HAS BACON"	// the server is one of the bacon masters
+	{
+		"#format"	"{1:d}"
+		"en"		"The server has {1} bacon."
+		"de"		"Der Server hat {1} Speck."
+	}
+	"PERSON HAS BACON"	// a player is one of the bacon masters
+	{
+		"#format"	"{1:s},{2:d}"
+		"en"		"{1} has {2} bacon."
+		"de"		"{1} hat {2} Speck."
+	}
+
+//-------------------------------------------------------------------------------------------------
+// error messages when !bacon or !nobacon is used on self
+//-------------------------------------------------------------------------------------------------
+	"NO SELF BACONING"
+	{
+		"en"		"You can't give yourself bacon."
+		"de"		"Du kannst Dir selbst keinen Speck geben."
+	}
+	"NO SELF TAKING"
+	{
+		"en"		"You can't take your own bacon."
+		"de"		"Du kannst Dir Deinen Speck nicht selbst wegnehmen"
+	}
+//-------------------------------------------------------------------------------------------------
+// sm_bacon_drop response
+//-------------------------------------------------------------------------------------------------
+	"BACON DROPPED"
+	{
+		"en"		"nom nom nom nom nom (ALL BACON CLEARED)"
+		"de"		"nom nom nom nom nom (DER SPECK IST WEG)"
+	}
+}
