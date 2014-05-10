@@ -1,0 +1,6 @@
+"Sprite"
+{
+	"$basetexture" "ghosting/ghost"
+	"$translucent" 1
+	"$spriteorigin" "[ 0.50 0.50 ]"
+}
