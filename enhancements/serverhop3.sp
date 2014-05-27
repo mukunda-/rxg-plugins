@@ -6,6 +6,8 @@
 #undef REQUIRE_PLUGIN
 #include <updater>
 
+// 1.0.5 11:25 AM 5/27/2014
+//  - ignore bots
 // 1.0.4 9:04 PM 10/28/2013
 //  - fixed server crash bug when no other servers active
 // 1.0.3 5:25 PM 10/28/2013
@@ -261,7 +263,7 @@ TrimMap( String:map[], maxlen ) {
 //-------------------------------------------------------------------------------------------------
 public OnSocketReceive( Handle:sock, String:receive_data[], const data_size, any:i ) {
 	decl String:text[256];
-	new offset = 2; // +2 to skip ???
+	new offset = 2; // skip header,protocol
 	
 	offset += strlen( receive_data[offset] )+1; // server name( not used )
 	
@@ -273,10 +275,12 @@ public OnSocketReceive( Handle:sock, String:receive_data[], const data_size, any
 	
 	offset += strlen( receive_data[offset] )+1; // game dir
 	offset += strlen( receive_data[offset] )+1; // game desc
-	offset += 2; //???
+	offset += 2; // game ID
 	
-	si_players[i] = receive_data[offset++];
-	si_maxplayers[i] = receive_data[offset++];
+	si_players[i] = receive_data[offset++]; // players
+	si_maxplayers[i] = receive_data[offset++]; // max. players
+	si_players[i] -= receive_data[offset++]; // bots
+	if( si_players < 0 ) si_players = 0;
 	
 	si_refreshing[i] = false;
 	CloseHandle( sock );
