@@ -280,7 +280,7 @@ public OnSocketReceive( Handle:sock, String:receive_data[], const data_size, any
 	si_players[i] = receive_data[offset++]; // players
 	si_maxplayers[i] = receive_data[offset++]; // max. players
 	si_players[i] -= receive_data[offset++]; // bots
-	if( si_players < 0 ) si_players = 0;
+	if( si_players[i] < 0 ) si_players[i] = 0;
 	
 	si_refreshing[i] = false;
 	CloseHandle( sock );
