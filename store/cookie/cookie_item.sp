@@ -8,6 +8,8 @@
 
 #pragma semicolon 1
 
+// 1.1.0
+//   increased to 35 hp
 // 1.0.2
 //   bugfix
 // 1.0.1
@@ -18,7 +20,7 @@ public Plugin:myinfo = {
 	name = "cookie item",
 	author = "mukunda",
 	description = "delicious",
-	version = "1.0.2",
+	version = "1.1.0",
 	url = "www.mukunda.com"
 };
 
@@ -47,7 +49,7 @@ new String:cookie_sound[64] = "rxg/items/cookie.mp3";
 new Float:cookie_last_use[MAXPLAYERS];
 #define COOLDOWN 2.0
 
-#define COOKIE_HP 10
+#define COOKIE_HP 35
 
 new GAME;
 
