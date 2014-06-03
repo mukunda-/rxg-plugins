@@ -6,6 +6,8 @@
 
 #pragma semicolon 1
 
+// 1.0.4
+//   bugfix with credit
 // 1.0.3
 //   sm_store command
 // 1.0.2
@@ -16,7 +18,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "1.0.3",
+    version     = "1.0.4",
     url         = "www.mukunda.com"
 };
 
@@ -242,7 +244,7 @@ bool:CommitCashChange( client, cash ) {
 		"INSERT INTO USER (ACCOUNT,CREDIT) VALUES (%d,%d) ON DUPLICATE KEY UPDATE CREDIT=CREDIT%s%d",
 		g_client_data_account[client],
 		cash,
-		cash >= 0 ? "+":"",
+		cash > 0 ? "+":"-",
 		cash );
 		
 	new Handle:pack = CreateDataPack();
