@@ -110,6 +110,7 @@ public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max 
 	CreateNative( "RXGSTORE_TakeCash", Native_TakeCash );
 	CreateNative( "RXGSTORE_CanUseItem", Native_CanUseItem );
 	CreateNative( "RXGSTORE_UseItem", Native_UseItem );
+	CreateNative( "RXGSTORE_ShowUseItemMenu", Native_ShowUseItemMenu );
 	CreateNative( "RXGSTORE_IsClientLoaded", Native_IsClientLoaded );
 	CreateNative( "RXGSTORE_IsConnected", Native_IsConnected );
 	
@@ -578,6 +579,33 @@ public UseItemMenu( Handle:menu, MenuAction:action, client, param2) {
 }
 
 //-------------------------------------------------------------------------------------------------
+public ShowUseItemMenu( client ) {
+	new Handle:menu = CreateMenu( UseItemMenu );
+	new items = 0;
+	for( new i = 0; i < ITEM_MAX; i++ ) {
+		new count = (g_client_items[client][i] + g_client_items_change[client][i]);
+		if( count > 0 ) {
+			decl String:info[16];
+			decl String:text[64];
+			FormatEx( info, sizeof info, "%d", i );
+			if( count == 1 ) {
+				FormatEx( text, sizeof text, "%s", item_names[i] );
+			} else {
+				FormatEx( text, sizeof text, "%s (%d)", item_names[i], count );
+			}
+			AddMenuItem(  menu, info, text );
+			items++;
+		}
+	}
+	if( items == 0 ) {
+		PrintToChat( client, "You don't have any items!" );
+		CloseHandle(menu);
+	} else {
+		DisplayMenu( menu, client, 60 );
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
 public Action:Command_use_item( client, args ) {
 	if( client == 0 ) return Plugin_Handled;
 	if( !g_db_connected || !g_client_data_loaded[client] ) {
@@ -595,33 +623,7 @@ public Action:Command_use_item( client, args ) {
 	for( new i = 0; arg[i]; i++ ) arg[i] = CharToLower(arg[i]);
 	TrimString(arg);
 	if( arg[0] == 0 ) {
-		// menu mode
-		
-		new Handle:menu = CreateMenu( UseItemMenu );
-		new items = 0;
-		for( new i = 0; i < ITEM_MAX; i++ ) {
-			new count = (g_client_items[client][i] + g_client_items_change[client][i]);
-			if( count > 0 ) {
-				decl String:info[16];
-				decl String:text[64];
-				FormatEx( info, sizeof info, "%d", i );
-				if( count == 1 ) {
-					FormatEx( text, sizeof text, "%s", item_names[i] );
-				} else {
-					FormatEx( text, sizeof text, "%s (%d)", item_names[i], count );
-				}
-				AddMenuItem(  menu, info, text );
-				items++;
-			}
-			
-		}
-		if( items == 0 ) {
-			PrintToChat( client, "You don't have any items!" );
-			CloseHandle(menu);
-		} else {
-			DisplayMenu( menu, client, 60 );
-		}
-		
+		ShowUseItemMenu(client);
 		return Plugin_Handled;
 	}
 	
@@ -777,6 +779,12 @@ public Native_UseItem( Handle:plugin, numParams ) {
 	
 	CommitItemChange( client, slot, -1 );
 	return true;
+}
+
+//-------------------------------------------------------------------------------------------------
+public Native_ShowUseItemMenu( Handle:plugin, numParams ) {
+	new client = GetNativeCell(1);
+	ShowUseItemMenu(client);
 }
 
 //-------------------------------------------------------------------------------------------------

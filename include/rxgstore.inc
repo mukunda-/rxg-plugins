@@ -67,6 +67,11 @@ native RXGSTORE_CanUseItem( client, itemid );
 native RXGSTORE_UseItem( client, itemid );
 
 //-------------------------------------------------------------------------------------------------
+// show the useitem menu
+// 
+native RXGSTORE_ShowUseItemMenu( client );
+
+//-------------------------------------------------------------------------------------------------
 // check if client inventory has been loaded yet
 //
 native RXGSTORE_IsClientLoaded( client );
@@ -101,6 +106,7 @@ public __pl_rxgstore_SetNTVOptional()
 	MarkNativeAsOptional("RXGSTORE_TakeCash");
 	MarkNativeAsOptional("RXGSTORE_CanUseItem");
 	MarkNativeAsOptional("RXGSTORE_UseItem");
+	MarkNativeAsOptional("RXGSTORE_ShowUseItemMenu");
 	MarkNativeAsOptional("RXGSTORE_IsClientLoaded");
 	MarkNativeAsOptional("RXGSTORE_IsConnected");
 }
