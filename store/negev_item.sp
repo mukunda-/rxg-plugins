@@ -10,7 +10,7 @@ public Plugin:myinfo = {
 	name = "negev item",
 	author = "mukunda",
 	description = "disposable negev",
-	version = "1.0.1",
+	version = "1.1.0",
 	url = "www.mukunda.com"
 };
 
@@ -39,11 +39,16 @@ public OnPluginEnd() {
 public RXGSTORE_OnUse(client) {
 	if( !IsPlayerAlive(client) ) return false;
 	
+	if ( GetTeamScore(2) == 0 && GetTeamScore(3) == 0 ) {
+		PrintToChat( client, "\x01 \x02You may not unpack a Negev yet." );
+		return false;
+	}
+	
 	PrintToChat( client, "Here is your Negev." );
 	GivePlayerItem( client, "weapon_negev" );
 	new team = GetClientTeam(client);
 	decl String:msg[256];
-	FormatEx( msg, sizeof msg, "\x03%N has unpackaged a Negev!", client );
+	FormatEx( msg, sizeof msg, "\01 \x03%N has unpackaged a Negev!", client );
 	for( new i = 1; i <= MaxClients; i++ ) {
 		if( IsClientInGame(i) && GetClientTeam(i) == team ) {
 			PrintToChat( i, msg );
