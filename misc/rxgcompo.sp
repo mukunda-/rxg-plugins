@@ -12,7 +12,7 @@ public Plugin:myinfo = {
 	name        = "rxgcompo",
 	author      = "mukunda",
 	description = "RXG Competition API",
-	version     = "1.0.3",
+	version     = "1.0.4",
 	url         = "www.mukunda.com"
 };
 
@@ -58,7 +58,7 @@ new g_leaderboard_lastpolltime;
 new bool:g_client_wants_leaderboard[MAXPLAYERS+1];
 new bool:g_refreshing_leaderboard;
 
-#define LB_ENTRIES 8
+#define LB_ENTRIES 10
 
 new g_num_lb;
 new g_leaderboard_account[LB_ENTRIES];
@@ -67,6 +67,8 @@ new g_leaderboard_points[LB_ENTRIES];
 
 new g_contest_start;
 new g_contest_end;
+
+new Handle:g_menu;
 
 //-------------------------------------------------------------------------------------------------
 public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max ) {
@@ -118,6 +120,14 @@ public OnPluginStart() {
 	RegConsoleCmd( "sm_compo", Command_contest );
 	
 	RegAdminCmd( "rxgcompo_forcecommit", Command_forcecommit, ADMFLAG_RCON, "force commit to database (for clean server shutdown)" );
+	
+	g_menu = CreateMenu( ContestMenuHandler, MenuAction_Select|MenuAction_DisplayItem );
+	SetMenuPagination( g_menu, MENU_NO_PAGINATION );
+	SetMenuExitButton( g_menu, true );
+	SetMenuTitle( g_menu, "REVOCOMP" );
+	AddMenuItem( g_menu, "1", "Your points" );
+	AddMenuItem( g_menu, "2", "Daily points" );
+	AddMenuItem( g_menu, "3", "[Top 10]" );
 }
 
 
@@ -375,7 +385,7 @@ public AddPoints( client, points, const String:message[] ) {
 		decl String:message2[256];
 		strcopy( message2, sizeof message2, message );
 		ReplaceString( message2, sizeof message2, "{points}", pointstring );
-		PrintToChat( client, "\x01 %s", message2 );
+		//PrintToChat( client, "\x01 %s", message2 ); DEBUG TEST BYPASS
 	}
 	
 	if( points > 0 ) {
@@ -385,7 +395,7 @@ public AddPoints( client, points, const String:message[] ) {
 	}
 	
 	if( capped ) {
-		PrintToChat( client, "\x01 \x0B[REVOCOMP]\x0E You have reached the daily point cap!" );
+		//PrintToChat( client, "\x01 \x0B[REVOCOMP]\x0E You have reached the daily point cap!" ); DEBUG TEST BYPASS
 	}
 	return points;
 }
@@ -418,51 +428,11 @@ public OnGetLeaders( Handle:owner, Handle:hndl, const String:error[], any:data )
 	g_leaderboard_lastpolltime = GetTime(); 
 }
 
-//----------------------------------------------------------------------------------------------------------------------
-public ContestMenuHandler( Handle:menu, MenuAction:action, client, param2) {
-	if( action == MenuAction_End)  {
-		CloseHandle(menu);
-	} else {
-	}
-}
 
-//----------------------------------------------------------------------------------------------------------------------
-DisplayLeaderboard( client ) {
-	g_client_wants_leaderboard[client] = false;
-	if( !IsClientInGame(client) ) return;
-	
-	if( g_num_lb == 0 ) return;
-	
-	new Handle:menu = CreateMenu( ContestMenuHandler );
-	SetMenuPagination( menu, MENU_NO_PAGINATION );
-	SetMenuExitButton( menu, false );
-	new bool:foundself;
-	for( new i = 0; i < g_num_lb; i++ ) {
-		decl String:text[128];
-		decl String:name[128];
-		new points;
-		new account = g_leaderboard_account[i];
-		strcopy( name, sizeof name, g_leaderboard_names[i] );
-		points = g_leaderboard_points[i];
-		
-		if( account == g_client_account[client] ) {
-			points = g_client_points[client];
-			foundself = true;
-		}
-		
-		FormatEx( text, sizeof text, "%s - %d points", name, points);
-		
-		AddMenuItem( menu, "", text );
+ShowTimeLeft(client) {
+	if( GetTime() < g_contest_start ) {
+		PrintToChat( client, "\x01 REVOCOMP has not started yet." );
 	}
-	
-	if( !foundself ) {
-		decl String:text[128];
-		FormatEx( text, sizeof text, "You have %d points.", g_client_points[client] );
-		AddMenuItem( menu, "", text );
-	}
-	
-	DisplayMenu( menu, client, 15 );
-	
 	new endtime = g_contest_end - GetTime();
 	if( endtime > 0 ) {
 		if( endtime < 60 ) {
@@ -478,21 +448,63 @@ DisplayLeaderboard( client ) {
 			PrintToChat( client, "\x01 \x01The contest ends in \x05%d day%s\x01.", endtime, endtime == 1 ? "":"s" );
 		}
 	} else if( endtime > -(60*60*24*3) ) {
-		PrintToChat( client, "\x01 \x02The contest has ended." );
+		PrintToChat( client, "\x01 \x02The contest has ended!" );
 	}
 }
 
+public PanelHandler1(Handle:menu, MenuAction:action, param1, param2) {
+	
+}
+
 //----------------------------------------------------------------------------------------------------------------------
-public Action:Command_contest( client, args ) {
-	PrintToChat( client, "\x02 *** TEST MODE *** THERE IS NO CONTEST RIGHT NOW. ***" );
-	if( !g_client_loaded[client] || !g_db_connected ) {
-		PrintToChat( client, "The database is currently unavailable." );
-		return Plugin_Handled;
+DisplayLeaderboard( client ) {
+	g_client_wants_leaderboard[client] = false;
+	if( !IsClientInGame(client) ) return;
+	
+	if( g_num_lb == 0 ) return;
+	
+	new Handle:menu = CreatePanel();//CreateMenu( ContestMenuHandler );
+	SetPanelTitle( menu, "REVOCOMP LEADERBOARD" );
+
+	
+	//SetMenuExitButton( menu, false );
+	//new bool:foundself;
+	for( new i = 0; i < g_num_lb; i++ ) {
+		decl String:text[128];
+		decl String:name[128];
+		new points;
+		new account = g_leaderboard_account[i];
+		strcopy( name, sizeof name, g_leaderboard_names[i] );
+		points = g_leaderboard_points[i];
+		
+		if( account == g_client_account[client] ) {
+			points = g_client_points[client];
+		//	foundself = true;
+		}
+		
+		FormatEx( text, sizeof text, "[%d] %s - %d points", i+1, name, points);
+		
+		DrawPanelText( menu, text );
 	}
-	if( g_client_wants_leaderboard[client] && g_refreshing_leaderboard ) return Plugin_Handled;
+	DrawPanelItem( menu, "Exit" );
+	/*
+	if( !foundself ) {
+		decl String:text[128];
+		FormatEx( text, sizeof text, "You have %d points.", g_client_points[client] );
+		AddMenuItem( menu, "", text );
+	}*/
+	
+	SendPanelToClient( menu, client, PanelHandler1, 20 );
+	CloseHandle(menu);
+	
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+GetLeaderboard(client) {
+	if( g_client_wants_leaderboard[client] && g_refreshing_leaderboard ) return;
 	if( g_refreshing_leaderboard ) {
 		g_client_wants_leaderboard[client] = true;
-		return Plugin_Handled;
+		return;
 	}
 	if( GetTime() > g_leaderboard_lastpolltime + 30 ) {
 		g_refreshing_leaderboard = true;
@@ -502,6 +514,48 @@ public Action:Command_contest( client, args ) {
 		DisplayLeaderboard(client);
 		
 	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+public ContestMenuHandler( Handle:menu, MenuAction:action, client, param2) {
+	if( action == MenuAction_DisplayItem ) {
+		if( param2 == 0 ) {
+			decl String:text[64];
+			FormatEx( text,sizeof text, "Your points: %d", g_client_points[client] );
+			RedrawMenuItem( text );
+		} else if( param2 == 1 ) {
+			decl String:text[64];
+			if( g_point_cap > 0 ) {
+				FormatEx( text,sizeof text, "Daily points: %d/%d (%d%%)", g_client_dailypoints[client], g_point_cap, (g_client_dailypoints[client]*100 / g_point_cap) );
+			} else {
+				FormatEx( text,sizeof text, "Daily points: %d/Unlimited", g_client_dailypoints[client] );
+			}
+			RedrawMenuItem( text );
+		}
+	} else if( action == MenuAction_Select ) {
+		if( param2 == 2 ) {
+			GetLeaderboard(client);
+		}
+	}
+}
+//----------------------------------------------------------------------------------------------------------------------
+ShowContestMenu(client) {
+	ShowTimeLeft(client); 
+	if( GetTime() >= g_contest_start ) {
+	
+		DisplayMenu( g_menu, client, 20 );
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+public Action:Command_contest( client, args ) {
+	PrintToChat( client, "\x01 \x02 *** TEST MODE *** THERE IS NO CONTEST, THIS PLUGIN IS BEING DEVELOPED. ***" );
+	if( !g_client_loaded[client] || !g_db_connected ) {
+		PrintToChat( client, "The database is currently unavailable." );
+		return Plugin_Handled;
+	}
+	ShowContestMenu( client );
+	
 	
 	return Plugin_Handled;
 }
@@ -529,14 +583,18 @@ public Native_GetPoints( Handle:plugin, numParams ) {
 UpdateDay() {
 	new time = GetTime();
 	
-	time -= 18000; // CDT, utc-5
-	time -= 21600; // shift 12:00 AM to 6:00 AM
-	new day = (time) / 86400;
+	time -= g_contest_start;
+	
+	// the first day is only 18 hours long (12:00PM -> 6:00 AM)
+	
+	//time -= 18000; // CDT, utc-5
+	//time -= 21600; // shift 12:00 AM to 6:00 AM
+	new day = (time+43200-21600) / 86400; //  + 12 hours (start of compo) - 6 hours (end at 6:00 each day)
 	if( g_current_day != day ) {
 		g_current_day = day;
-		if( time >= g_contest_start && time < g_contest_end ) {
-			new day_index = day - (g_contest_start/86400);
-			g_point_cap = GetPointCap( day_index );
+		if( time >= 0 && time < (g_contest_end - g_contest_start) ) {
+			//new day_index = day - (g_contest_start/86400);
+			g_point_cap = GetPointCap( day );
 		} else {
 			g_point_cap = 0;
 		}
@@ -555,7 +613,8 @@ UpdateDay() {
 //----------------------------------------------------------------------------------------------------------------------
 GetPointCap( day ) {
 	// REVOCOMP point caps
-	return 1000;
+
+
 	if( day < 7 ) {
 		return 10000;
 	} else if( day < 14 ) {
@@ -566,3 +625,4 @@ GetPointCap( day ) {
 		return 0;
 	}
 }
+
