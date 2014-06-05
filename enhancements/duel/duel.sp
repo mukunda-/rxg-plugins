@@ -10,6 +10,8 @@
 #pragma semicolon 1
 
 // CHANGES:
+//  1.2.1 
+//    exposed OnDuelEnd
 //  1.2.0
 //    overrides file
 //    strip map folder from names
@@ -100,6 +102,8 @@ new Handle:kv_config			= INVALID_HANDLE;
 new Handle:kv_config2			= INVALID_HANDLE; // overrides
 
 new Handle:duelmenu				= INVALID_HANDLE;
+
+new Handle:g_OnDuelEnd;
 
 enum {
 	RANGE_CLOSE,
@@ -195,6 +199,8 @@ public OnPluginStart() {
 	{
 		Updater_AddPlugin(UPDATE_URL);
 	}
+	
+	g_OnDuelEnd = CreateGlobalForward("OnClientDied", ET_Ignore, Param_Cell, Param_Cell );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -346,16 +352,33 @@ public Event_RoundEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
 	
 	if( duel_active ) {
 		
+		new winner=0,loser=0;
+		
 		for( new i = 0; i < 2; i++ ) {
 			new client = GetClientOfUserId( duel_userid[i] );
 			if( !client ) continue;
+			
+			if( IsPlayerAlive(i) ) {
+				if( winner != 0 ) {
+					// both alive - they let the time expire, no winner.
+					winner = 0;
+				} else {
+					winner = client;
+				}
+			} else { 
+				loser = client;
+			}
+ 
 		//	SetEntityFlags( clients[i], GetEntityFlags(clients[i]) & ~FL_FROZEN ); might fuck up intermission freeze?
 			SetEntityMoveType( client, MOVETYPE_WALK );
 		}
-	}
-	//StopSpecialRound();
-
-	//CancelActiveVote();
+		if( winner ) {
+			Call_StartForward( g_OnDuelEnd );
+			Call_PushCell( winner );
+			Call_PushCell( loser ); 
+			Call_Finish();
+		}
+	} 
 }
 
 public Event_Intermission( Handle:event, const String:name[], bool:dontBroadcast ) {
