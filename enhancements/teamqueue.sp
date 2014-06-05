@@ -4,6 +4,7 @@
 #include <sdkhooks>
 #include <clientprefs>
 #include <cstrike>
+#include <idletracker>
 
 #undef REQUIRE_PLUGIN
 #include <updater>
@@ -326,6 +327,7 @@ public Event_RoundStart( Handle:event, const String:name[], bool:dontBroadcast )
 			if( client == 0 ) continue;
 			if( !is_client_queued[client] ) continue;
 			PrintToChat( client, "\x01 \x04You are queued (%d) to join %s\x04.", pos, team_names[team+2] );
+			ResetClientIdleTime( client );
 			pos++;
 		}
 		

@@ -14,6 +14,7 @@ public Plugin:myinfo = {
 };
 
 public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max ) {
+	CreateNative( "ResetClientIdleTime", Native_ResetIdleTime );
 	CreateNative( "GetClientIdleTime", Native_GetIdleTime );
 	CreateNative( "IsClientIdleAtSpawn", Native_IdleAtSpawn );
 }
@@ -107,6 +108,11 @@ public Native_GetIdleTime( Handle:plugin, numParams ) {
 public Native_IdleAtSpawn( Handle:plugin, numParams ) {
 	new client = GetNativeCell(1);
 	return idle_at_spawn[client];
+}
+
+public Native_ResetIdleTime( Handle:plugin, numParams ) {
+	new client = GetNativeCell(1);
+	ResetIdleTime(client);
 }
 
 //----------------------------------------------------------------------------------------------------------------------

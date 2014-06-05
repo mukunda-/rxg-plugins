@@ -18,6 +18,7 @@ public Plugin:myinfo = {
 new kill_streaks[MAXPLAYERS+1];
 
 new bool:round_end;
+new bool:warmup;
 
 //----------------------------------------------------------------------------------------------------------------------
 public OnPluginStart() {
@@ -31,6 +32,23 @@ public OnPluginStart() {
 	
 	CreateTimer( 60.0, OnMinute, _, TIMER_REPEAT );
 	
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+public OnMapStart() {
+	new Float:warmuptime = float(GetConVarInt( FindConVar( "mp_warmuptime" ) ));
+	if( warmuptime != 0.0 ) {
+		warmup = true;
+		CreateTimer( warmuptime, WarmupEnded, _, TIMER_FLAG_NO_MAPCHANGE );
+	} else {
+		warmup = false;
+	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+public Action:WarmupEnded( Handle:timer ) {
+	warmup=false;
+	return Plugin_Handled;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -54,7 +72,7 @@ public OnPlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast ) {
 
 //----------------------------------------------------------------------------------------------------------------------
 public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
-	if( round_end ) return;
+	if( round_end || warmup ) return;
 	new attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
 	new victim = GetClientOfUserId( GetEventInt( event, "victim" ) );
 	new assist = GetClientOfUserId( GetEventInt( event, "assister" ) );
@@ -108,14 +126,14 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 
 //----------------------------------------------------------------------------------------------------------------------
 public OnBombPlant( Handle:event, const String:name[], bool:dontBroadcast ) {
-	if( round_end ) return;
+	if( round_end || warmup ) return;
 	new client = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	COMPO_AddPoints( client, 200, "{points} for planting the bomb."  );
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 public OnBombDefused( Handle:event, const String:name[], bool:dontBroadcast ) {
-	if( round_end ) return;
+	if( round_end || warmup ) return;
 	new client = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	COMPO_AddPoints( client, 200, "{points} for defusing the bomb."  );
 }

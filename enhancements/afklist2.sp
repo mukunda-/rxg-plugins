@@ -24,8 +24,13 @@ public Plugin:myinfo = {
 
 new bool:idle_at_spawn_printed;
 
+new Handle:sm_afklist_kickspec_threshold;
+new Handle:sm_afklist_kickspec_time; 
+
 //-------------------------------------------------------------------------------------------------
 public OnPluginStart() {
+	sm_afklist_kick_threshold = CreateConVar( "sm_afklist_kickspec_threshold", "99", "Threshold of players in server to start kicking spectators" );
+	sm_afklist_kickspec_time = CreateConVar( "sm_afklist_kickspec_time", "10.0", "Kick spectators after this many minutes of idling" ); 
 	HookEvent( "round_start", Event_RoundStart, EventHookMode_PostNoCopy );
 	HookEvent( "round_end", Event_RoundEnd, EventHookMode_PostNoCopy );
 	HookEvent( "player_death", Event_PlayerDeath );
@@ -48,12 +53,12 @@ CheckSpawnAFK() {
 		else active_players[team]++;
 	}
 	if( ((active_players[1]+inactive_players[1]) > 0) && active_players[1] == 0 ) {
-		PrintToChatAll( "[SM] The last CT%s AFK!", inactive_players[1] == 1 ? " is" : "s are" );
+		PrintToChatAll( "\x01 \x04[IDLE] The last CT%s AFK!", inactive_players[1] == 1 ? " is" : "s are" );
 		PrintCenterTextAll( "The last CT%s AFK!", inactive_players[1] == 1 ? " is" : "s are" );
 		idle_at_spawn_printed = true;
 	} else if( ((active_players[0]+inactive_players[0]) > 0) && active_players[0] == 0 ) {
-		PrintToChatAll( "[SM] The last terrorist%s AFK!", inactive_players[0] == 1 ? " is" : "s are" );
-		PrintCenterTextAll( "[SM] The last terrorist%s AFK!", inactive_players[0] == 1 ? " is" : "s are" );
+		PrintToChatAll( "\x01 \x04[IDLE] The last terrorist%s AFK!", inactive_players[0] == 1 ? " is" : "s are" );
+		PrintCenterTextAll( "The last terrorist%s AFK!", inactive_players[0] == 1 ? " is" : "s are" );
 		idle_at_spawn_printed = true;
 	}
 }
@@ -65,9 +70,24 @@ public Event_RoundStart( Handle:event, const String:name[], bool:dontBroadcast )
 
 //-------------------------------------------------------------------------------------------------
 MoveAFKClients() {
+	new threshold = GetConVarInt(sm_afklist_kick_threshold);
+	new Float:time = GetConVarFloat(sm_afklist_kickspec_time) * 60.0;
+	
+	new players = GetClientCount();
+	
 	for( new i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i) ) continue;
-		if( GetClientTeam(i) < 2 ) continue;
+		if( GetClientTeam(i) < 2 ) {
+			// spectator
+			if( players >= threshold ) {
+				if( GetClientIdleTime(i) >= time ) {
+					KickClient( i, "Automated kick to make room" );
+					continue;
+				}
+			}
+			
+			
+		}
 		if( !IsPlayerAlive(i) ) continue;
 		
 		if( GetClientIdleTime(i) >= IDLE_THRESHOLD ) {
