@@ -10,7 +10,7 @@ public Plugin:myinfo = {
 	name        = "revocomp scoring",
 	author      = "mukunda",
 	description = "revocomp scoring",
-	version     = "1.0.1",
+	version     = "1.0.2",
 	url         = "www.mukunda.com"
 };
 
@@ -92,7 +92,7 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 		weap = 3;
 	}
 	
-	PrintToChatAll( "DEBUG KILL %s", weapon );
+	//PrintToChatAll( "DEBUG KILL %s", weapon );
 	
 	if( weap == 0 ) {
 		COMPO_AddPoints( attacker, 150, "{points} for killing a player." );
@@ -169,9 +169,9 @@ public Action:OnHurtChicken(victim, &attacker, &inflictor, &Float:damage, &damag
 */
 //----------------------------------------------------------------------------------------------------------------------
 public OnHaxBan( client, victim ) {
-	COMPO_AddPoints( attacker, 1000, "{points} for banning a cheater." );
+	COMPO_AddPoints( client, 1000, "{points} for banning a cheater." );
 }
 
 public OnDuelEnd( winner, loser ) {
-	COMPO_AddPoints( attacker, 400, "{points} for winning a duel." );
+	COMPO_AddPoints( winner, 400, "{points} for winning a duel." );
 }

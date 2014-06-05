@@ -12,7 +12,7 @@ public Plugin:myinfo = {
 	name        = "rxgcompo",
 	author      = "mukunda",
 	description = "RXG Competition API",
-	version     = "1.0.2",
+	version     = "1.0.3",
 	url         = "www.mukunda.com"
 };
 
@@ -288,9 +288,9 @@ LoadClientData( client ) {
 //----------------------------------------------------------------------------------------------------------------------
 public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) { 
 	// commit data if it has been more than 60 seconds
-	//if( g_last_commit > GetTime() + 60 ) { DEBUG BYPASS
+	if( g_last_commit > GetTime() + 60 ) {
 		CommitPlayerData(); 
-	//}
+	}
 }
 //----------------------------------------------------------------------------------------------------------------------
 public Action:CommitDataTimer( Handle:timer ) {
@@ -328,7 +328,7 @@ CommitPlayerData( ) {
 			decl String:safename[128];
 			SQL_EscapeString( g_db, name, safename, sizeof safename );
 			FormatEx( query, sizeof query, 
-				"INSERT INTO players (account,points,daypoints,day,ingame,name) VALUES (%d,%d,%d,%d,%d,'%s') ON DUPLICATE KEY UPDATE points=%d,ingame=%d,daypoints=%d,day=%d,name='%s'",
+				"INSERT INTO players (account,points,daypoints,day,ingame,name) VALUES (%d,%d,%d,%d,%d,'%s') ON DUPLICATE KEY UPDATE points=%d,daypoints=%d,day=%d,ingame=%d,name='%s'",
 				g_client_account[i], g_client_points[i], g_client_dailypoints[i], g_client_day[i], time, safename,
 				g_client_points[i], g_client_dailypoints[i], g_client_day[i], time, safename );
 			SQL_TQuery( g_db, OnSQLCommitData, query );
@@ -528,7 +528,10 @@ public Native_GetPoints( Handle:plugin, numParams ) {
 //----------------------------------------------------------------------------------------------------------------------
 UpdateDay() {
 	new time = GetTime();
-	new day = time / 86400;
+	
+	time -= 18000; // CDT, utc-5
+	time -= 21600; // shift 12:00 AM to 6:00 AM
+	new day = (time) / 86400;
 	if( g_current_day != day ) {
 		g_current_day = day;
 		if( time >= g_contest_start && time < g_contest_end ) {
