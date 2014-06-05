@@ -47,7 +47,7 @@ CheckSpawnAFK() {
 		if( !IsClientInGame(i) ) continue;
 		if( !IsPlayerAlive(i) ) continue;
 		new team = GetClientTeam(i) - 2;
-		if( team < 0 ) continue; // justin case
+		//if( team < 0 ) continue; // justin case
 		
 		if( IsClientIdleAtSpawn(i) && GetClientIdleTime(i) >= IDLE_THRESHOLD ) inactive_players[team]++;
 		else active_players[team]++;
