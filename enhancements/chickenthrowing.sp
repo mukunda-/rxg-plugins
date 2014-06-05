@@ -160,6 +160,7 @@ ThrowChicken(client, Float:scale, Float:speed, Float:gravity)
 	//PrintToChatAll("uptime: %f... height: %f... time: %f", upTime, height, time);
 	
 	if (scale < MIN_SCALE) scale = MIN_SCALE;
+	else if (scale > MAX_SCALE) scale = MAX_SCALE;
 	
 	//Create chicken
 	new chicken = CreateEntityByName("chicken");
