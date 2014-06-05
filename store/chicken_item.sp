@@ -11,7 +11,7 @@ public Plugin:myinfo = {
 	name = "chicken item",
 	author = "WhiteThunder",
 	description = "throwable chickens",
-	version = "1.0.0",
+	version = "1.1.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -28,6 +28,13 @@ public Plugin:myinfo = {
 //-------------------------------------------------------------------------------------------------
 public OnPluginStart() {
 	RXGSTORE_RegisterItem( ITEM_NAME, ITEMID, ITEM_FULLNAME );
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnLibraryAdded( const String:name[] ) {
+	if( StrEqual( name, "rxgstore" ) ) {
+		RXGSTORE_RegisterItem( ITEM_NAME, ITEMID, ITEM_FULLNAME );
+	}
 }
 
 //-------------------------------------------------------------------------------------------------
