@@ -28,7 +28,7 @@ public Plugin:myinfo =
 #define MAX_SCALE 6.0
 #define COLLISION_RADIUS 5.0
 #define COLLISION_LANDED_MULT 5.0
-#define COMBINATION_MULT 0.3
+#define COMBINATION_MULT 0.5
 
 #define CASHMODEL "models/props/cs_assault/money.mdl"
 #define MAXENTITIES 2048
