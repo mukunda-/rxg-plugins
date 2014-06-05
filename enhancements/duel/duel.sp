@@ -39,7 +39,7 @@ public Plugin:myinfo = {
 	name = "duel",
 	author = "mukunda",
 	description = "i demand satisfaction",
-	version = "1.2.0",
+	version = "1.2.1",
 	url = "www.mukunda.com"
 };
 
