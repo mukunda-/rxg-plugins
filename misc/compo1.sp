@@ -131,7 +131,7 @@ public Action:OnMinute( Handle:timer ) {
 		}
 	}
 }
-
+/*
 //----------------------------------------------------------------------------------------------------------------------
 public OnEntityCreated(entity, const String:classname[]) {
 	if( StrEqual( classname, "chicken" ) ) {
@@ -148,7 +148,7 @@ public Action:OnHurtChicken(victim, &attacker, &inflictor, &Float:damage, &damag
 	COMPO_AddPoints( attacker, 20, "{points} for killing a chicken." );
 	return Plugin_Continue;
 }
-
+*/
 //----------------------------------------------------------------------------------------------------------------------
 public OnHaxBan( client, victim ) {
 	COMPO_AddPoints( attacker, 1000, "{points} for banning a cheater." );
