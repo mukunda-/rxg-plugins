@@ -56,6 +56,8 @@ new cash_ent_next;
 
 new GAME;
 
+#define TF2_CASH_SCALE 1.5
+
 #define GAME_CSGO	0
 #define GAME_TF2	1
  
@@ -249,10 +251,15 @@ SpawnCash( const Float:pos[3], const Float:vel[3], amount, dropper ) {
 		return ;
 	}
 	new ent = CreateEntityByName( "prop_physics_override" );
-	 
+	
+	if( GAME == GAME_TF2 ){
+		SetEntPropFloat( ent, Prop_Data, "m_flModelScale", TF2_CASH_SCALE );
+	}
+	
 	DispatchKeyValue(ent, "model", money_model ); 
 	DispatchKeyValue( ent, "spawnflags", "256" );	// usable
 	DispatchKeyValue( ent, "targetname", "RXGCASHMONAY" );
+	
 	DispatchSpawn(ent);
 	
 	SetEntProp( ent, Prop_Send, "m_CollisionGroup", 2 ); // set non-collidable  
