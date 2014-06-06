@@ -10,7 +10,7 @@ public Plugin:myinfo = {
 	name        = "revocomp scoring",
 	author      = "mukunda",
 	description = "revocomp scoring",
-	version     = "1.0.2",
+	version     = "1.0.3",
 	url         = "www.mukunda.com"
 };
 
@@ -77,24 +77,26 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new victim = GetClientOfUserId( GetEventInt( event, "victim" ) );
 	new assist = GetClientOfUserId( GetEventInt( event, "assister" ) );
 	if( victim == attacker ) {
-		COMPO_AddPoints( attacker, 20, "{points} for suicide!" );
+		COMPO_AddPoints( attacker, 15, "{points} for suicide!" );
 	}
 	if( attacker == 0 ) return;
+	
+	new players = COMPO_GetRoundPlayers();
  
 	new weap = 0;
 	decl String:weapon[64];
 	GetEventString( event, "weapon", weapon, sizeof weapon );
-	if( StrContains( weapon, "knife" ) != -1 || StrContains( weapon, "bayonet" ) != -1 ) {
+	if( (StrContains( weapon, "knife" ) != -1 || StrContains( weapon, "bayonet" ) != -1)   ) {
 		weap = 1;
-	} else if( StrEqual( weapon, "taser" ) ) {
+	} else if( StrEqual( weapon, "taser"   ) ) {
 		weap = 2;
-	} else if( StrEqual( weapon, "hegrenade" ) ) {
+	} else if( StrEqual( weapon, "hegrenade"  ) ) {
 		weap = 3;
 	}
 	
 	//PrintToChatAll( "DEBUG KILL %s", weapon );
 	
-	if( weap == 0 ) {
+	if( weap == 0 || players < 12 ) { // always run this one if less than 12 players
 		COMPO_AddPoints( attacker, 150, "{points} for killing a player." );
 	} else if( weap == 1 ) {
 		COMPO_AddPoints( attacker, 350, "{points} for knifing a player." );
@@ -108,15 +110,20 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	if( kill_streaks[attacker] == 4 ) {
 		COMPO_AddPoints( attacker, 100, "{points} for 4-kill streak." );
 	} else if( kill_streaks[attacker] == 5 ) {
-		COMPO_AddPoints( attacker, 120, "{points} for 5-kill streak." );
+		new points = players >= 12 ? 120 : 100;
+		COMPO_AddPoints( attacker, points, "{points} for 5-kill streak." );
 	} else if( kill_streaks[attacker] == 6 ) {
-		COMPO_AddPoints( attacker, 140, "{points} for 6-kill streak." );
+		new points = players >= 12 ? 140 : 100;
+		COMPO_AddPoints( attacker, points, "{points} for 6-kill streak." );
 	} else if( kill_streaks[attacker] == 7 ) {
-		COMPO_AddPoints( attacker, 200, "{points} for 7-kill streak." );
+		new points = players >= 12 ? 200 : 100;
+		COMPO_AddPoints( attacker, points, "{points} for 7-kill streak." );
 	} else if( kill_streaks[attacker] == 8 ) {
-		COMPO_AddPoints( attacker, 250, "{points} for 8-kill streak." );
+		new points = players >= 12 ? 250 : 100;
+		COMPO_AddPoints( attacker, points, "{points} for 8-kill streak." );
 	} else if( kill_streaks[attacker] >= 9 ) {
-		COMPO_AddPoints( attacker, 300, "{points} for 9+ kill streak." );
+		new points = players >= 12 ? 300 : 100;
+		COMPO_AddPoints( attacker, points, "{points} for 9+ kill streak." );
 	}
 	
 	if( assist != 0 ) {
@@ -140,10 +147,17 @@ public OnBombDefused( Handle:event, const String:name[], bool:dontBroadcast ) {
 
 //----------------------------------------------------------------------------------------------------------------------
 public Action:OnMinute( Handle:timer ) {
+	new bonus = (COMPO_GetRoundPlayers() - 6) * 30 / 8;
+	if( bonus < 0 ) bonus = 0;
+	if( bonus > 30 ) bonus = 30;
+	bonus = 30-bonus;
+	new playing_points = 20 + bonus;
 	for( new i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i) ) continue;
 		if( GetClientTeam(i) >= 2 ) {
-			COMPO_AddPoints( i, 20, "{points} for playing."  );
+			 
+			
+			COMPO_AddPoints( i, playing_points, "{points} for playing."  );
 		} else {
 			COMPO_AddPoints( i, 5, "{points} for spectating."  );
 		}
@@ -169,9 +183,11 @@ public Action:OnHurtChicken(victim, &attacker, &inflictor, &Float:damage, &damag
 */
 //----------------------------------------------------------------------------------------------------------------------
 public OnHaxBan( client, victim ) {
-	COMPO_AddPoints( client, 1000, "{points} for banning a cheater." );
+	COMPO_AddPoints( client, 700, "{points} for banning a cheater." );
 }
 
 public OnDuelEnd( winner, loser ) {
-	COMPO_AddPoints( winner, 400, "{points} for winning a duel." );
+	if( COMPO_GetRoundPlayers() >= 12 ) {
+		COMPO_AddPoints( winner, 400, "{points} for winning a duel." );
+	}
 }

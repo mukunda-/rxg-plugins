@@ -7,6 +7,7 @@
 native COMPO_AddPoints( client, points,  const String:message[] );
 native COMPO_GetTopPoints();
 native COMPO_GetPoints( client );
+native COMPO_GetRoundPlayers();
  
 public SharedPlugin:__pl_rxgstore = 
 {
@@ -25,5 +26,6 @@ public __pl_rxgstore_SetNTVOptional()
 	MarkNativeAsOptional("COMPO_AddPoints");
 	MarkNativeAsOptional("COMPO_GetTopPoints");
 	MarkNativeAsOptional("COMPO_GetPoints");
+	MarkNativeAsOptional("COMPO_GetRoundPlayers");
 }
 #endif

@@ -12,7 +12,7 @@ public Plugin:myinfo = {
 	name        = "rxgcompo",
 	author      = "mukunda",
 	description = "RXG Competition API",
-	version     = "1.0.4",
+	version     = "1.0.5",
 	url         = "www.mukunda.com"
 };
 
@@ -46,10 +46,12 @@ new g_client_points[MAXPLAYERS+1];
 new g_client_dailypoints[MAXPLAYERS+1];
 new g_client_day[MAXPLAYERS+1];
  
-new g_current_day = 0;
+new g_current_day = -9000000;
 new g_point_cap = 0;
 
 new g_top_points;
+
+new g_round_players;
 
 new g_last_commit;
 
@@ -76,6 +78,7 @@ public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max 
 	CreateNative( "COMPO_AddPoints", Native_AddPoints );
 	CreateNative( "COMPO_GetTopPoints", Native_GetTopPoints );
 	CreateNative( "COMPO_GetPoints", Native_GetPoints );
+	CreateNative( "COMPO_GetRoundPlayers", Native_GetRoundPlayers );
 	RegPluginLibrary( "rxgcompo" );
 }
 
@@ -226,13 +229,16 @@ public OnClientDisconnect(client) {
 	if( g_db_connected ) {
 		new account = g_client_account[client];
 		if( account == 0 ) return;
+		CommitPlayer( client, 0, false );
+		
 		g_client_account[client] = 0;
 	
+		/*
 		decl String:query[1024];
 		FormatEx( query, sizeof query, 
 			"UPDATE players SET ingame=0 WHERE ACCOUNT=%d",account );
 		
-		SQL_TQuery( g_db, OnSQLClientLogout, query );
+		SQL_TQuery( g_db, OnSQLClientLogout, query );*/
 	}
 }
 
@@ -297,15 +303,23 @@ LoadClientData( client ) {
 
 //----------------------------------------------------------------------------------------------------------------------
 public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) { 
+
+	g_round_players = 0;
+	for( new i = 1; i <= MaxClients; i++ ) {
+		if( !IsClientInGame(i) )continue;
+		if( GetClientTeam(i) >= 2 ) {
+			g_round_players++;
+		}
+	}
 	// commit data if it has been more than 60 seconds
-	if( g_last_commit > GetTime() + 60 ) {
+	if( GetTime() >= g_last_commit + 60 ) {
 		CommitPlayerData(); 
 	}
 }
 //----------------------------------------------------------------------------------------------------------------------
 public Action:CommitDataTimer( Handle:timer ) {
 	// commit data if it has been 5 minutes
-	if( g_last_commit > GetTime() + 300 ) {
+	if( GetTime() >= g_last_commit + 300 ) {
 		CommitPlayerData();
 	}
 	return Plugin_Continue;
@@ -325,6 +339,28 @@ public OnSQLCommitData( Handle:owner, Handle:hndl, const String:error[], any:dat
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+CommitPlayer( client, time, bool:updatename ) {
+	decl String:query[1024];
+	decl String:name[64];
+	GetClientName( client, name, sizeof name );
+	
+	if( updatename ) {
+		decl String:safename[128];
+		SQL_EscapeString( g_db, name, safename, sizeof safename );
+		FormatEx( query, sizeof query, 
+			"INSERT INTO players (account,points,daypoints,day,ingame,name) VALUES (%d,%d,%d,%d,%d,'%s') ON DUPLICATE KEY UPDATE points=%d,daypoints=%d,day=%d,ingame=%d,name='%s'",
+			g_client_account[client], g_client_points[client], g_client_dailypoints[client], g_client_day[client], time, safename,
+			g_client_points[client], g_client_dailypoints[client], g_client_day[client], time, safename );
+	} else {
+		FormatEx( query, sizeof query, 
+			"INSERT INTO players (account,points,daypoints,day,ingame) VALUES (%d,%d,%d,%d,%d) ON DUPLICATE KEY UPDATE points=%d,daypoints=%d,day=%d,ingame=%d",
+			g_client_account[client], g_client_points[client], g_client_dailypoints[client], g_client_day[client], time, 
+			g_client_points[client], g_client_dailypoints[client], g_client_day[client], time );
+	}
+	SQL_TQuery( g_db, OnSQLCommitData, query );
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 CommitPlayerData( ) {
 	if( !g_db_connected ) return;
 	
@@ -332,16 +368,9 @@ CommitPlayerData( ) {
 	for( new i = 1; i <= MaxClients; i++ ) {
 		if( IsClientInGame(i) && g_client_loaded[i] ) {
 			if( IsFakeClient(i) ) continue;
-			decl String:query[1024];
-			decl String:name[64];
-			GetClientName( i, name, sizeof name );
-			decl String:safename[128];
-			SQL_EscapeString( g_db, name, safename, sizeof safename );
-			FormatEx( query, sizeof query, 
-				"INSERT INTO players (account,points,daypoints,day,ingame,name) VALUES (%d,%d,%d,%d,%d,'%s') ON DUPLICATE KEY UPDATE points=%d,daypoints=%d,day=%d,ingame=%d,name='%s'",
-				g_client_account[i], g_client_points[i], g_client_dailypoints[i], g_client_day[i], time, safename,
-				g_client_points[i], g_client_dailypoints[i], g_client_day[i], time, safename );
-			SQL_TQuery( g_db, OnSQLCommitData, query );
+			CommitPlayer(i, time,true);
+			
+			
 		}
 	}
 }
@@ -360,6 +389,8 @@ public AddPoints( client, points, const String:message[] ) {
 	if( g_point_cap && (g_client_dailypoints[client] >= g_point_cap) ) {
 		return 0;// point cap
 	}
+	
+	if( g_round_players < 6 ) return 0;
 	
 	new bool:capped = false;
 	g_client_dailypoints[client] += points;
@@ -580,6 +611,11 @@ public Native_GetPoints( Handle:plugin, numParams ) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+public Native_GetRoundPlayers( Handle:plugin, numParams ) {
+	return g_round_players;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 UpdateDay() {
 	new time = GetTime();
 	
@@ -589,7 +625,13 @@ UpdateDay() {
 	
 	//time -= 18000; // CDT, utc-5
 	//time -= 21600; // shift 12:00 AM to 6:00 AM
-	new day = (time+43200-21600) / 86400; //  + 12 hours (start of compo) - 6 hours (end at 6:00 each day)
+	//+43200-21600
+	new day_offset = (g_contest_start % 86400); // seconds into the first day that the contest starts
+	day_offset -= 6*60*60; // 6:00 AM
+	if( day_offset < 0 ) day_offset += 86400;
+	
+	new day = (time+day_offset) / 86400;
+	if( day < 0 ) day += 86400;
 	if( g_current_day != day ) {
 		g_current_day = day;
 		if( time >= 0 && time < (g_contest_end - g_contest_start) ) {
@@ -613,8 +655,8 @@ UpdateDay() {
 //----------------------------------------------------------------------------------------------------------------------
 GetPointCap( day ) {
 	// REVOCOMP point caps
-
-
+	
+	
 	if( day < 7 ) {
 		return 10000;
 	} else if( day < 14 ) {
