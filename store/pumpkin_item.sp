@@ -5,7 +5,7 @@
 
 #pragma semicolon 1
 
-#define MIN_DISTANCE 45.0
+#define MIN_DISTANCE 50.0
 #define MAX_DISTANCE 200.0
 
 //-------------------------------------------------------------------------------------------------
@@ -59,19 +59,19 @@ public bool:SpawnPumpkin( client ) {
 		new Float:distance = GetVectorDistance( feet, end, true );
 
 		if ( distance < MIN_DISTANCE * MIN_DISTANCE ) {
-			PrintToChat( client, "\x06Cannot plant that close" );
+			PrintToChat( client, "\x07808080Cannot plant that close" );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
 		
 		if ( distance > MAX_DISTANCE * MAX_DISTANCE ) {
-			PrintToChat( client, "\x06Cannot plant that far away" );
+			PrintToChat( client, "\x07808080Cannot plant that far away" );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
 		
 		if ( FloatAbs( norm_angles[0] - (270.0) ) > 45.0 ) {
-			PrintToChat( client, "\x06Cannot plant there" );
+			PrintToChat( client, "\x07808080Cannot plant there" );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
@@ -82,14 +82,27 @@ public bool:SpawnPumpkin( client ) {
 	DispatchSpawn( ent );
 	TeleportEntity( ent, end, NULL_VECTOR, NULL_VECTOR );
 	
-	PrintToChat( client, "\x04Pumpkin bomb planted!" );
+	decl String:team_color[7];
+	new team = GetClientTeam(client);
+	
+	if( team == 2 ){
+		team_color = "ff3d3d";
+	} else if ( team == 3 ){
+		team_color = "84d8f4";
+	} else {
+		return true;
+	}
+	
+	decl String:name[32];
+	GetClientName(client, name, sizeof name);
+	
+	PrintToChatAll("\x07%s%s \x07FFD800has spawned a pumpkin!", team_color, name);
 	
 	return true;
 }
 
 //-------------------------------------------------------------------------------------------------
 public bool:TraceFilter_All( entity, contentsMask ) {
-	
 	return false;
 }
 
