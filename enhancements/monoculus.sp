@@ -59,6 +59,8 @@ public Action:Command_SpawnMonoculus( client, args ) {
 		new String:team_arg[12];
 		GetCmdArg( 1, team_arg, sizeof team_arg );
 		team = StringToInt(team_arg);
+	} else {
+		team = GetClientTeam(client);
 	}
 	
 	SpawnMonoculus( client, team );
