@@ -76,6 +76,7 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
 	new victim = GetClientOfUserId( GetEventInt( event, "victim" ) );
 	new assist = GetClientOfUserId( GetEventInt( event, "assister" ) );
+	if( IsFakeClient(victim) ) return;
 	if( victim == attacker ) {
 		COMPO_AddPoints( attacker, 15, "{points} for suicide!" );
 	}

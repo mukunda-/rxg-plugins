@@ -307,6 +307,7 @@ public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
 	g_round_players = 0;
 	for( new i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i) )continue;
+		if( IsFakeClient(i) ) continue;
 		if( GetClientTeam(i) >= 2 ) {
 			g_round_players++;
 		}
@@ -621,17 +622,15 @@ UpdateDay() {
 	
 	time -= g_contest_start;
 	
-	// the first day is only 18 hours long (12:00PM -> 6:00 AM)
+	// the first day is only 18 hours long (12:00PM -> 6:00 AM CDT)
 	
-	//time -= 18000; // CDT, utc-5
-	//time -= 21600; // shift 12:00 AM to 6:00 AM
-	//+43200-21600
+	
 	new day_offset = (g_contest_start % 86400); // seconds into the first day that the contest starts
-	day_offset -= 6*60*60; // 6:00 AM
+	day_offset -= 11*60*60; // 6:00 AM CDT (11:00 UTC)
 	if( day_offset < 0 ) day_offset += 86400;
 	
 	new day = (time+day_offset) / 86400;
-	if( day < 0 ) day += 86400;
+	
 	if( g_current_day != day ) {
 		g_current_day = day;
 		if( time >= 0 && time < (g_contest_end - g_contest_start) ) {
