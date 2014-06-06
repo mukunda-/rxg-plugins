@@ -6,14 +6,14 @@
 #pragma semicolon 1
 
 #define MIN_DISTANCE 45.0
-#define MAX_DISTANCE 150.0
+#define MAX_DISTANCE 200.0
 
 //-------------------------------------------------------------------------------------------------
 public Plugin:myinfo = {
 	name = "pumpkin item",
 	author = "WhiteThunder",
-	description = "deployable pumpkin",
-	version = "1.0.0",
+	description = "deployable pumpkin bombs",
+	version = "1.1.0",
 	url = "www.reflex-gamers.com"
 };
 
