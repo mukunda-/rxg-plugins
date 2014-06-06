@@ -6,7 +6,7 @@
 #pragma semicolon 1
 
 #define MIN_DISTANCE 50.0
-#define MAX_DISTANCE 200.0
+#define MAX_DISTANCE 250.0
 
 //-------------------------------------------------------------------------------------------------
 public Plugin:myinfo = {
@@ -59,19 +59,19 @@ public bool:SpawnPumpkin( client ) {
 		new Float:distance = GetVectorDistance( feet, end, true );
 
 		if ( distance < MIN_DISTANCE * MIN_DISTANCE ) {
-			PrintToChat( client, "\x07808080Cannot plant that close" );
+			PrintToChat( client, "\x07808080Cannot plant that close." );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
 		
 		if ( distance > MAX_DISTANCE * MAX_DISTANCE ) {
-			PrintToChat( client, "\x07808080Cannot plant that far away" );
+			PrintToChat( client, "\x07808080Cannot plant that far away." );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
 		
 		if ( FloatAbs( norm_angles[0] - (270.0) ) > 45.0 ) {
-			PrintToChat( client, "\x07808080Cannot plant there" );
+			PrintToChat( client, "\x07808080Cannot plant there." );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
@@ -96,7 +96,7 @@ public bool:SpawnPumpkin( client ) {
 	decl String:name[32];
 	GetClientName(client, name, sizeof name);
 	
-	PrintToChatAll("\x07%s%s \x07FFD800has spawned a pumpkin!", team_color, name);
+	PrintToChatAll("\x07%s%s \x07FFD800has spawned a \x07FF6600Pumpkin!", team_color, name);
 	
 	return true;
 }

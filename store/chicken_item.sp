@@ -15,7 +15,7 @@ public Plugin:myinfo = {
 	url = "www.reflex-gamers.com"
 };
 
-
+//-------------------------------------------------------------------------------------------------
 #define GRAVITY 800.0
 #define GRAVITY_MULT 0.5
 #define SPEED 750.0

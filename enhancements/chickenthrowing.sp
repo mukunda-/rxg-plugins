@@ -1,5 +1,3 @@
-// Chicken throwing command and api
-// Version 1.0.0
 
 #include <sourcemod>
 #include <sdktools>
@@ -8,15 +6,15 @@
 #pragma semicolon 1
 
 //-------------------------------------------------------------------------------------------------
-public Plugin:myinfo =
-{
+public Plugin:myinfo = {
 	name = "Chicken Throwing",
 	author = "WhiteThunder",
 	description = "Chicken throwing lel",
-	version = "1.0.0",
+	version = "1.1.0",
 	url = "www.reflex-gamers.com"
 };
 
+//-------------------------------------------------------------------------------------------------
 #define GRAVITY 800.0
 #define SPEED 750.0
 #define VERTICAL_OFFSET -10.0
