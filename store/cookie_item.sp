@@ -50,6 +50,8 @@ new Float:cookie_last_use[MAXPLAYERS];
 #define COOLDOWN 2.0
 
 #define COOKIE_HP 35
+#define COOKIE_HP_TF2 85
+#define TF2_COOKIE_SCALE 1.5
 
 new GAME;
 
@@ -154,7 +156,7 @@ public bool:OnCookieTouch( client, entity ) {
 	}
 	cookie_last_use[client] = GetGameTime();
 	
-	hp += (maxhealth * COOKIE_HP) / 100;
+	hp += (maxhealth * ( GAME == GAME_TF2 ? COOKIE_HP_TF2 : COOKIE_HP )) / 100;
 	if( GAME == GAME_CSGO ) {
 		if( hp > maxhealth ) hp = maxhealth;
 	} else {
@@ -212,11 +214,17 @@ SpawnCookie( Float:vec[3], Float:vel[3] ) {
 	new ent = CreateEntityByName( "prop_physics_override" );
 	DispatchKeyValue( ent, "targetname", "RXG_COOKIE" );
 	SetEntityModel( ent, cookie_model );
+	
+	if( GAME == GAME_TF2 ){
+		SetEntPropFloat( ent, Prop_Data, "m_flModelScale", TF2_COOKIE_SCALE );
+	}
+	
 	if( GAME==GAME_CSGO ){
 		SetEntityRenderColor( ent, 128,128,128);
 	} else {
 		SetEntityRenderColor( ent, 255,255,255);
 	}
+	
 	DispatchKeyValue( ent, "spawnflags", "256" );
 	SetEntProp( ent, Prop_Send, "m_CollisionGroup", 2 );
 	DispatchSpawn( ent );
