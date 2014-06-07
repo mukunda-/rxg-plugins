@@ -112,10 +112,10 @@ public Action:Command_voicemenu( client, args ) {
 
 //-------------------------------------------------------------------------------------------------
 bool:RegisterEntity( ent, Handle:plugin, Function:callback ) {
-	if( ent <= MAXPLAYERS ) {
+	if( ent <= MaxClients ) {
 		if( !IsClientInGame(ent) ) return false;
 		registered_ents[ent] = GetClientUserId( ent );
-	} else if( ent > MAXPLAYERS && ent < 2048 ) {
+	} else if( ent > MaxClients && ent < 2048 ) {
 		registered_ents[ent] = EntIndexToEntRef( ent );
 	} else {
 		return false;
