@@ -74,7 +74,7 @@ public OnPlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast ) {
 public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	if( round_end || warmup ) return;
 	new attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
-	new victim = GetClientOfUserId( GetEventInt( event, "victim" ) );
+	new victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	new assist = GetClientOfUserId( GetEventInt( event, "assister" ) );
 	if( IsFakeClient(victim) ) return;
 	if( victim == attacker ) {
