@@ -20,14 +20,15 @@ public Plugin:myinfo = {
 #define VERTICAL_OFFSET 50.0
 
 #define TEAM_BOSS 5
-#define MAX_MONOCULUS_COUNT 5
+#define BOSS_HEALTH 4000 //default 8000
+#define MAX_MONOCULUS_COUNT 4
 #define SUMMON_SOUND_COOLDOWN 10.0
 
 #define MONOCULUS_BOSS_WAIT_TIMER 60.0
 #define MONOCULUS_SPECTRAL_WAIT_TIMER 20.0
 #define MONOCULUS_BOSS_EXPIRE_TIMER 150.0
 
-new bool:g_sound_playing = false;
+new Float:g_last_summon;
 new g_monoculus_count;
 
 //-------------------------------------------------------------------------------------------------
@@ -40,6 +41,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) 
 //-------------------------------------------------------------------------------------------------
 public OnMapStart() {
 	PrecacheMonoculus();
+	g_last_summon = -SUMMON_SOUND_COOLDOWN;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -110,7 +112,9 @@ bool:SpawnMonoculus( client, team ) {
 		}
 	}
 	
-	end[2] += VERTICAL_OFFSET;
+	if( team != TEAM_BOSS ) {
+		end[2] += VERTICAL_OFFSET;
+	}
 	
 	new ent = CreateEntityByName("eyeball_boss");
 	SetEntProp( ent, Prop_Data, "m_iTeamNum", team );
@@ -121,6 +125,9 @@ bool:SpawnMonoculus( client, team ) {
 	
 	DispatchSpawn( ent );
 	TeleportEntity( ent, end, NULL_VECTOR, NULL_VECTOR );
+	
+	SetEntProp( ent, Prop_Data, "m_iMaxHealth", BOSS_HEALTH );
+	SetEntProp( ent, Prop_Data, "m_iHealth", BOSS_HEALTH );
 	
 	decl String:team_color[7];
 	new client_team = GetClientTeam(client);
@@ -134,28 +141,25 @@ bool:SpawnMonoculus( client, team ) {
 	decl String:name[32];
 	GetClientName( client, name, sizeof name );
 	
+	new Float:time = GetGameTime();
+	
 	if( team == TEAM_BOSS ) {
 		PrintToChatAll( "\x07%s%s \x07FFD800has summoned a \x07874FADMONOCULUS!", team_color, name );
 		CreateTimer( MONOCULUS_BOSS_WAIT_TIMER, Timer_LowerMonoculusCount );
 		CreateTimer( MONOCULUS_BOSS_EXPIRE_TIMER, Timer_KillExpiredBossMonoculus, EntIndexToEntRef(ent) );
+		g_last_summon = time;
 	} else {
 		PrintToChatAll( "\x07%s%s \x07FFD800has summoned a \x07%sSpectral Monoculus!", team_color, name, team_color );
 		CreateTimer( MONOCULUS_SPECTRAL_WAIT_TIMER, Timer_LowerMonoculusCount );
 		
-		if( !g_sound_playing ) {
+		if( time >= g_last_summon + SUMMON_SOUND_COOLDOWN ) {
 			EmitSoundToAll( "ui/halloween_boss_summoned_fx.wav", SOUND_FROM_PLAYER, SNDCHAN_AUTO, SNDLEVEL_HOME );
-			g_sound_playing = true;
-			CreateTimer( SUMMON_SOUND_COOLDOWN, Timer_EnableSounds );
+			g_last_summon = time;
 		}
 	}
 	
 	g_monoculus_count++;
 	return true;
-}
-
-//-------------------------------------------------------------------------------------------------
-public Action:Timer_EnableSounds( Handle:timer ) {
-	g_sound_playing = false;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -165,7 +169,8 @@ public Action:Timer_LowerMonoculusCount( Handle:timer ) {
 
 //-------------------------------------------------------------------------------------------------
 public Action:Timer_KillExpiredBossMonoculus( Handle:timer, any:boss ) {
-	if( IsValidEntity( boss ) ) { // sometimes they don't go away when they should
+	if( IsValidEntity( boss ) ) {
+		// sometimes they don't go away when they should
 		AcceptEntityInput( boss, "Kill" );
 	}
 }
