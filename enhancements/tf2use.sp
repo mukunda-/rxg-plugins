@@ -7,7 +7,7 @@ public Plugin:myinfo =  {
 	name = "tf2use",
 	author = "mukunda",
 	description = "interface for using objects",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "http://www.mukunda.com/"
 };
 
