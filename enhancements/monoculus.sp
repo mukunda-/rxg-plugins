@@ -10,7 +10,7 @@ public Plugin:myinfo = {
 	name = "Spawn Monoculus",
 	author = "WhiteThunder",
 	description = "Spawnable Monoculus",
-	version = "1.1.0",
+	version = "1.2.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -26,9 +26,10 @@ public Plugin:myinfo = {
 #define MAX_MONOCULUS_COUNT 4
 #define SUMMON_SOUND_COOLDOWN 10.0
 
-#define MONOCULUS_BOSS_WAIT_TIMER 60.0
-#define MONOCULUS_SPECTRAL_WAIT_TIMER 20.0
-#define MONOCULUS_BOSS_EXPIRE_TIMER 150.0
+#define BOSS_COLLISION_DELAY 1.0
+#define BOSS_WAIT_TIMER 60.0
+#define SPECTRAL_WAIT_TIMER 20.0
+#define BOSS_EXPIRE_TIMER 180.0
 
 new Float:g_last_summon;
 new g_monoculus_count;
@@ -95,20 +96,14 @@ bool:SpawnMonoculus( client, team ) {
 
 		new Float:distance = GetVectorDistance( feet, end, true );
 
-		if( distance < MIN_DISTANCE * MIN_DISTANCE ) {
-			PrintToChat( client, "\x07808080Cannot summon that close." );
-			RXGSTORE_ShowUseItemMenu(client);
-			return false;
-		}
-		
 		if( distance > MAX_DISTANCE * MAX_DISTANCE ) {
-			PrintToChat( client, "\x07808080Cannot summon that far away." );
+			PrintToChat( client, "\x07FFD800Cannot summon that far away." );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
 		
 		if( FloatAbs( norm_angles[0] - (270.0) ) > 45.0 ) {
-			PrintToChat( client, "\x07808080Cannot summon there." );
+			PrintToChat( client, "\x07FFD800Cannot summon there." );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
@@ -128,11 +123,14 @@ bool:SpawnMonoculus( client, team ) {
 	}
 	
 	DispatchSpawn( ent );
+	SetEntProp( ent, Prop_Send, "m_CollisionGroup", 2 );
 	TeleportEntity( ent, end, NULL_VECTOR, NULL_VECTOR );
 	
 	if( team == TEAM_BOSS ) {
+		
+		CreateTimer( BOSS_COLLISION_DELAY, Timer_ActivateBossCollision, ent );
+	
 		new player_count = GetClientCount();
-
 		new boss_hp = BOSS_BASE_HEALTH;
 		if( player_count > BOSS_HEALTH_PLAYER_THRESHOLD ) {
 			boss_hp += (player_count - 10) * BOSS_HEALTH_PER_PLAYER_ABOVE_THRESHOLD;
@@ -158,12 +156,12 @@ bool:SpawnMonoculus( client, team ) {
 	
 	if( team == TEAM_BOSS ) {
 		PrintToChatAll( "\x07%s%s \x07FFD800has summoned a \x07874FADMONOCULUS!", team_color, name );
-		CreateTimer( MONOCULUS_BOSS_WAIT_TIMER, Timer_LowerMonoculusCount );
-		CreateTimer( MONOCULUS_BOSS_EXPIRE_TIMER, Timer_KillExpiredBossMonoculus, EntIndexToEntRef(ent) );
+		CreateTimer( BOSS_WAIT_TIMER, Timer_LowerMonoculusCount );
+		CreateTimer( BOSS_EXPIRE_TIMER, Timer_KillExpiredBossMonoculus, EntIndexToEntRef(ent) );
 		g_last_summon = time;
 	} else {
 		PrintToChatAll( "\x07%s%s \x07FFD800has summoned a \x07%sSpectral Monoculus!", team_color, name, team_color );
-		CreateTimer( MONOCULUS_SPECTRAL_WAIT_TIMER, Timer_LowerMonoculusCount );
+		CreateTimer( SPECTRAL_WAIT_TIMER, Timer_LowerMonoculusCount );
 		
 		if( time >= g_last_summon + SUMMON_SOUND_COOLDOWN ) {
 			EmitSoundToAll( "ui/halloween_boss_summoned_fx.wav", SOUND_FROM_PLAYER, SNDCHAN_AUTO, SNDLEVEL_HOME );
@@ -182,10 +180,19 @@ public Action:Timer_LowerMonoculusCount( Handle:timer ) {
 
 //-------------------------------------------------------------------------------------------------
 public Action:Timer_KillExpiredBossMonoculus( Handle:timer, any:boss ) {
-	if( IsValidEntity( boss ) ) {
+	if( IsValidEntity(boss) ) {
 		// sometimes they don't go away when they should
 		AcceptEntityInput( boss, "Kill" );
+		PrintToChatAll( "\x07874FADMONOCULUS! \x01has left the realm!" );
 	}
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:Timer_ActivateBossCollision( Handle:timer, any:boss ) {
+	if( IsValidEntity(boss) ) {
+		SetEntProp( boss, Prop_Send, "m_CollisionGroup", 0 );
+	}
+	return Plugin_Handled;
 }
 
 //-------------------------------------------------------------------------------------------------
