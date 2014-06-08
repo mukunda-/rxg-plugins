@@ -823,6 +823,15 @@ public Action:Command_cash( client, args ) {
 
 public Action:Command_store( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
-	ReplyToCommand( client, "Visit our store at store.reflex-gamers.com." );
+	if( GAME == GAME_TF2 ) {
+		new Handle:Kv = CreateKeyValues( "motd" );
+		KvSetString( Kv, "title", "RXG Store" );
+		KvSetNum( Kv, "type", MOTDPANEL_TYPE_URL );
+		KvSetString( Kv, "msg", "http://store.reflex-gamers.com" );
+		ShowVGUIPanel( client, "info", Kv, true );
+		CloseHandle( Kv );
+	} else {
+		ReplyToCommand( client, "Visit our store at store.reflex-gamers.com." );
+	}
 	return Plugin_Handled;
 }
