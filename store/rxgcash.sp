@@ -58,7 +58,7 @@ new cash_ent_next;
 //#define TF2_CASH_SCALE 1.5
 new Float:g_cash_spawn_time[2048];
 #define TF2_CASH_ACTIVATION_DELAY 1.0
-#define TF2_VERTICAL_OFFSET 15.0
+#define TF2_VERTICAL_OFFSET 20.0
 
 new GAME;
 
