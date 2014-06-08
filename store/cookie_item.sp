@@ -20,7 +20,7 @@ public Plugin:myinfo = {
 	name = "cookie item",
 	author = "mukunda",
 	description = "delicious",
-	version = "1.2.0",
+	version = "1.3.0",
 	url = "www.mukunda.com"
 };
 
@@ -52,6 +52,7 @@ new Float:cookie_last_use[MAXPLAYERS];
 #define COOKIE_HP 35
 #define COOKIE_HP_TF2 85
 #define TF2_COOKIE_SCALE 1.5
+#define TF2_COOKIE_FADE_TIME 2.0
 
 new GAME;
 
@@ -166,7 +167,6 @@ public bool:OnCookieTouch( client, entity ) {
 	
 	if( GAME == GAME_CSGO ) {
 		PrintToChat( client, "\x01 \x04Mmm... delicious!" );
-		FadeCookie(entity);
 	} else {
 		
 		if( GAME == GAME_TF2 ) {
@@ -186,8 +186,9 @@ public bool:OnCookieTouch( client, entity ) {
 		}
 		
 		PrintToChat( client, "\x04Mmm... delicious!" );
-		AcceptEntityInput( entity, "kill" );
 	}
+	
+	FadeCookie(entity);
 	
 	EmitSoundToAll( cookie_sound, client );
 	return true;
@@ -208,19 +209,34 @@ public OnPlayerUse( Handle:event, const String:name[],bool:dontBroadcast ) {
 }
 
 //-------------------------------------------------------------------------------------------------
+public Action:Timer_KillCookie( Handle:timer, any:cookie ) {
+	if( IsValidEntity(cookie) ) {
+		AcceptEntityInput( cookie, "Kill" );
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
 FadeCookie( cookie ) {
-	new ent = CreateEntityByName( "prop_dynamic" );
-	SetEntityModel( ent, cookie_model );
-	SetEntityRenderColor( ent, 128,128,128);
-	DispatchSpawn( ent );
-	decl Float:pos[3];
-	decl Float:ang[3];
-	GetEntPropVector( cookie, Prop_Data, "m_vecAbsOrigin", pos );
-	GetEntPropVector( cookie, Prop_Data, "m_angAbsRotation", ang );
-	AcceptEntityInput( cookie, "kill" );
-	
-	TeleportEntity( ent, pos, ang, NULL_VECTOR );
-	AcceptEntityInput( ent, "FadeAndKill" );
+
+	if( GAME == GAME_TF2 ) {
+		SetEntityRenderFx( cookie, RENDERFX_FADE_FAST );
+		CreateTimer( TF2_COOKIE_FADE_TIME, Timer_KillCookie, EntIndexToEntRef(cookie) );
+	} else if ( GAME == GAME_CSGO ) {	
+		new ent = CreateEntityByName( "prop_dynamic" );
+		SetEntityModel( ent, cookie_model );
+		SetEntityRenderColor( ent, 128,128,128);
+		DispatchSpawn( ent );
+		decl Float:pos[3];
+		decl Float:ang[3];
+		GetEntPropVector( cookie, Prop_Data, "m_vecAbsOrigin", pos );
+		GetEntPropVector( cookie, Prop_Data, "m_angAbsRotation", ang );
+		AcceptEntityInput( cookie, "kill" );
+		
+		TeleportEntity( ent, pos, ang, NULL_VECTOR );
+		AcceptEntityInput( ent, "FadeAndKill" );
+	} else {
+		AcceptEntityInput( cookie, "Kill" );
+	}
 }
 
 //-------------------------------------------------------------------------------------------------
