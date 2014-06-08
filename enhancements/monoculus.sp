@@ -10,7 +10,7 @@ public Plugin:myinfo = {
 	name = "Spawn Monoculus",
 	author = "WhiteThunder",
 	description = "Spawnable Monoculus",
-	version = "1.0.0",
+	version = "1.1.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -20,7 +20,9 @@ public Plugin:myinfo = {
 #define VERTICAL_OFFSET 50.0
 
 #define TEAM_BOSS 5
-#define BOSS_HEALTH 4000 //default 8000
+#define BOSS_BASE_HEALTH 8000
+#define BOSS_HEALTH_PER_PLAYER_ABOVE_THRESHOLD 500
+#define BOSS_HEALTH_PLAYER_THRESHOLD 10
 #define MAX_MONOCULUS_COUNT 4
 #define SUMMON_SOUND_COOLDOWN 10.0
 
@@ -121,13 +123,24 @@ bool:SpawnMonoculus( client, team ) {
 	
 	if( team == TEAM_BOSS ) {
 		DispatchKeyValue( ent, "targetname", "RXG_MONOCULUS" );
+	} else {
+		SetEntPropEnt( ent, Prop_Send, "m_hOwnerEntity", client );
 	}
 	
 	DispatchSpawn( ent );
 	TeleportEntity( ent, end, NULL_VECTOR, NULL_VECTOR );
 	
-	SetEntProp( ent, Prop_Data, "m_iMaxHealth", BOSS_HEALTH );
-	SetEntProp( ent, Prop_Data, "m_iHealth", BOSS_HEALTH );
+	if( team == TEAM_BOSS ) {
+		new player_count = GetClientCount();
+
+		new boss_hp = BOSS_BASE_HEALTH;
+		if( player_count > BOSS_HEALTH_PLAYER_THRESHOLD ) {
+			boss_hp += (player_count - 10) * BOSS_HEALTH_PER_PLAYER_ABOVE_THRESHOLD;
+		}
+		
+		SetEntProp( ent, Prop_Data, "m_iMaxHealth", boss_hp );
+		SetEntProp( ent, Prop_Data, "m_iHealth", boss_hp );
+	}
 	
 	decl String:team_color[7];
 	new client_team = GetClientTeam(client);
