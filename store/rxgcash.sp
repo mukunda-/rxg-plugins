@@ -19,7 +19,7 @@ public Plugin:myinfo =
 	name = "RXGCASH",
 	author = "mukunda",
 	description = "Dat monay",
-	version = "1.0.4",
+	version = "1.1.0",
 	url = "www.mukunda.com"
 };
  
