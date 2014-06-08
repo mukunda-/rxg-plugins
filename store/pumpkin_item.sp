@@ -56,7 +56,6 @@ public OnPluginEnd() {
 public OnMapStart() {
 	for( new i = 1; i <= MaxClients; i++ ) {
 		g_last_broadcast[i] = -BROADCAST_COOLDOWN;
-		g_client_pumpkins[i] = 0;
 	}
 }
 
@@ -65,11 +64,6 @@ public Event_RoundStart( Handle:event, const String:name[], bool:dontBroadcast )
 	for( new i = 1; i <= MaxClients; i++ ) {
 		g_client_pumpkins[i] = 0;
 	}
-}
-
-//-------------------------------------------------------------------------------------------------
-public bool:DidClientChange( client ) {
-	return g_client_userid[client] != GetClientUserId(client);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -82,7 +76,7 @@ public bool:SpawnPumpkin( client ) {
 		g_client_userid[client] = userid;
 		g_client_pumpkins[client] = 0;
 	} else if( g_client_pumpkins[client] >= MAX_PUMPKINS_PER_PLAYER ) {
-		PrintToChat( client, "\x07FFD800You may not have more than %i Pumpkins planted at a time.", MAX_PUMPKINS_PER_PLAYER );
+		PrintToChat( client, "\x07FFD800You may not have more than %i Pumpkins planted at once.", MAX_PUMPKINS_PER_PLAYER );
 		RXGSTORE_ShowUseItemMenu(client);
 		return false;
 	}
