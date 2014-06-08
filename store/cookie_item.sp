@@ -166,29 +166,27 @@ public bool:OnCookieTouch( client, entity ) {
 	
 	if( GAME == GAME_CSGO ) {
 		PrintToChat( client, "\x01 \x04Mmm... delicious!" );
-	} else {
-		PrintToChat( client, "\x04Mmm... delicious!" );
-	}
-	if( GAME == GAME_CSGO ) {
 		FadeCookie(entity);
 	} else {
-		AcceptEntityInput( entity, "kill" );
-	}
-	
-	if( GAME == GAME_TF2 ) {
-		decl String:team_color[7];
-		new team = GetClientTeam(client);
 		
-		if( team == 2 ){
-			team_color = "ff3d3d";
-		} else if ( team == 3 ){
-			team_color = "84d8f4";
+		if( GAME == GAME_TF2 ) {
+			decl String:team_color[7];
+			new team = GetClientTeam(client);
+			
+			if( team == 2 ){
+				team_color = "ff3d3d";
+			} else if ( team == 3 ){
+				team_color = "84d8f4";
+			}
+			
+			decl String:name[32];
+			GetClientName( client, name, sizeof name );
+			
+			PrintToChatAll( "\x07%s%s \x07FFD800has eaten a \x07b24115Cookie!", team_color, name );
 		}
 		
-		decl String:name[32];
-		GetClientName( client, name, sizeof name );
-		
-		PrintToChatAll( "\x07%s%s \x07FFD800has eaten a \x07b24115Cookie!", team_color, name );
+		PrintToChat( client, "\x04Mmm... delicious!" );
+		AcceptEntityInput( entity, "kill" );
 	}
 	
 	EmitSoundToAll( cookie_sound, client );
