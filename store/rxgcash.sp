@@ -2,6 +2,7 @@
 //-------------------------------------------------------------------------------------------------
 #include <sourcemod>
 #include <sdktools> 
+#include <sdkhooks>
 #include <rxgstore>
 
 #undef REQUIRE_PLUGIN
@@ -54,9 +55,12 @@ new c_dropcash_limitents;
 new cash_ent_buffer[500]; // max=500
 new cash_ent_next;
 
-new GAME;
+//#define TF2_CASH_SCALE 1.5
+new Float:g_cash_spawn_time[2048];
+#define TF2_CASH_ACTIVATION_DELAY 1.0
+#define TF2_VERTICAL_OFFSET 15.0
 
-#define TF2_CASH_SCALE 1.5
+new GAME;
 
 #define GAME_CSGO	0
 #define GAME_TF2	1
@@ -94,8 +98,10 @@ public OnPluginStart() {
 		money_model = "models/props/cs_assault/money.mdl";
 		take_sound = "weapons/flashbang/flashbang_draw.wav";
 	} else {
-		money_model = "models/rxg/items/cash.mdl";
-		take_sound = "weapons/draw_melee.wav";
+		//money_model = "models/rxg/items/cash.mdl";
+		//take_sound = "weapons/draw_melee.wav";
+		//take_sound = "ui/credits_updated.wav";
+		take_sound = "mvm/mvm_money_pickup.wav";
 	}
 	
 	sm_dropcash_chance = CreateConVar( "sm_dropcash_chance", "0.1", "Chance that a CASHWADS will drop.", FCVAR_PLUGIN, true, 0.0, true, 1.0 );
@@ -140,7 +146,12 @@ public Action:Command_SpawnCash( client, args ) {
 		return Plugin_Handled;
 	}
 	new Float:vec[3];
-	GetClientEyePosition( client, vec );
+	if( GAME == GAME_TF2 ) {
+		GetClientAbsOrigin( client, vec );
+		vec[2] += TF2_VERTICAL_OFFSET;
+	} else {
+		GetClientEyePosition( client, vec );
+	}
 	SpawnCash( vec, NULL_VECTOR, 5,  0 );
 	return Plugin_Handled;
 }
@@ -155,8 +166,8 @@ ResetCounters() {
 }
 //-------------------------------------------------------------------------------------------------
 public OnMapStart() {
-	PrecacheModel( money_model ); 
 	if( GAME == GAME_TF2 ) {
+		/*
 		AddFileToDownloadsTable( "materials/rxg/items/cash.vmt" );
 		AddFileToDownloadsTable( "materials/rxg/items/cash.vtf" );
 		AddFileToDownloadsTable( "models/rxg/items/cash.dx80.vtx" );
@@ -165,8 +176,14 @@ public OnMapStart() {
 		AddFileToDownloadsTable( "models/rxg/items/cash.phy" );
 		AddFileToDownloadsTable( "models/rxg/items/cash.sw.vtx" );
 		AddFileToDownloadsTable( "models/rxg/items/cash.vvd" );
+		*/
+		PrecacheModel( "models/items/currencypack_small.mdl" );
+		PrecacheModel( "models/items/currencypack_medium.mdl" );
+		PrecacheModel( "models/items/currencypack_large.mdl" );
+	} else {
+		PrecacheModel( money_model );
 	}
-	PrecacheSound( take_sound ); 
+	PrecacheSound( take_sound );
 	ResetCounters();
 }
 
@@ -203,8 +220,13 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	}
 	
 	decl Float:vec[3];
-	GetClientEyePosition(victim, vec); 
-	   
+	
+	if( GAME == GAME_TF2 ) {
+		GetClientAbsOrigin( victim, vec );
+	} else {
+		GetClientEyePosition( victim, vec );
+	}
+	
 	for( new i = 0; i < c_dropcash_amount; i++ ) {
 		 
 		if( GetRandomFloat(0.0,1.0) > c_dropcash_chance*multiplier ) continue;
@@ -250,36 +272,50 @@ SpawnCash( const Float:pos[3], const Float:vel[3], amount, dropper ) {
 	if( !RXGSTORE_IsConnected() ) {
 		return ;
 	}
-	new ent = CreateEntityByName( "prop_physics_override" );
+	new ent;
+
+	if( GAME == GAME_TF2 ) {
+		ent = CreateEntityByName( "item_currencypack_custom" );
+		DispatchSpawn(ent);
+		g_cash_spawn_time[ent] = GetGameTime();
+	} else {
+		ent = CreateEntityByName( "prop_physics_override" );
+		DispatchKeyValue( ent, "model", money_model ); 
+		DispatchKeyValue( ent, "spawnflags", "256" );	// usable
+		DispatchKeyValue( ent, "targetname", "RXGCASHMONAY" );
+		
+		SetEntProp( ent, Prop_Send, "m_CollisionGroup", 2 ); // set non-collidable  
+		AcceptEntityInput( ent, "DisableDamageForces" );
+		DispatchSpawn(ent);
+		
+		// we delay damage forces so when someone dies, the bullets that killed them arent able to instantly knock the cash away
+		CreateTimer( 1.2, EDFTimer, EntIndexToEntRef(ent), TIMER_FLAG_NO_MAPCHANGE );
+	}
 	
+	/*
 	if( GAME == GAME_TF2 ){
 		SetEntPropFloat( ent, Prop_Data, "m_flModelScale", TF2_CASH_SCALE );
 	}
+	*/
 	
-	DispatchKeyValue(ent, "model", money_model ); 
-	DispatchKeyValue( ent, "spawnflags", "256" );	// usable
-	DispatchKeyValue( ent, "targetname", "RXGCASHMONAY" );
-	
-	DispatchSpawn(ent);
-	
-	SetEntProp( ent, Prop_Send, "m_CollisionGroup", 2 ); // set non-collidable  
+	entprop_cash_amount[ent] = amount;
+	entprop_cash_owner[ent] = dropper;
+
 	new Float:ang[3];
 	ang[0] = GetRandomFloat( 0.0, 360.0 );
 	ang[1] = GetRandomFloat( 0.0, 360.0 );
 	ang[2] = GetRandomFloat( 0.0, 360.0 );
-	AcceptEntityInput( ent, "DisableDamageForces" );
+	TeleportEntity( ent, pos, ang, vel );
  
-	entprop_cash_amount[ent] = amount;
-	entprop_cash_owner[ent] = dropper;
-  
-	TeleportEntity( ent, pos, ang, vel);
- 
-	// we delay damage forces so when someone dies, the bullets that killed them arent able to instantly knock the cash away
-	CreateTimer( 1.2, EDFTimer, EntIndexToEntRef(ent), TIMER_FLAG_NO_MAPCHANGE );
+	if( GAME == GAME_TF2 ) {
+		SDKHook( ent, SDKHook_Touch, OnCashTouch_TF2 );
+	}
 	
+	/*
 	if( GAME == GAME_TF2 ) {
 		TF2Use_Hook( ent, OnCashTouch );
 	}
+	*/
 	
 	if( c_dropcash_limitents ) {
 		if( EntRefToEntIndex( cash_ent_buffer[cash_ent_next] ) ) {
@@ -330,16 +366,22 @@ DropPlayerCashFunc( client, Float:vec[], bool:throw, amount, bool:count ) {
 	// randomize origin
 	new Float:vec2[3];
 	for( new i = 0; i < 3; i++ ) vec2[i] = vec[i];
-	vec2[0] += GetRandomFloat( -5.0, 5.0 );
-	vec2[1] += GetRandomFloat( -5.0, 5.0 );
-	vec2[2] += GetRandomFloat( -25.0, 0.0 );
+	if( GAME == GAME_TF2 ) {
+		vec2[0] += GetRandomFloat( -25.0, 25.0 );
+		vec2[1] += GetRandomFloat( -25.0, 25.0 );
+		vec2[2] += TF2_VERTICAL_OFFSET;
+	} else {
+		vec2[0] += GetRandomFloat( -5.0, 5.0 );
+		vec2[1] += GetRandomFloat( -5.0, 5.0 );
+		vec2[2] += GetRandomFloat( -25.0, 0.0 );
+	}
 	
 	if( count ) cash_drop_counter[client]++;
 	// spawn
 	SpawnCash( vec2, vel, amount, count?client:0 );
 }
 
-  
+
 //-------------------------------------------------------------------------------------------------
 public OnPlayerUse( Handle:event, const String:name[], bool:dontBroadcast ) {  
 	new client = GetClientOfUserId( GetEventInt( event, "userid" ) );
@@ -366,6 +408,32 @@ public bool:OnCashTouch( client, entity ) {
 	EmitSoundToAll( take_sound, client );
 	AcceptEntityInput( entity, "Kill" );
 	return true;
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:OnCashTouch_TF2( entity, client ) {
+	
+	if( GetGameTime() < g_cash_spawn_time[entity] + TF2_CASH_ACTIVATION_DELAY ) {
+		return Plugin_Handled;
+	}
+	
+	if( client > 0 && client <= MaxClients ) {
+		if( !RXGSTORE_IsClientLoaded(client) ) {
+			PrintToChat( client, "Your items are still being loaded; cannot pickup cash!" );
+			return Plugin_Handled;
+		}
+		
+		RXGSTORE_AddCash( client, entprop_cash_amount[entity] );
+		PrintPickupMessage( client, entprop_cash_amount[entity] );
+		if( entprop_cash_owner[entity] ) {
+			cash_drop_counter[entprop_cash_owner[entity]]--;
+		}
+		
+		EmitSoundToAll( take_sound, client );
+		AcceptEntityInput( entity, "Kill" );
+	}
+	
+	return Plugin_Handled;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -418,8 +486,13 @@ public OnTakeCash( userid, amount, any:data, bool:failed ) {
 	}
 	
 	
-	new Float:vec[3]; 
-	GetClientEyePosition( client, vec );
+	new Float:vec[3];
+	
+	if( GAME == GAME_TF2 ) {
+		GetClientAbsOrigin( client, vec );
+	} else {
+		GetClientEyePosition( client, vec );
+	}
 	
 	DropPlayerCashFunc( client, vec, true, amount, true );
 }
