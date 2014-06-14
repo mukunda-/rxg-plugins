@@ -417,7 +417,7 @@ public AddPoints( client, points, const String:message[] ) {
 		decl String:message2[256];
 		strcopy( message2, sizeof message2, message );
 		ReplaceString( message2, sizeof message2, "{points}", pointstring );
-		//PrintToChat( client, "\x01 %s", message2 ); DEBUG TEST BYPASS
+		PrintToChat( client, "\x01 %s", message2 ); 
 	}
 	
 	if( points > 0 ) {
@@ -427,7 +427,7 @@ public AddPoints( client, points, const String:message[] ) {
 	}
 	
 	if( capped ) {
-		//PrintToChat( client, "\x01 \x0B[REVOCOMP]\x0E You have reached the daily point cap!" ); DEBUG TEST BYPASS
+		PrintToChat( client, "\x01 \x0B[REVOCOMP]\x0E You have reached the daily point cap!" );
 	}
 	return points;
 }
@@ -464,6 +464,7 @@ public OnGetLeaders( Handle:owner, Handle:hndl, const String:error[], any:data )
 ShowTimeLeft(client) {
 	if( GetTime() < g_contest_start ) {
 		PrintToChat( client, "\x01 REVOCOMP has not started yet." );
+		return;
 	}
 	new endtime = g_contest_end - GetTime();
 	if( endtime > 0 ) {
@@ -581,7 +582,7 @@ ShowContestMenu(client) {
 
 //----------------------------------------------------------------------------------------------------------------------
 public Action:Command_contest( client, args ) {
-	PrintToChat( client, "\x01 \x02 *** TEST MODE *** THERE IS NO CONTEST, THIS PLUGIN IS BEING DEVELOPED. ***" );
+	//PrintToChat( client, "\x01 \x02 *** TEST MODE *** THERE IS NO CONTEST, THIS PLUGIN IS BEING DEVELOPED. ***" ); DEBUG VERSION
 	if( !g_client_loaded[client] || !g_db_connected ) {
 		PrintToChat( client, "The database is currently unavailable." );
 		return Plugin_Handled;
@@ -657,11 +658,11 @@ GetPointCap( day ) {
 	
 	
 	if( day < 7 ) {
-		return 10000;
+		return 7500;
 	} else if( day < 14 ) {
-		return 20000;
+		return 16000;
 	} else if( day < 21 ) {
-		return 30000;
+		return 25000;
 	} else {
 		return 0;
 	}
