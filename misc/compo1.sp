@@ -109,18 +109,18 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	
 	kill_streaks[attacker]++;
 	if( kill_streaks[attacker] == 4 ) {
-		COMPO_AddPoints( attacker, 100, "{points} for 4-kill streak." );
+		COMPO_AddPoints( attacker, 50, "{points} for 4-kill streak." );
 	} else if( kill_streaks[attacker] == 5 ) {
-		new points = players >= 12 ? 120 : 100;
+		new points = players >= 12 ? 75 : 50;
 		COMPO_AddPoints( attacker, points, "{points} for 5-kill streak." );
 	} else if( kill_streaks[attacker] == 6 ) {
-		new points = players >= 12 ? 140 : 100;
+		new points = players >= 12 ? 100 : 70;
 		COMPO_AddPoints( attacker, points, "{points} for 6-kill streak." );
 	} else if( kill_streaks[attacker] == 7 ) {
-		new points = players >= 12 ? 200 : 100;
+		new points = players >= 12 ? 150 : 80;
 		COMPO_AddPoints( attacker, points, "{points} for 7-kill streak." );
 	} else if( kill_streaks[attacker] == 8 ) {
-		new points = players >= 12 ? 250 : 100;
+		new points = players >= 12 ? 200 : 90;
 		COMPO_AddPoints( attacker, points, "{points} for 8-kill streak." );
 	} else if( kill_streaks[attacker] >= 9 ) {
 		new points = players >= 12 ? 300 : 100;
@@ -152,7 +152,7 @@ public Action:OnMinute( Handle:timer ) {
 	if( bonus < 0 ) bonus = 0;
 	if( bonus > 30 ) bonus = 30;
 	bonus = 30-bonus;
-	new playing_points = 20 + bonus;
+	new playing_points = 35 + bonus;
 	for( new i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i) ) continue;
 		if( GetClientTeam(i) >= 2 ) {
