@@ -5,12 +5,16 @@
 
 #pragma semicolon 1
 
+// 1.1.0
+//   defuse map support
+//
+
 //----------------------------------------------------------------------------------------------------------------------
 public Plugin:myinfo = {
 	name = "autoslay",
 	author = "REFLEX-GAMERS",
 	description = "auto slay vaginas",
-	version = "1.0.0",
+	version = "1.1.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -82,14 +86,22 @@ public Event_RoundStart( Handle:event, const String:name[], bool:dontBroadcast )
 public Event_RoundEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new CSRoundEndReason:reason = CSRoundEndReason:GetEventInt( event, "reason" );
 	if( reason == CSRoundEnd_HostagesRescued ) {
-		SlaySurvivors( CS_TEAM_T );
+		SlaySurvivors( CS_TEAM_T, "\x01 \x02Slaying terrorists for letting the hostage escape." );
 	} else if( reason == CSRoundEnd_HostagesNotRescued ) {
-		SlaySurvivors( CS_TEAM_CT );
+		SlaySurvivors( CS_TEAM_CT, "\x01 \x02Slaying counter-terrorists for not rescuing the hostage." );
+	} else if( reason == CSRoundEnd_TargetSaved ) {
+		SlaySurvivors( CS_TEAM_T, "\x01 \x02Slaying terrorists for not planting the bomb." );
+	} else if( reason == CSRoundEnd_TargetBombed ) {
+		SlaySurvivors( CS_TEAM_CT, "\x01 \x02Slaying counter-terrorists for not defusing the bomb." );
 	}
+//	else if( reason == CSRoundEnd_BombDefused ) {
+		// should this happen ?
+//		SlaySurvivors( CS_TEAM_T, "\x01 \x02Slaying terrorists for not protecting the bomb." );
+//	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-SlaySurvivors( team ) {
+SlaySurvivors( team, const String:reason[] ) {
 	slaytimer = 0;
 	slaycount = 0;
 	for( new i = 1; i <= MaxClients; i++ ) {
@@ -103,9 +115,9 @@ SlaySurvivors( team ) {
 	
 	if( slaycount > 0 ) {
 		if( team == 2 ) {
-			PrintToChatAll( "\x01 \x02Slaying terrorists for letting the hostage escape." );
+			PrintToChatAll( reason );// );
 		} else if( team == 3 ) {
-			PrintToChatAll( "\x01 \x02Slaying counter-terrorists for not rescuing the hostage." );
+			PrintToChatAll( reason );// );
 		}
 		CreateTimer( 1.0, StartSlay ,round);
 	}

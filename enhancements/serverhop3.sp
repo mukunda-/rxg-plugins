@@ -22,7 +22,7 @@ public Plugin:myinfo = {
 	name = "Server Hop [rxgcsgo edition]",
 	author = "[GRAVE] rig0r",
 	description = "Provides live server info with join option",
-	version = "1.0.4",
+	version = "1.0.5",
 	url = "http://www.gravedigger-company.nl"
 };
 
