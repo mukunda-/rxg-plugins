@@ -16,6 +16,8 @@
 #pragma semicolon 1
 
 
+// version 1.2.0
+//   called on +lookatweapon
 // version 1.1.0
 //   exclude AFKs
 // version 1.0.0
@@ -30,13 +32,13 @@ public Plugin:myinfo = {
 	name = "Watching",
 	author = "mukunda",
 	description = "Command to see how many players are sharing your view.",
-	version = "1.1.0",
+	version = "1.2.0",
 	url = "www.reflex-gamers.com"
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 new Float:last_used[MAXPLAYERS];
-#define COOLDOWN 1.0
+#define COOLDOWN 1.0 
 
 enum {
 	SPECMODE_FIRSTPERSON = 4,
@@ -47,14 +49,13 @@ enum {
 //----------------------------------------------------------------------------------------------------------------------
 public OnPluginStart() {
 	RegConsoleCmd( "sm_watching", Command_watching, "Shows how many players are watching you." );
+	AddCommandListener( OnLookAtWeapon, "+lookatweapon" );
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-public Action:Command_watching( client, args ) {
-	if( client == 0 ) return Plugin_Continue;
-
+ShowWatching( client ) {
 	// -- commandspam protection --
-	if( FloatAbs(GetGameTime() - last_used[client]) < COOLDOWN ) return Plugin_Handled;
+	if( FloatAbs(GetGameTime() - last_used[client]) < COOLDOWN ) return;
 	last_used[client] = GetGameTime();
 	
 	new target;
@@ -67,7 +68,7 @@ public Action:Command_watching( client, args ) {
 		if( (!IsClientObserver(client)) || ((specmode != SPECMODE_FIRSTPERSON) && (specmode != SPECMODE_3RDPERSON)) ) {
 
 			// free roaming, function disabled
-			return Plugin_Handled;
+			return ;
 		}
 		
 		target = GetEntPropEnt( client, Prop_Send, "m_hObserverTarget" );
@@ -75,7 +76,7 @@ public Action:Command_watching( client, args ) {
 		target = client;
 	}
 	
-	if( target == 0 ) return Plugin_Handled;
+	if( target == 0 ) return ;
 	
 	new count = 0;
 	
@@ -105,5 +106,18 @@ public Action:Command_watching( client, args ) {
 	} else {
 		PrintToChat( client, "\x01 \x04There %s %s other %s watching %N.", count == 1 ? "is":"are", countstring, count == 1 ? "person":"people", target );
 	}
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+public Action:OnLookAtWeapon(client, const String:command[], argc) {
+	ShowWatching( client );
+	return Plugin_Continue;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+public Action:Command_watching( client, args ) {
+	if( client == 0 ) return Plugin_Continue;
+	ShowWatching( client );
+	
 	return Plugin_Handled;
 }
