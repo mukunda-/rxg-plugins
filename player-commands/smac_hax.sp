@@ -35,7 +35,7 @@ enum {
 	FLAG_COUNT
 };
 
-new String:g_reasons[] = {
+new String:g_reasons[][] = {
 	"Aimbot",
 	"Auto-trigger",
 	"Convar tampering",
