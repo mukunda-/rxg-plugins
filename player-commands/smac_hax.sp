@@ -8,13 +8,17 @@
 
 #pragma semicolon 1
 
+// 1.0.1
+//  - only ban if 3 or more aimbot detections
+//
+
 /* Plugin Info */
 public Plugin:myinfo =
 {
 	name = "smac_hax",
 	author = "mukunda",
 	description = "!hax",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "www.mukunda.com"
 };
 
@@ -63,7 +67,10 @@ FlagClient( client, flag ) {
 
 public Action:SMAC_OnCheatDetected(client, const String:module[], DetectionType:type, Handle:info ) {
 	if( type == Detection_Aimbot ) {
-		FlagClient( client, FLAG_AIMBOT );
+		new detections = KvGetNum( info, "detection" );
+		if( detections >= 3 ) {
+			FlagClient( client, FLAG_AIMBOT );
+		}
 	} else if( type == Detection_AutoTrigger ) {
 		FlagClient( client, FLAG_AUTOTRIGGER );
 	} else if( type >= Detection_CvarNotEqual &&
