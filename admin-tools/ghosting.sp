@@ -46,6 +46,8 @@
 // donators can use ghost in designated ghosting zones
 // and can USE items as a ghost
 
+// 1.1.4
+//   removed quick ghost buttons, "just use !ghost".
 // CHANGES - 1.1.2
 //   support for donators
 //   added haunted zone
@@ -60,7 +62,7 @@ public Plugin:myinfo = {
 	name = "ghosting",
 	author = "mukunda",
 	description = "the real kind of ghosting",
-	version = "1.1.3",
+	version = "1.1.4",
 	url = "www.reflex-gamers.com"
 };
 
@@ -296,7 +298,7 @@ public OnPluginStart() {
 	mp_maxmoney = FindConVar( "mp_maxmoney" );
 
 	HookEvent( "round_start", Event_RoundStart, EventHookMode_PostNoCopy );
-	RegAdminCmd( "sm_ghost", Command_ghost, AFLAG );
+	RegConsoleCmd( "sm_ghost", Command_ghost );
 	RegAdminCmd( "sm_gzap", Command_zap, AFLAG );
 	RegAdminCmd( "sm_gheal", Command_heal, AFLAG );
 	RegAdminCmd( "sm_ghostie", Command_hostie, AFLAG );
@@ -334,9 +336,9 @@ public OnPluginStart() {
 
 	HookEvent( "player_use", Event_PlayerUse );
 
-	if( GAME == GAME_TF2 ) {
-		AddCommandListener( Command_taunt, "+taunt" );
-	}
+//	if( GAME == GAME_TF2 ) {
+//		AddCommandListener( Command_taunt, "+taunt" );
+//	}
 
 	HookExistingClients();
 
@@ -539,7 +541,8 @@ TryGhost( client, bool:admincmd ) {
 
 //----------------------------------------------------------------------------------------------------------------------
 public Action:Command_ghost( client, args ) {
-	TryGhost(client,true);
+	if( client == 0 ) return Plugin_Continue;
+	TryGhost(client,false);
 	 
 	return Plugin_Handled;
 }
@@ -1637,17 +1640,17 @@ bool:TryGhostButton( client ) {
 }
 
 public Action:OnPlayerRunCmd( client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon ) {
-	
-	if( GAME == GAME_CSGO ) {
-		if( impulse == 100 ) {
-			TryGhostButton(client );
-			return Plugin_Continue;
-		}
-	} else if( GAME == GAME_TF2 ) {
-		if( ( (last_buttons[client] ^ buttons) & buttons) & IN_RELOAD ) {
-			TryGhostButton(client);
-		}
-	}
+	//
+	//if( GAME == GAME_CSGO ) {
+	//	if( impulse == 100 ) {
+	//		TryGhostButton(client );
+	//		return Plugin_Continue;
+	//	}
+	//} else if( GAME == GAME_TF2 ) {
+	//	if( ( (last_buttons[client] ^ buttons) & buttons) & IN_RELOAD ) {
+	//		TryGhostButton(client);
+	//	}
+	//}
 
 	if( ghost_active[client] ) {
 		if(ghost_fade[client] ) return Plugin_Continue;
@@ -1681,10 +1684,10 @@ public Action:OnPlayerRunCmd( client, &buttons, &impulse, Float:vel[3], Float:an
 	return Plugin_Continue;
 }
 
-public Action:Command_taunt( client, const String:command[], argc ) {
-	TryGhostButton(client);
-	return Plugin_Continue;
-}
+//public Action:Command_taunt( client, const String:command[], argc ) {
+//	TryGhostButton(client);
+//	return Plugin_Continue;
+//}
 
 //----------------------------------------------------------------------------------------------------------------------
 public bool:TraceFilter_Use( entity, contentsMask, any:client ) {
