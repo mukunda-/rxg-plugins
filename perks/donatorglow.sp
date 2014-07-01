@@ -8,6 +8,8 @@
 #include <donations>
 #include <rxgcolorparser>
  
+// 2.1.0
+//   un-dumb
 // 2.0.1
 //   glow sustains across sessions
 
@@ -15,7 +17,7 @@ public Plugin:myinfo = {
 	name = "VIP Glow",
 	author = "mukunda",
 	description = "VIP Glow",
-	version = "2.0.1",
+	version = "2.1.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -24,7 +26,7 @@ new glow_sprites[MAXPLAYERS+1] = {-1,...};
 new glow_sprites2[MAXPLAYERS+1] = {-1,...};
 new glow_color[MAXPLAYERS+1][3];
 new glow_fp[MAXPLAYERS+1]; // first person flag
-new glow_on[MAXPLAYERS+1]; // userid 
+new bool:glow_on[MAXPLAYERS+1]; // bool
 new cookie_loaded[MAXPLAYERS+1]; // userid
 new glow_team[2048];
 
@@ -112,6 +114,11 @@ public Action:OnSetTransmit( entity, client ) {
 	if( !IsPlayerAlive(client) ) return Plugin_Continue;
 	if( GetClientTeam(client) == glow_team[entity] ) return Plugin_Continue;
 	return Plugin_Handled;
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnClientCookiesCached( client ) {
+	LoadClientPrefs( client );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -212,12 +219,12 @@ UpdateGlowColor( client ) {
 
 //-------------------------------------------------------------------------------------------------
 bool:IsGlowDesired( client ) {
-	return glow_on[client] == GetClientUserId(client);
+	return glow_on[client];
 }
 
 //-------------------------------------------------------------------------------------------------
 GlowOn( client ) {
-	glow_on[client] = GetClientUserId(client);
+	glow_on[client] = true;
 	if( !IsPlayerAlive(client) ) return;
 	if( !IsValidEntity(glow_sprites[client]) ) {
 		glow_sprites[client] = EntIndexToEntRef(CreateSprite( client, glow_color[client] ));
@@ -237,7 +244,7 @@ GlowOff( client, bool:save=true ) {
 		AcceptEntityInput(glow_sprites2[client],"Kill");
 		glow_sprites2[client] = -1; 
 	}
-	if( save ) glow_on[client] = 0;	
+	if( save ) glow_on[client] = false;	
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -260,11 +267,11 @@ LoadClientPrefs( client ) {
 			glow_color[client][1] = 128;
 			glow_color[client][2] = 128;
 			glow_fp[client] = true;
-			glow_on[client] = 0;
+			glow_on[client] = false;
 		} else {
 			glow_fp[client] = (data[0] == '1');
 			ParseColor( data[1], glow_color[client] );
-			glow_on[client] = (data[7] == '1') ? GetClientUserId(client):0;
+			glow_on[client] = (data[7] == '1');
 		}
 	}
 }
@@ -275,7 +282,7 @@ SaveClientPrefs( client ) {
 	decl String:data[16];
 	
 	// RRGGBB hexcode
-	FormatEx( data, sizeof data, "%s%02X%02X%02X%s", glow_fp[client]?"1":"0", glow_color[client][0], glow_color[client][1], glow_color[client][2], (glow_on[client] == GetClientUserId(client)) ? "1":"0" );
+	FormatEx( data, sizeof data, "%s%02X%02X%02X%s", glow_fp[client]?"1":"0", glow_color[client][0], glow_color[client][1], glow_color[client][2], glow_on[client] ? "1":"0" );
 	
 	SetClientCookie( client, cookieprefs, data );
 }
@@ -349,9 +356,8 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 public OnPlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new userid = GetEventInt( event, "userid" );
 	new client = GetClientOfUserId( userid );
-	if( client == 0 ) return;
 	if( GetClientTeam( client ) < 2 ) return;
-	if( userid == glow_on[client] ) {
+	if( glow_on[client] ) {
 		GlowOn( client );
 	}
 }
@@ -373,7 +379,7 @@ public GlowMenuHandler( Handle:menu, MenuAction:action, param1, param2 ) {
 		decl String:text[64];
 		if( param2 == GM_TOGGLE ) {
 			
-			FormatEx( text,sizeof text, "%s", (glow_on[client] == GetClientUserId(client))?"Turn Off":"Turn On" );
+			FormatEx( text,sizeof text, "%s", (glow_on[client])?"Turn Off":"Turn On" );
 			RedrawMenuItem( text );
 		} else if( param2 == GM_FPDISP ) {
 			FormatEx( text, sizeof text, "First Person Display: %s", glow_fp[client]?"On":"Off" );
@@ -391,7 +397,7 @@ public GlowMenuHandler( Handle:menu, MenuAction:action, param1, param2 ) {
 	} else if( action == MenuAction_Select ) {
 		new client = param1;
 		if( param2 == GM_TOGGLE ) {
-			if( (glow_on[client] == GetClientUserId(client)) ) {
+			if( (glow_on[client]) ) {
 				GlowOff( client );
 			} else {
 				GlowOn( client );
