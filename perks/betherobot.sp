@@ -3,6 +3,7 @@
 #include <tf2_stocks>
 #include <betherobot>
 #include <donations>
+#include <clientprefs>
 
 #define PLUGIN_VERSION "1.3"
 
@@ -76,7 +77,7 @@ LoadClientPrefs( client ) {
 		
 		// if the cookie doesn't have a value set a default color
 		if( data[0] == 0 ) {
-			robot_on[client][0] = false;
+			robot_on[client] = false;
 		} else {
 			robot_on[client] = (data[0] == '1');
 		}
@@ -129,12 +130,13 @@ public OnClientConnected(client)
 {
 	Status[client] = GetConVarBool(cvarDefault) ? RobotStatus_WantsToBeRobot : RobotStatus_Human;
 	LastTransformTime[client] = 0.0;
-	LoadClientPrefs(client);
+}
+public OnClientCookiesCached( client ) {
+	LoadClientPrefs( client );
 	if(robot_on[client]){
 		ToggleRobot(client, true);
 	}
 }
-
 public Action:Command_betherobot(client, args)
 {
 	if (!client && !args)
