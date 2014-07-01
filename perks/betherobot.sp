@@ -15,14 +15,23 @@ public Plugin:myinfo =
 	url = "http://mstr.ca/"
 }
 
+
+new cookie_loaded[MAXPLAYERS+1]; // userid
+new bool:robot_on[MAXPLAYERS+1]; // userid 
+
 new RobotStatus:Status[MAXPLAYERS + 1];
 new Float:LastTransformTime[MAXPLAYERS + 1];
 
 new Handle:cvarFootsteps, Handle:cvarDefault, Handle:cvarClasses, Handle:cvarSounds, Handle:cvarTaunts,
 Handle:cvarFileExists, Handle:cvarCooldown, Handle:cvarWearables, Handle:cvarWearablesKill;
 
+new Handle:cookieprefs; //Clientprefs
+
 public OnPluginStart()
 {
+
+	cookieprefs = RegClientCookie( "VIPRobotData", "VIP Robot Saved Data", CookieAccess_Protected );
+	
 	RegConsoleCmd("sm_robot", Command_betherobot);
 	RegConsoleCmd("sm_tobor", Command_betherobot);
 	RegConsoleCmd("sm_betherobot", Command_betherobot);
@@ -51,7 +60,40 @@ public OnPluginStart()
 	
 	AddMultiTargetFilter("@robots", Filter_Robots, "all robots", false);
 }
+//-------------------------------------------------------------------------------------------------
+LoadClientPrefs( client ) {
+	new userid = GetClientUserId( client );
+	
+	// cookie_loaded contains the userid of the last load operation, if its equal
+	// that means the cookie was already loaded for this unique person
+	if( userid == cookie_loaded[client] ) return;
+	
+	if( AreClientCookiesCached(client) ) {
+		cookie_loaded[client] = userid; // mark as "loaded"
+		
+		decl String:data[128];
+		GetClientCookie( client, cookieprefs, data, sizeof data );
+		
+		// if the cookie doesn't have a value set a default color
+		if( data[0] == 0 ) {
+			robot_on[client][0] = false;
+		} else {
+			robot_on[client] = (data[0] == '1');
+		}
+	}
+}
+//-------------------------------------------------------------------------------------------------
+SaveClientPrefs( client ) {
+	if( GetClientUserId(client) != cookie_loaded[client] ) return;
+	decl String:data[16];
+	
+	// RRGGBB hexcode
+	FormatEx( data, sizeof data, "%c", robot_on[client] ? '1':'0');
+	
+	SetClientCookie( client, cookieprefs, data );
+}
 
+//-------------------------------------------------------------------------------------------------
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
 	CreateNative("BeTheRobot_GetRobotStatus", Native_GetRobotStatus);
@@ -87,6 +129,10 @@ public OnClientConnected(client)
 {
 	Status[client] = GetConVarBool(cvarDefault) ? RobotStatus_WantsToBeRobot : RobotStatus_Human;
 	LastTransformTime[client] = 0.0;
+	LoadClientPrefs(client);
+	if(robot_on[client]){
+		ToggleRobot(client, true);
+	}
 }
 
 public Action:Command_betherobot(client, args)
@@ -161,6 +207,7 @@ stock bool:ToggleRobot(client, bool:toggle = bool:2)
 		LastTransformTime[client] = GetTickedTime();
 		Status[client] = RobotStatus_Robot;
 		SetWearableAlpha(client, 0);
+		robot_on[client] = true;
 	}
 	else if (!toggle || (toggle == bool:2 && Status[client] == RobotStatus_Robot)) // Can possibly just be else. I am not good with logic.
 	{
@@ -169,6 +216,7 @@ stock bool:ToggleRobot(client, bool:toggle = bool:2)
 		LastTransformTime[client] = GetTickedTime();
 		Status[client] = RobotStatus_Human;
 		SetWearableAlpha(client, 255);
+		robot_on[client] = false;
 	}
 	return true;
 }
