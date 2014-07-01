@@ -12,7 +12,7 @@ public Plugin:myinfo = {
 	name        = "rxgcompo",
 	author      = "mukunda",
 	description = "RXG Competition API",
-	version     = "1.0.5",
+	version     = "1.0.7",
 	url         = "www.mukunda.com"
 };
 
@@ -71,6 +71,8 @@ new g_contest_start;
 new g_contest_end;
 
 new Handle:g_menu;
+
+#define MIN_PLAYERS_TO_GAIN_POINTS 3
 
 //-------------------------------------------------------------------------------------------------
 public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max ) {
@@ -301,9 +303,30 @@ LoadClientData( client ) {
 	SQL_TQuery( g_db, OnSQLClientData, query, GetClientUserId(client) );
 }
 
+PrintRoundInfo( client ) {
+	
+	if( g_client_loaded[client] && g_db_connected ) {
+		if( g_point_cap && g_client_dailypoints[client] >= g_point_cap ) {
+			PrintToChat( client, "\x01 \x0B[REVOCOMP]\x01 You are at the daily point cap. (%d/%d)", g_client_dailypoints[client], g_point_cap );
+			return;
+		}
+		if( g_round_players < MIN_PLAYERS_TO_GAIN_POINTS ) {
+			PrintToChat( client, "\x01 \x0B[REVOCOMP]\x01 Under %d players: Point gains are disabled.", MIN_PLAYERS_TO_GAIN_POINTS );
+			return;
+		}
+		if( g_point_cap ) {
+			PrintToChat( client, "\x01 \x0B[REVOCOMP]\x01 You have gained \x04%d\x01 of \x04%d\x01 points today.", g_client_dailypoints[client], g_point_cap );
+		} else {
+			PrintToChat( client, "\x01 \x0B[REVOCOMP]\x01 You have gained \x04%d\x01 of \x04Unlimited\x01 points today.", g_client_dailypoints[client] );
+		}
+		
+	}
+}
+
 //----------------------------------------------------------------------------------------------------------------------
 public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) { 
 
+	
 	g_round_players = 0;
 	for( new i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i) )continue;
@@ -311,10 +334,21 @@ public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
 		if( GetClientTeam(i) >= 2 ) {
 			g_round_players++;
 		}
+		 
 	}
-	// commit data if it has been more than 60 seconds
-	if( GetTime() >= g_last_commit + 60 ) {
-		CommitPlayerData(); 
+	new time = GetTime();
+	new bool:started = ( time >= g_contest_start && time < g_contest_end );
+	if( started ) {
+		for( new i = 1; i <= MaxClients; i++ ) {
+			if( IsClientInGame(i) && !IsFakeClient(i) ) {
+				PrintRoundInfo(i);
+			}
+		}
+	
+		// commit data if it has been more than 60 seconds
+		if( GetTime() >= g_last_commit + 60 ) {
+			CommitPlayerData(); 
+		}
 	}
 }
 //----------------------------------------------------------------------------------------------------------------------
@@ -378,12 +412,13 @@ CommitPlayerData( ) {
 
 //----------------------------------------------------------------------------------------------------------------------
 public AddPoints( client, points, const String:message[] ) {
-
+	//LogToFile( g_logFile, "ADDPOINTS1" );
 	if( !g_db_connected ) return 0;
-
+	//LogToFile( g_logFile, "ADDPOINTS2" );
 	if( !g_client_loaded[client] ) return 0;
-
-	if( g_top_points == 0 ) return 0;
+	//LogToFile( g_logFile, "ADDPOINTS3" )	;
+	//if( g_top_points == 0 ) return 0;
+	//LogToFile( g_logFile, "ADDPOINTS4" );
 	new time = GetTime();
 	if( time < g_contest_start || time >= g_contest_end ) return 0;
 	
@@ -391,7 +426,7 @@ public AddPoints( client, points, const String:message[] ) {
 		return 0;// point cap
 	}
 	
-	if( g_round_players < 6 ) return 0;
+	if( g_round_players < MIN_PLAYERS_TO_GAIN_POINTS ) return 0;
 	
 	new bool:capped = false;
 	g_client_dailypoints[client] += points;
