@@ -8,12 +8,14 @@
 #include <donations>
 #include <rxgcolorparser>
  
+// 2.0.1
+//   glow sustains across sessions
 
 public Plugin:myinfo = {
 	name = "VIP Glow",
 	author = "mukunda",
 	description = "VIP Glow",
-	version = "2.0.0",
+	version = "2.0.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -252,15 +254,17 @@ LoadClientPrefs( client ) {
 		decl String:data[128];
 		GetClientCookie( client, cookieprefs, data, sizeof data );
 		
-		// if the cookie doesn't have a value set a default color
+		// if the cookie doesn't have a value, set a default color
 		if( data[0] == 0 ) {
 			glow_color[client][0] = 128;
 			glow_color[client][1] = 128;
 			glow_color[client][2] = 128;
 			glow_fp[client] = true;
+			glow_on[client] = 0;
 		} else {
 			glow_fp[client] = (data[0] == '1');
 			ParseColor( data[1], glow_color[client] );
+			glow_on[client] = (data[7] == '1') ? GetClientUserId(client):0;
 		}
 	}
 }
@@ -271,7 +275,7 @@ SaveClientPrefs( client ) {
 	decl String:data[16];
 	
 	// RRGGBB hexcode
-	FormatEx( data, sizeof data, "%s%02X%02X%02X", glow_fp[client]?"1":"0", glow_color[client][0], glow_color[client][1], glow_color[client][2] );
+	FormatEx( data, sizeof data, "%s%02X%02X%02X%s", glow_fp[client]?"1":"0", glow_color[client][0], glow_color[client][1], glow_color[client][2], (glow_on[client] == GetClientUserId(client)) ? "1":"0" );
 	
 	SetClientCookie( client, cookieprefs, data );
 }
@@ -330,6 +334,7 @@ public Action:Command_Glow( client, args ) {
 	} else {
 		GlowOn( client );
 	}
+	SaveClientPrefs( client );
 	return Plugin_Handled;
 }
  
@@ -391,6 +396,7 @@ public GlowMenuHandler( Handle:menu, MenuAction:action, param1, param2 ) {
 			} else {
 				GlowOn( client );
 			}
+			SaveClientPrefs( client );
 			DisplayMenu( glow_menu, client, MENU_TIME_FOREVER );
 		} else if( param2 == GM_CONCMD ) {
 			PrintToChat( client, "Bind \"glow\" or \"+glow\" to a key for easy access." );
