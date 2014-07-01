@@ -17,7 +17,7 @@ public Plugin:myinfo = {
 	name = "VIP Glow",
 	author = "mukunda",
 	description = "VIP Glow",
-	version = "2.1.0",
+	version = "2.1.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -306,8 +306,7 @@ public Action:Command_GlowOn( client, args ) {
 	if( Donations_GetClientLevel(client) == 0 ) {
 		ReplyToCommand( client, "Glowing is only available for VIPs." );
 		return Plugin_Handled;
-	}
-	LoadClientPrefs(client);
+	} 
 	
 	if( !GetColorFromCmd( client,args ) ) return Plugin_Handled;
 	GlowOn( client );
@@ -332,8 +331,7 @@ public Action:Command_Glow( client, args ) {
 	if( Donations_GetClientLevel(client) == 0 ) {
 		ReplyToCommand( client, "Glowing is only available for VIPs." );
 		return Plugin_Handled;
-	}
-	LoadClientPrefs(client);
+	} 
 	if( !GetColorFromCmd( client, args ) ) return Plugin_Handled;
 	
 	if( IsValidEntity( glow_sprites[client] ) ) {
@@ -366,8 +364,7 @@ public OnPlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast ) {
 public OnVIPMenu( client, VIPAction:action ) {
 	if( action == VIP_ACTION_HELP ) {
 		PrintToChat( client, "\x01 \x04The glow feature places a glow around your person which is only visible to your teammates or dead players." );
-	} else if( action == VIP_ACTION_USE ) {
-		LoadClientPrefs(client);
+	} else if( action == VIP_ACTION_USE ) { 
 		DisplayMenu( glow_menu, client, MENU_TIME_FOREVER );
 	}
 }
