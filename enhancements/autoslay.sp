@@ -5,6 +5,8 @@
 
 #pragma semicolon 1
 
+// 1.1.1
+//  dont slay cts when bomb doenst get defused (could allow griefing)
 // 1.1.0
 //   defuse map support
 //
@@ -14,7 +16,7 @@ public Plugin:myinfo = {
 	name = "autoslay",
 	author = "REFLEX-GAMERS",
 	description = "auto slay vaginas",
-	version = "1.1.0",
+	version = "1.1.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -91,9 +93,10 @@ public Event_RoundEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
 		SlaySurvivors( CS_TEAM_CT, "\x01 \x02Slaying counter-terrorists for not rescuing the hostage." );
 	} else if( reason == CSRoundEnd_TargetSaved ) {
 		SlaySurvivors( CS_TEAM_T, "\x01 \x02Slaying terrorists for not planting the bomb." );
-	} else if( reason == CSRoundEnd_TargetBombed ) {
-		SlaySurvivors( CS_TEAM_CT, "\x01 \x02Slaying counter-terrorists for not defusing the bomb." );
 	}
+//      else if( reason == CSRoundEnd_TargetBombed ) {
+//		SlaySurvivors( CS_TEAM_CT, "\x01 \x02Slaying counter-terrorists for not defusing the bomb." );
+//	}
 //	else if( reason == CSRoundEnd_BombDefused ) {
 		// should this happen ?
 //		SlaySurvivors( CS_TEAM_T, "\x01 \x02Slaying terrorists for not protecting the bomb." );
