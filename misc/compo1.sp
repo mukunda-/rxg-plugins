@@ -5,12 +5,15 @@
 #include <smac_hax>
 #include <duel>
 
+// 1.0.4
+// fixed suicide extra credit
+
 //----------------------------------------------------------------------------------------------------------------------
 public Plugin:myinfo = {
 	name        = "revocomp scoring",
 	author      = "mukunda",
 	description = "revocomp scoring",
-	version     = "1.0.3",
+	version     = "1.0.4",
 	url         = "www.mukunda.com"
 };
 
@@ -79,6 +82,7 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	if( IsFakeClient(victim) ) return;
 	if( victim == attacker ) {
 		COMPO_AddPoints( attacker, 15, "{points} for suicide!" );
+		return;
 	}
 	if( attacker == 0 ) return;
 	
@@ -148,7 +152,7 @@ public OnBombDefused( Handle:event, const String:name[], bool:dontBroadcast ) {
 
 //----------------------------------------------------------------------------------------------------------------------
 public Action:OnMinute( Handle:timer ) {
-	new bonus = (COMPO_GetRoundPlayers() - 6) * 30 / 8;
+	new bonus = (COMPO_GetRoundPlayers() - 3) * 30 / 8;
 	if( bonus < 0 ) bonus = 0;
 	if( bonus > 30 ) bonus = 30;
 	bonus = 30-bonus;
@@ -164,24 +168,7 @@ public Action:OnMinute( Handle:timer ) {
 		}
 	}
 }
-/*
-//----------------------------------------------------------------------------------------------------------------------
-public OnEntityCreated(entity, const String:classname[]) {
-	if( StrEqual( classname, "chicken" ) ) {
-		PrintToChatAll(" DEBUG, hooked chicken" );
-		SDKHook( entity, SDKHook_OnTakeDamage, OnHurtChicken );
-	}
-} 
-
-//----------------------------------------------------------------------------------------------------------------------
-public Action:OnHurtChicken(victim, &attacker, &inflictor, &Float:damage, &damagetype) {
-	PrintToChatAll(" DEBUG, onhurt chicken %d", attacker );
-	if( damage <= 0.0 ) return Plugin_Continue;
-	if( attacker < 1 || attacker > MaxClients ) return Plugin_Continue;
-	COMPO_AddPoints( attacker, 20, "{points} for killing a chicken." );
-	return Plugin_Continue;
-}
-*/
+ 
 //----------------------------------------------------------------------------------------------------------------------
 public OnHaxBan( client, victim ) {
 	COMPO_AddPoints( client, 700, "{points} for banning a cheater." );
