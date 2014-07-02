@@ -126,6 +126,8 @@ public OnPluginStart() {
 	RegConsoleCmd( "useitem", Command_use_item );
 	RegConsoleCmd( "items", Command_items );
 	RegConsoleCmd( "sm_store", Command_store );
+	RegConsoleCmd( "sm_shop", Command_store );
+	RegConsoleCmd( "sm_buy", Command_store );
 	
 	if( g_update_method == UPDATE_METHOD_TIMED ) {
 		CreateTimer( UPDATE_TIMED_INTERVAL, OnTimedUpdate, _, TIMER_REPEAT );
