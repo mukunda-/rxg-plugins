@@ -803,7 +803,6 @@ public Native_IsConnected( Handle:plugin, numParams ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-
 public Action:Command_cash( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	
@@ -823,17 +822,85 @@ public Action:Command_cash( client, args ) {
 	return Plugin_Handled;
 }
 
-public Action:Command_store( client, args ) {
-	if( client == 0 ) return Plugin_Continue;
-	if( GAME == GAME_TF2 ) {
+//-------------------------------------------------------------------------------------------------
+public ShowStorePage( client, id, token ) {
+	
+	decl String:url[1024];
+	FormatEx( url, sizeof url,
+		"http://store.reflex-gamers.com/quickauth%s.php?id=%d&token=%d",
+		GAME == GAME_CSGO ? "_csgo" : "",
+		id,
+		token );
+	
+	if( GAME == GAME_CSGO ) {
+		ShowMOTDPanel(client, "RXG Store", url, MOTDPANEL_TYPE_URL);
+	} else {
 		new Handle:Kv = CreateKeyValues( "motd" );
 		KvSetString( Kv, "title", "RXG Store" );
 		KvSetNum( Kv, "type", MOTDPANEL_TYPE_URL );
-		KvSetString( Kv, "msg", "http://store.reflex-gamers.com" );
+		KvSetString( Kv, "msg", url );
 		ShowVGUIPanel( client, "info", Kv, true );
 		CloseHandle( Kv );
-	} else {
-		ReplyToCommand( client, "Visit our store at store.reflex-gamers.com." );
 	}
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnQuickAuthSave( Handle:owner, Handle:hndl, const String:error[], any:data ) {
+	
+	SQL_TQuery( g_db, OnQuickAuthFetch, "SELECT LAST_INSERT_ID()", data );
+	
+	if( !hndl ) {
+		LogError( "SQL error saving QuickAuth token ::: %s", error );
+		DB_Fault();
+		return;
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnQuickAuthFetch( Handle:owner, Handle:hndl, const String:error[], any:data ) {
+	
+	if( !hndl ) {
+		LogError( "SQL error fetching QuickAuth ID ::: %s", error );
+		DB_Fault();
+		return;
+	}
+	
+	new id;
+	
+	if( SQL_FetchRow( hndl ) ) {
+		id = SQL_FetchInt( hndl, 0 );
+	}
+	
+	ResetPack(data);
+	new client = ReadPackCell(data);
+	new token = ReadPackCell(data);
+	CloseHandle(data);
+	
+	client = GetClientOfUserId( client );
+	if( client == 0 ) return; // disconnected
+	
+	ShowStorePage( client, id, token );
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:Command_store( client, args ) {
+	if( client == 0 ) return Plugin_Continue;
+	
+	new token = GetRandomInt( 10000, 100000 );
+	
+	decl String:query[1024];
+	FormatEx( query, sizeof query, 
+		"INSERT INTO QUICKAUTH (ACCOUNT, TOKEN) VALUES (%d, %d)",
+		GetSteamAccountID(client),
+		token );
+	
+	new Handle:pack = CreateDataPack();
+	WritePackCell( pack, GetClientUserId(client) );
+	WritePackCell( pack, token );
+	
+	SQL_TQuery( g_db, OnQuickAuthSave, query, pack );
+	
+	//ReplyToCommand( client, "Visit our store at store.reflex-gamers.com" );
+	
 	return Plugin_Handled;
 }
