@@ -11,7 +11,7 @@ public Plugin:myinfo = {
 	name = "pumpkin item",
 	author = "WhiteThunder",
 	description = "spawnable pumpkin bombs",
-	version = "2.0.0",
+	version = "2.1.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -199,12 +199,15 @@ public Action:OnPumpkinHit( pumpkin, &attacker, &inflictor, &Float:damage, &dama
 	new userid = g_pumpkin_userid[pumpkin];
 	new client = GetClientOfUserId(userid);
 	
+	//Damage is from owner
+	attacker = client;
+	
 	//Client must be original user
 	if( g_client_userid[client] == userid ) {
 		g_client_pumpkins[client]--;
 	}
 	
-	return Plugin_Continue;
+	return Plugin_Changed;
 }
 
 //-------------------------------------------------------------------------------------------------
