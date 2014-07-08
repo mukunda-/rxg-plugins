@@ -199,12 +199,15 @@ public Action:OnPumpkinHit( pumpkin, &attacker, &inflictor, &Float:damage, &dama
 	new userid = g_pumpkin_userid[pumpkin];
 	new client = GetClientOfUserId(userid);
 	
+	//Owner is the attacker
+	attacker = client;
+	
 	//Client must be original user
 	if( g_client_userid[client] == userid ) {
 		g_client_pumpkins[client]--;
 	}
 	
-	return Plugin_Continue;
+	return Plugin_Changed;
 }
 
 //-------------------------------------------------------------------------------------------------
