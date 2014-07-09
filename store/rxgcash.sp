@@ -117,7 +117,12 @@ public OnPluginStart() {
 	sm_dropcash_limitents = CreateConVar( "sm_dropcash_limitents", "0", "Limit number of cash entities, 0=unlimited, takes effect next round start.", FCVAR_PLUGIN, true, 0.0, true, 500.0 );
 	c_dropcash_limitents = GetConVarInt( sm_dropcash_limitents );
 	
-	HookEvent( "round_start", OnRoundStart, EventHookMode_PostNoCopy ); 
+	if( GAME == GAME_TF2 ) {
+		HookEvent( "teamplay_round_start", OnRoundStart, EventHookMode_PostNoCopy ); 
+	} else {
+		HookEvent( "round_start", OnRoundStart, EventHookMode_PostNoCopy ); 
+	}
+	
 	HookEvent( "player_death", OnPlayerDeath ); 
 	RegAdminCmd( "sm_spawncash", Command_SpawnCash, ADMFLAG_RCON );
 	RegConsoleCmd( "sm_dropcash", Command_DropCash );
@@ -191,7 +196,7 @@ public OnMapStart() {
 public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
 	ResetCounters();
 }
-     
+
 //-------------------------------------------------------------------------------------------------
 public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new attacker = GetClientOfUserId(GetEventInt( event, "attacker" ));
@@ -309,16 +314,11 @@ SpawnCash( const Float:pos[3], const Float:vel[3], amount, dropper ) {
  
 	if( GAME == GAME_TF2 ) {
 		SDKHook( ent, SDKHook_Touch, OnCashTouch_TF2 );
+		//TF2Use_Hook( ent, OnCashTouch );
 	}
-	
-	/*
-	if( GAME == GAME_TF2 ) {
-		TF2Use_Hook( ent, OnCashTouch );
-	}
-	*/
 	
 	if( c_dropcash_limitents ) {
-		if( EntRefToEntIndex( cash_ent_buffer[cash_ent_next] ) ) {
+		if( cash_ent_buffer[cash_ent_next] && EntRefToEntIndex( cash_ent_buffer[cash_ent_next] ) != INVALID_ENT_REFERENCE ) {
 			AcceptEntityInput( cash_ent_buffer[cash_ent_next], "kill" );
 		}
 		cash_ent_buffer[cash_ent_next++] = EntIndexToEntRef( ent );
