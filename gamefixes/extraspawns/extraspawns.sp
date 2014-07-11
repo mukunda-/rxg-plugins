@@ -30,6 +30,16 @@ new ct_spawn_counter;
 new t_spawn_limit;
 new ct_spawn_limit;
 
+public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) {
+	decl String:filepath[256];
+	BuildPath( Path_SM, filepath, sizeof(filepath), "configs/extraspawns.txt" );
+	if( !FileExists(filepath) ) {
+		return APLRes_SilentFailure;
+	}
+	return APLRes_Success;
+}
+	
+
 //-------------------------------------------------------------------------------------------------
 public OnPluginStart() {
 //	spawn_array = CreateArray( 6 );
@@ -173,11 +183,6 @@ public OnMapStart() {
 	BuildPath( Path_SM, filepath, sizeof(filepath), "configs/extraspawns.txt" );
 	
 	new Handle:kv = CreateKeyValues( "ExtraSpawns" );
-	if( !FileExists(filepath) ) {
-		CloseHandle(kv);
-		SetFailState( "configs/extraspawns.txt missing" );
-		return;
-	}
 	if( !FileToKeyValues( kv, filepath ) ) {
 		CloseHandle(kv);
 		SetFailState( "Couldn't Load Config" );
