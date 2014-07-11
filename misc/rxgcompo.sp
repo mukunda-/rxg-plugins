@@ -441,6 +441,7 @@ public AddPoints( client, points, const String:message[] ) {
 	if( (g_top_points-g_client_points[client]) > 50000 ) {
 		mul = 1.0 + Pow(1.0-float(g_client_points[client])/float(g_top_points),3.0)*2.0;
 		if( mul < 1.0 ) mul = 1.0;
+		if( mul > 1.5 ) mul = 1.5;
 	}
 	
 	
