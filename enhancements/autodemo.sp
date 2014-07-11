@@ -8,6 +8,8 @@
 
 #pragma semicolon 1
 
+// 2.2.0
+//  robustify uploading
 // 2.1.2
 //  errorlog improvement
 // 2.1.1
@@ -28,7 +30,7 @@
 //1.0.3
 //   exclude bots 
 
-#define VERSION "2.1.2"
+#define VERSION "2.2.0"
 
 //-------------------------------------------------------------------------------------------------
 public Plugin:myinfo = {
@@ -46,6 +48,10 @@ new Handle:autodemo_enabled; 	// should demos be recorded
 new c_minplayers;		 		// cached values
 new c_enabled;				 	// 
 
+new String:g_logfile[128];
+
+new String:game_name[16];
+
 new String:demo_path[128];	// path to "sm/data/demos"
 
 new bool:demo_active;		// is demo currently recording
@@ -54,6 +60,7 @@ new String:demo_name[128];	// name of demo, ie "auto-server-030114-203000-cs_off
 //new String:demo_date[64];	// in the format that is used by the web side (removed)
 new Float:demo_active_time;	// last game time the game was confirmed to have people playing
 new Float:demo_start_time;	// game time when the demo was started
+new bool:demo_save = false;
 
 new demo_scores[2];			// saved endround scores
 
@@ -76,9 +83,30 @@ new CURLDefaultOpt[][2] = {
 }; 
 
 new curl_timeout = 600; // 10 minute timeout on demo upload
-new String:curl_transfer_limit[32] = "200000";
+new String:curl_transfer_limit[32] = "300000";
+
+new g_save_all;
+new g_result_index;
  
 #define UPDATE_URL "http://www.mukunda.com/plagins/autodemo/update.txt"
+
+//-------------------------------------------------------------------------------------------------
+KvSetHandle( Handle:kv, const String:key[], Handle:value ) {
+	KvSetNum( kv, key, _:value );
+}
+
+//-------------------------------------------------------------------------------------------------
+Handle:KvGetHandle( Handle:kv, const String:key[] ) {
+	return Handle:KvGetNum( kv, key, _:INVALID_HANDLE );
+}
+
+//-------------------------------------------------------------------------------------------------
+bool:TryDeleteFile( const String:file[] ) {
+	if( FileExists(file) ) {
+		return DeleteFile(file);
+	}
+	return true;
+}
 
 //-------------------------------------------------------------------------------------------------
 public OnConVarChanged( Handle:cvar, const String:oldv[], const String:newv[] ) {
@@ -131,10 +159,26 @@ LoadConfig() {
 		StrCat( site_url, sizeof site_url, "/" );
 	}
 	KvGetString( kv, "key", site_key, sizeof site_key ); 
+	
+	KvGetString( kv, "transferlimit", curl_transfer_limit, sizeof curl_transfer_limit, "300000" ); 
+	curl_timeout = KvGetNum( kv, "transfertimeout", 600 ); 
+	g_save_all = KvGetNum( kv, "saveall", 1 );
 }
 
 //-------------------------------------------------------------------------------------------------
 public OnPluginStart() {
+
+	BuildPath( Path_SM, g_logfile, sizeof g_logfile, "logs/autodemo.log" );
+	
+	decl String:gamedir[32];
+	GetGameFolderName( gamedir, sizeof gamedir );
+	if( StrEqual( gamedir, "tf", false ) ) {
+		game_name = "tf2";
+	} else if( StrEqual( gamedir, "csgo", false ) ) {
+		game_name = "csgo";
+	} else {
+		game_name = "idk";
+	}
 	
 	LoadConfig();
 	BuildPath( Path_SM, demo_path, sizeof(demo_path), "data/demos/" );
@@ -179,11 +223,15 @@ CleanupDemos() {
 	new Handle:dir = OpenDirectory( demo_path );	
 	decl String:entry[128];
 	new FileType:ft;
+	new time = GetTime();
 	while( ReadDirEntry( dir, entry, sizeof entry, ft ) ) {
 		if( ft != FileType_File ) continue;
 		decl String:path[256];
 		Format( path, sizeof path, "%s%s", demo_path, entry );
-		DeleteFile( path );
+		
+		if( (time - GetFileTime( path, FileTime_LastChange )) > (60*60*12) ) {
+			DeleteFile( path );
+		}
 	}
 	CloseHandle( dir );
 }
@@ -318,6 +366,7 @@ StartDemo() {
 	demo_start_time = GetGameTime();
 	demo_active = true;
 	demo_info_created = false;
+	demo_save = false;
 
 	PrintToChatAll( "Recording Demo... %s.dem", demo_name );
 }
@@ -341,12 +390,28 @@ StopDemo() {
 	
 	ServerCommand("tv_stoprecord");
 	demo_active = false;
+	
+	if( !g_save_all && !demo_save ) {
+		return; // nobody requested this demo to be saved, discard.
+	}
+	
 	// upload to webserver
 	new Float:duration = GetGameTime() - demo_start_time;
 	
 	// demo info is usually created during the intermission, this is a failsafe
 	CreateDemoInfo(); 
 	
+	new Handle:op = CreateKeyValues( "AutoDemoUpload" );
+	
+	KvSetNum( op, "file_index", 0 );
+	KvSetString( op, "name", demo_name );
+	KvSetString( op, "logfile", logfile );
+	KvSetNum( op, "time", demo_time );
+	KvSetFloat( op, "duration", duration );
+	KvSetNum( op, "score0", demo_scores[0] );
+	KvSetNum( op, "score1", demo_scores[1] );
+	KvSetNum( op, "retries", 0 );
+	/*
 	new Handle:pack = CreateDataPack();
 	WritePackCell( pack, 0 ); // file index  
 	WritePackCell( pack, 0 ); // reserved slot for file handle
@@ -356,8 +421,8 @@ StopDemo() {
 	WritePackFloat( pack, duration );
 	WritePackCell( pack, demo_scores[0] );
 	WritePackCell( pack, demo_scores[1] );
-
-	CreateTimer( 2.0, StartTransfer, pack );
+*/
+	CreateTimer( 2.0, StartTransfer, op );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -365,112 +430,51 @@ public Action:StartTransfer( Handle:timer, any:data ) {
 	DemoUpload(data);
 	return Plugin_Handled;
 }
-
+/*
 //-------------------------------------------------------------------------------------------------
 SkipPackStrings( Handle:pack, count ) {
 	decl String:buffer[256];
 	for( new i = 0; i < count; i++ ) {
 		ReadPackString(pack,buffer,sizeof buffer);
 	}
-}
+}*/
 
 //-------------------------------------------------------------------------------------------------
-public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
-	
-	ResetPack(data);
-	new index = ReadPackCell( data )+1;
-	new Handle:file = Handle:ReadPackCell( data );
-	CloseHandle(file);
-	decl String:name[256];
-	ReadPackString( data, name, sizeof name );
-		
-	if( code == CURLE_OK ) {
-		
-		if( index == 3 ) {
-			CloseHandle(data);
-			new response;
-			curl_easy_getinfo_int(hndl,CURLINFO_RESPONSE_CODE,response);
-			CloseHandle(hndl);
-			if( response != 200 ) { // 200 is HTTP_RESPONSE_OK
-				LogError( "Couldn't register demo on site: \"%s\"", name );
-				return;
-			}
-			// verify registration:
-			decl String:resultfile[128];
-			FormatEx( resultfile, sizeof resultfile, "%sresult", demo_path );
-			file = OpenFile( resultfile, "r" );
-			decl String:result[64];
-			ReadFileLine( file, result, sizeof result );
-			TrimString( result );
-			if( !StrEqual( result, "OK" ) ) {
-				LogError( "Couldn't register demo on site: \"%s\"", name );
-			}
-			CloseHandle( file );
-			
-			return; // operation complete
-		}
-		CloseHandle(hndl);
-		
-		ResetPack(data);
-		WritePackCell(data,index);
-		
-		DemoUpload(data);
-		
-	} else {
-		CloseHandle(hndl);
-		LogError( "Upload failure for: \"%s\". code %d", name, code );
-		
-		CloseHandle(data);
-	}
-}
-
-//-------------------------------------------------------------------------------------------------
-DemoUpload( Handle:pack ) {
+DemoUpload( Handle:op ) {
 	
 	new Handle:curl = curl_easy_init();
 	curl_easy_setopt_int_array( curl, CURLDefaultOpt, sizeof( CURLDefaultOpt ) );
 	curl_easy_setopt_int( curl, CURLOPT_TIMEOUT, curl_timeout );
 	curl_easy_setopt_int64( curl, CURLOPT_MAX_SEND_SPEED_LARGE, curl_transfer_limit );
-	if( !curl ) {
-		LogError( "Couldn't initialize cURL for uploading: \"%s\"", demo_name );
-		return;
-	}
+ 
 	
-	ResetPack(pack);
-	new index = ReadPackCell( pack ); 
-	ReadPackCell( pack ); 
+	new index = KvGetNum( op, "file_index" ); 
 	decl String:name[256];
-	ReadPackString( pack, name, sizeof name );
-		
+	KvGetString( op, "name", name, sizeof name );
+	
 	if( index == 2 ) {
-		decl String:request[512];
-		SkipPackStrings(pack,1); // skip logfile string
-		new time = ReadPackCell( pack );
-		new Float:duration = ReadPackFloat( pack );
-		new scores[2];
-		scores[0] = ReadPackCell(pack);
-		scores[1] = ReadPackCell(pack);
+		decl String:request[512]; 
+		  
 		FormatEx( request, sizeof request, 
-			"%sregister.php?key=%s&server=%s&demo=%s&score=%d-%d&time=%d&duration=%.2f", 
+			"%sregister.php?key=%s&server=%s&game=%s&demo=%s&score=%d-%d&time=%d&duration=%.2f", 
 			site_url, site_key,
-			server_identifier,
+			server_identifier, game_name,
 			name, 
-			demo_scores[0], demo_scores[1],
-			time,
-			duration );
-		//PrintToServer( "DEBUG: register=%s", request );
+			KvGetNum( op, "score0" ), KvGetNum( op, "score1" ),
+			KvGetNum( op, "time" ),
+			KvGetFloat( op, "duration" ) );
+		
 		curl_easy_setopt_string( curl, CURLOPT_URL, request );
-		FormatEx( request, sizeof request, "%sresult", demo_path );
+		
 		decl String:resultfile[128];
-		FormatEx( resultfile, sizeof resultfile, "%sresult", demo_path );
+		FormatEx( resultfile, sizeof resultfile, "%sresult%d", demo_path, g_result_index++ );
 		new Handle:outfile = curl_OpenFile( resultfile, "wb" );
 		curl_easy_setopt_handle( curl, CURLOPT_WRITEDATA, outfile );
 		
 		PrintToServer( "[autodemo] Registering demo: %s", name );
-		ResetPack(pack);
-		ReadPackCell(pack);
-		WritePackCell( pack, _:outfile );
-		curl_easy_perform_thread( curl, OnCurlComplete, pack );
+		KvSetHandle( op, "file", outfile );
+		KvSetString( op, "resultfile", resultfile );
+		curl_easy_perform_thread( curl, OnCurlComplete, op );
 		
 	} else {
 		curl_easy_setopt_string( curl, CURLOPT_USERPWD, ftp_auth );
@@ -478,50 +482,151 @@ DemoUpload( Handle:pack ) {
 		curl_easy_setopt_int( curl, CURLOPT_FTP_CREATE_MISSING_DIRS, CURLFTP_CREATE_DIR );
 		
 		decl String:source[128];
-		decl String:dest[128];
+		decl String:dest[256];
 		if( index == 0 ) {
 			
 			FormatEx( source, sizeof source, "%s%s.dem", demo_path, name );
 			FormatEx( dest, sizeof dest, "%s%s.dem", ftp_url, name );
 			
 		} else {
-			ReadPackString( pack, source, sizeof source );
+			KvGetString( op, "logfile", source, sizeof source );
 			FormatEx( dest, sizeof dest, "%s%s.log", ftp_url, name );
 			
 		}
 		new Handle:infile = curl_OpenFile( source, "rb" );
 		if( infile == INVALID_HANDLE ) {
 			CloseHandle(curl);
-			LogError( "Couldn't open \"%s\" for upload.", source );
+			CloseHandle(op);
+			LogToFile( g_logfile, "Couldn't open \"%s\" for upload!", source );
 			return;
 		}
 		
 		PrintToServer( "[autodemo] Uploading file: %s", source );
-		ResetPack(pack);
-		ReadPackCell(pack);
-		WritePackCell( pack, _:infile );
+		KvSetHandle( op, "file", infile );
+		
 		curl_easy_setopt_handle( curl, CURLOPT_READDATA, infile );
 		curl_easy_setopt_string( curl, CURLOPT_URL, dest );
-		curl_easy_perform_thread( curl, OnCurlComplete, pack );
+		curl_easy_perform_thread( curl, OnCurlComplete, op );
 	}
 }
 
 //-------------------------------------------------------------------------------------------------
+bool:CheckRegistration( Handle:curl, Handle:op ) {
+	decl String:resultfile[128];
+	KvGetString( op, "resultfile", resultfile, sizeof resultfile ); 
+	
+	new response;
+	curl_easy_getinfo_int(curl,CURLINFO_RESPONSE_CODE,response);
+	if( response != 200 ) { // 200 is HTTP_RESPONSE_OK
+		TryDeleteFile( resultfile );
+		return false;
+	}
+	
+	// verify registration:
+	new Handle:file = OpenFile( resultfile, "r" );
+	decl String:result[64];
+	result[0] = 0;
+	ReadFileLine( file, result, sizeof result );
+	CloseHandle(file); 
+	
+	TrimString( result );
+	if( !StrEqual( result, "OK" ) ) {
+		return false;
+	}
+	return true;
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
+	new Handle:op = data;
+	
+	new index = KvGetNum( op, "file_index" );
+	CloseHandle( KvGetHandle( op, "file" ) );
+	decl String:name[256];
+	KvGetString( op, "name", name, sizeof name );
+		
+	if( code == CURLE_OK ) {
+		
+		
+		if( index == 2 ) {
+			
+			if( !CheckRegistration( hndl, op ) ) {
+				CloseHandle(hndl);
+				
+				if( !CanRetryTransfer(op) ) {
+					LogToFile( g_logfile, "Couldn't register demo on site: \"%s\"", name );
+					CloseHandle(op);
+					return;
+				}
+				
+				// retry
+				DemoUpload( op );
+				return;
+			}
+			CloseHandle(hndl);
+			CloseHandle(op);
+			
+			return; // operation complete
+		}
+		
+		index = index + 1;
+		KvSetNum( op, "file_index", index );
+		
+		DemoUpload( op );
+		
+	} else {
+		CloseHandle(hndl);
+		if( !CanRetryTransfer( op ) ) {
+			LogToFile( g_logfile, "Upload failure for: \"%s\". code %d", name, code );
+			CloseHandle(op);
+			return;
+		}
+		
+		DemoUpload(op);
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+bool:CanRetryTransfer( Handle:op ) {
+	new retries = KvGetNum( op, "retries" );
+	if( retries < 3 ) {
+		KvSetNum( op, "retries", retries+1 );
+		return true;
+	}
+	return false;
+}
+
+//-------------------------------------------------------------------------------------------------
 public OnIntermission( Handle:event, const String:name[], bool:db ) {
-	if( demo_active ) {
+	if( demo_active && (g_save_all || demo_save) ) {
 		// tell users that their match was saved
 		PrintToChatAll( "Saving Demo... %s.dem", demo_name );
-		CreateDemoInfo();
 	}
+	CreateDemoInfo();
 }
 
 //-------------------------------------------------------------------------------------------------
 public Action:Command_demo( client, args ) {
 	if( !demo_active ) {
-		ReplyToCommand( client, "A demo is not being recorded currently." );
+		ReplyToCommand( client, "A demo is not currently being recorded." );
 		return Plugin_Handled;
 	}
 	
+	
 	ReplyToCommand( client, "Currently recording: %s.dem", demo_name );
+	if( !demo_save ) {
+		demo_save = true;
+		if( !g_save_all ) {
+			if( client == 0 ) {
+				ReplyToCommand( client, "[AutoDemo] Demo marked for saving." );
+			}
+			
+			PrintToChatAll( "\x01 \x04** Demo marked for saving. **" );
+		}
+	} else {
+		ReplyToCommand( client, "This demo will be uploaded after the match completes." );
+	}
+	
+	
 	return Plugin_Handled;
 }
