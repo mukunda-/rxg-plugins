@@ -12,7 +12,7 @@ public Plugin:myinfo = {
 	name        = "rxgcompo",
 	author      = "mukunda",
 	description = "RXG Competition API",
-	version     = "1.0.9",
+	version     = "1.1.0",
 	url         = "www.mukunda.com"
 };
 
@@ -72,7 +72,7 @@ new g_contest_end;
 
 new Handle:g_menu;
 
-#define MIN_PLAYERS_TO_GAIN_POINTS 3
+#define MIN_PLAYERS_TO_GAIN_POINTS 6
 
 //-------------------------------------------------------------------------------------------------
 public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max ) {
