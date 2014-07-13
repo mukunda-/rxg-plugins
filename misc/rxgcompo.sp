@@ -12,7 +12,7 @@ public Plugin:myinfo = {
 	name        = "rxgcompo",
 	author      = "mukunda",
 	description = "RXG Competition API",
-	version     = "1.0.7",
+	version     = "1.0.8",
 	url         = "www.mukunda.com"
 };
 
@@ -311,8 +311,7 @@ PrintRoundInfo( client ) {
 			return;
 		}
 		if( g_round_players < MIN_PLAYERS_TO_GAIN_POINTS ) {
-			PrintToChat( client, "\x01 \x0B[REVOCOMP]\x01 Under %d players: Point gains are disabled.", MIN_PLAYERS_TO_GAIN_POINTS );
-			return;
+			PrintToChat( client, "\x01 \x0B[REVOCOMP]\x01 Under %d players: Point bonuses are disabled.", MIN_PLAYERS_TO_GAIN_POINTS );
 		}
 		if( g_point_cap ) {
 			PrintToChat( client, "\x01 \x0B[REVOCOMP]\x01 You have gained \x04%d\x01 of \x04%d\x01 points today.", g_client_dailypoints[client], g_point_cap );
@@ -395,7 +394,7 @@ CommitPlayer( client, time, bool:updatename ) {
 	SQL_TQuery( g_db, OnSQLCommitData, query );
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//------------------------------------------------------------------	----------------------------------------------------
 CommitPlayerData( ) {
 	if( !g_db_connected ) return;
 	
@@ -411,7 +410,7 @@ CommitPlayerData( ) {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-public AddPoints( client, points, const String:message[] ) {
+public AddPoints( client, points, const String:message[],  flags ) {
 	//LogToFile( g_logFile, "ADDPOINTS1" );
 	if( !g_db_connected ) return 0;
 	//LogToFile( g_logFile, "ADDPOINTS2" );
@@ -426,7 +425,11 @@ public AddPoints( client, points, const String:message[] ) {
 		return 0;// point cap
 	}
 	
-	if( g_round_players < MIN_PLAYERS_TO_GAIN_POINTS ) return 0;
+	if( !(flags & 1) ) {
+		if( g_round_players < MIN_PLAYERS_TO_GAIN_POINTS ) {
+			return 0;	
+		}
+	}
 	
 	new bool:capped = false;
 	g_client_dailypoints[client] += points;
@@ -633,7 +636,7 @@ public Action:Command_contest( client, args ) {
 public Native_AddPoints( Handle:plugin, numParams ) {
 	decl String:message[64];
 	GetNativeString( 3, message, sizeof message );
-	return AddPoints( GetNativeCell(1), GetNativeCell(2), message );
+	return AddPoints( GetNativeCell(1), GetNativeCell(2), message, GetNativeCell(4) );
 }
 
 //----------------------------------------------------------------------------------------------------------------------

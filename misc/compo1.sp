@@ -13,12 +13,14 @@ public Plugin:myinfo = {
 	name        = "revocomp scoring",
 	author      = "mukunda",
 	description = "revocomp scoring",
-	version     = "1.0.4",
+	version     = "1.0.5",
 	url         = "www.mukunda.com"
 };
 
 //----------------------------------------------------------------------------------------------------------------------
 new kill_streaks[MAXPLAYERS+1];
+
+new Float:client_last_kill[MAXPLAYERS+1];
 
 new bool:round_end;
 new bool:warmup;
@@ -80,11 +82,16 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	new assist = GetClientOfUserId( GetEventInt( event, "assister" ) );
 	if( IsFakeClient(victim) ) return;
+	
 	if( victim == attacker ) {
-		COMPO_AddPoints( attacker, 15, "{points} for suicide!" );
-		return;
+		if( (GetGameTime() - client_last_kill[victim]) < 600.0 ) {
+			COMPO_AddPoints( victim, 15, "{points} for suicide!" );
+			return;
+		}
 	}
+	
 	if( attacker == 0 ) return;
+	client_last_kill[attacker] = GetGameTime();
 	
 	new players = COMPO_GetRoundPlayers();
  
@@ -152,19 +159,29 @@ public OnBombDefused( Handle:event, const String:name[], bool:dontBroadcast ) {
 
 //----------------------------------------------------------------------------------------------------------------------
 public Action:OnMinute( Handle:timer ) {
-	new bonus = (COMPO_GetRoundPlayers() - 3) * 30 / 8;
-	if( bonus < 0 ) bonus = 0;
-	if( bonus > 30 ) bonus = 30;
-	bonus = 30-bonus;
-	new playing_points = 35 + bonus;
+	new players =COMPO_GetRoundPlayers();
+	
+	new bonus;
+	if( players >= 0 && players <= 3 ) {
+		bonus = 150;
+	} else if( players >= 4 && players <= 6 ) {
+		bonus = 135;
+	} else if( players >= 7 && players <= 12 ) {
+		bonus = 100;
+	} else {
+		bonus = 85;
+	}
+	  
+	new Float:time = GetGameTime();
 	for( new i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i) ) continue;
-		if( GetClientTeam(i) >= 2 ) {
-			 
-			
-			COMPO_AddPoints( i, playing_points, "{points} for playing."  );
+		
+		if( GetClientTeam(i) >= 2 ) { 
+			if( (time - client_last_kill[i]) < 600.0 ) {
+				COMPO_AddPoints( i, bonus, "{points} for playing.", ADDPOINTS_ALWAYS );
+			}
 		} else {
-			COMPO_AddPoints( i, 5, "{points} for spectating."  );
+			COMPO_AddPoints( i, 15, "{points} for spectating.", ADDPOINTS_ALWAYS );
 		}
 	}
 }

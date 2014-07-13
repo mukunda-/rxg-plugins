@@ -3,13 +3,17 @@
 #endif
 
 #define _rxgcompo_included
+
+enum {
+	ADDPOINTS_ALWAYS = 1
+};
      
-native COMPO_AddPoints( client, points,  const String:message[] );
+native COMPO_AddPoints( client, points,  const String:message[], flags=0 );
 native COMPO_GetTopPoints();
 native COMPO_GetPoints( client );
 native COMPO_GetRoundPlayers();
  
-public SharedPlugin:__pl_rxgstore = 
+public SharedPlugin:__pl_rxgcompo = 
 {
 	name = "rxgcompo",
 	file = "rxgcompo.smx",
@@ -21,7 +25,7 @@ public SharedPlugin:__pl_rxgstore =
 };
 
 #if !defined REQUIRE_PLUGIN
-public __pl_rxgstore_SetNTVOptional()
+public __pl_rxgcompo_SetNTVOptional()
 {
 	MarkNativeAsOptional("COMPO_AddPoints");
 	MarkNativeAsOptional("COMPO_GetTopPoints");
