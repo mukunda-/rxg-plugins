@@ -14,7 +14,7 @@ public Plugin:myinfo = {
 	name        = "revocomp scoring",
 	author      = "mukunda",
 	description = "revocomp scoring",
-	version     = "1.0.7",
+	version     = "1.0.8",
 	url         = "www.mukunda.com"
 };
 
@@ -74,6 +74,10 @@ public OnRoundEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
 public OnPlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new client = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	kill_streaks[client] = 0;
+}
+
+public OnClientPutInServer( client ) {
+	client_last_kill[client] = -2000.0;
 }
 
 //----------------------------------------------------------------------------------------------------------------------
