@@ -12,7 +12,7 @@ public Plugin:myinfo = {
 	name        = "rxgcompo",
 	author      = "mukunda",
 	description = "RXG Competition API",
-	version     = "1.0.8",
+	version     = "1.0.9",
 	url         = "www.mukunda.com"
 };
 
@@ -431,6 +431,14 @@ public AddPoints( client, points, const String:message[],  flags ) {
 		}
 	}
 	
+	new Float:mul = 1.0;
+	if( (g_top_points-g_client_points[client]) > 50000 ) {
+		mul = 1.0 + Pow(1.0-float(g_client_points[client])/float(g_top_points),3.0)*2.0;
+		if( mul < 1.0 ) mul = 1.0;
+		if( mul > 1.5 ) mul = 1.5;
+	}
+	points = RoundToFloor(float(points) * mul); 
+	
 	new bool:capped = false;
 	g_client_dailypoints[client] += points;
 	if( g_point_cap && (g_client_dailypoints[client] >= g_point_cap) ) {
@@ -439,16 +447,6 @@ public AddPoints( client, points, const String:message[],  flags ) {
 		capped = true;
 		 
 	}
-	
-	new Float:mul = 1.0;
-	if( (g_top_points-g_client_points[client]) > 50000 ) {
-		mul = 1.0 + Pow(1.0-float(g_client_points[client])/float(g_top_points),3.0)*2.0;
-		if( mul < 1.0 ) mul = 1.0;
-		if( mul > 1.5 ) mul = 1.5;
-	}
-	
-	
-	points = RoundToFloor(float(points) * mul); 
 	
 	if( message[0] != 0 ) {
 		decl String:pointstring[64];
