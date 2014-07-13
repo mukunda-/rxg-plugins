@@ -4,6 +4,7 @@
 #include <sdkhooks>
 #include <smac_hax>
 #include <duel>
+#include <idletracker>
 
 // 1.0.4
 // fixed suicide extra credit
@@ -13,7 +14,7 @@ public Plugin:myinfo = {
 	name        = "revocomp scoring",
 	author      = "mukunda",
 	description = "revocomp scoring",
-	version     = "1.0.5",
+	version     = "1.0.6",
 	url         = "www.mukunda.com"
 };
 
@@ -177,7 +178,7 @@ public Action:OnMinute( Handle:timer ) {
 		if( !IsClientInGame(i) ) continue;
 		
 		if( GetClientTeam(i) >= 2 ) { 
-			if( (time - client_last_kill[i]) < 600.0 ) {
+			if( (time - client_last_kill[i]) < 600.0 && GetClientIdleTime(i) < 30.0 ) {
 				COMPO_AddPoints( i, bonus, "{points} for playing.", ADDPOINTS_ALWAYS );
 			}
 		} else {
