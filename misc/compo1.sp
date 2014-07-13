@@ -14,7 +14,7 @@ public Plugin:myinfo = {
 	name        = "revocomp scoring",
 	author      = "mukunda",
 	description = "revocomp scoring",
-	version     = "1.0.6",
+	version     = "1.0.7",
 	url         = "www.mukunda.com"
 };
 
@@ -82,9 +82,9 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
 	new victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	new assist = GetClientOfUserId( GetEventInt( event, "assister" ) );
-	if( IsFakeClient(victim) ) return;
 	
 	if( victim == attacker ) {
+		if( IsFakeClient(victim) ) return;
 		if( (GetGameTime() - client_last_kill[victim]) < 600.0 ) {
 			COMPO_AddPoints( victim, 15, "{points} for suicide!" );
 			return;
@@ -93,6 +93,8 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	
 	if( attacker == 0 ) return;
 	client_last_kill[attacker] = GetGameTime();
+	
+	if( IsFakeClient(victim) ) return;
 	
 	new players = COMPO_GetRoundPlayers();
  
