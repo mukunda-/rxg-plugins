@@ -14,7 +14,7 @@ public Plugin:myinfo = {
 	name        = "revocomp scoring",
 	author      = "mukunda",
 	description = "revocomp scoring",
-	version     = "1.0.8",
+	version     = "1.0.9",
 	url         = "www.mukunda.com"
 };
 
@@ -188,7 +188,7 @@ public Action:OnMinute( Handle:timer ) {
 				COMPO_AddPoints( i, bonus, "{points} for playing.", ADDPOINTS_ALWAYS );
 			}
 		} else {
-			COMPO_AddPoints( i, 15, "{points} for spectating.", ADDPOINTS_ALWAYS );
+			COMPO_AddPoints( i, 10, "{points} for spectating.", ADDPOINTS_ALWAYS );
 		}
 	}
 }
