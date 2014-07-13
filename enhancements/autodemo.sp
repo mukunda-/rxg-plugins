@@ -8,6 +8,8 @@
 
 #pragma semicolon 1
 
+// 2.2.1
+//  delete successfully uploaded demos
 // 2.2.0
 //  robustify uploading
 // 2.1.2
@@ -30,7 +32,7 @@
 //1.0.3
 //   exclude bots 
 
-#define VERSION "2.2.0"
+#define VERSION "2.2.1"
 
 //-------------------------------------------------------------------------------------------------
 public Plugin:myinfo = {
@@ -536,6 +538,13 @@ bool:CheckRegistration( Handle:curl, Handle:op ) {
 	return true;
 }
 
+DeleteDemo( Handle:op ) {
+	decl String:demo[256];
+	KvGetString( op, "name", demo, sizeof demo );
+	Format( demo, sizeof demo, "%s%s.dem", demo_path, demo );
+	TryDeleteFile( demo );
+}
+
 //-------------------------------------------------------------------------------------------------
 public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 	new Handle:op = data;
@@ -564,6 +573,10 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 				return;
 			}
 			CloseHandle(hndl);
+			
+			DeleteDemo(op);
+			
+			
 			CloseHandle(op);
 			
 			return; // operation complete
