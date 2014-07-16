@@ -8,6 +8,9 @@
 
 #pragma semicolon 1
 
+// 2.2.2
+//  show index for upload failures
+//  doubled transfer timeout
 // 2.2.1
 //  delete successfully uploaded demos
 // 2.2.0
@@ -84,7 +87,7 @@ new CURLDefaultOpt[][2] = {
 	{_:CURLOPT_VERBOSE,			0}		//
 }; 
 
-new curl_timeout = 600; // 10 minute timeout on demo upload
+new curl_timeout = 1800; // 30 minute timeout on demo upload
 new String:curl_transfer_limit[32] = "300000";
 
 new g_save_all;
@@ -163,7 +166,7 @@ LoadConfig() {
 	KvGetString( kv, "key", site_key, sizeof site_key ); 
 	
 	KvGetString( kv, "transferlimit", curl_transfer_limit, sizeof curl_transfer_limit, "300000" ); 
-	curl_timeout = KvGetNum( kv, "transfertimeout", 600 ); 
+	curl_timeout = KvGetNum( kv, "transfertimeout", 1200 ); 
 	g_save_all = KvGetNum( kv, "saveall", 1 );
 }
 
@@ -590,7 +593,7 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 	} else {
 		CloseHandle(hndl);
 		if( !CanRetryTransfer( op ) ) {
-			LogToFile( g_logfile, "Upload failure for: \"%s\". code %d", name, code );
+			LogToFile( g_logfile, "Upload failure for: \"%s\" (index %d). code %d", name, index, code );
 			CloseHandle(op);
 			return;
 		}
