@@ -14,7 +14,7 @@ public Plugin:myinfo = {
 	name        = "revocomp scoring",
 	author      = "mukunda",
 	description = "revocomp scoring",
-	version     = "1.1.0",
+	version     = "1.1.1",
 	url         = "www.mukunda.com"
 };
 
@@ -195,7 +195,7 @@ public Action:OnMinute( Handle:timer ) {
  
 //----------------------------------------------------------------------------------------------------------------------
 public OnHaxBan( client, victim ) {
-	COMPO_AddPoints( client, 700, "{points} for banning a cheater." );
+	COMPO_AddPoints( client, 700, "{points} for banning a cheater.", ADDPOINTS_ALWAYS  );
 }
 
 public OnDuelEnd( winner, loser ) {
