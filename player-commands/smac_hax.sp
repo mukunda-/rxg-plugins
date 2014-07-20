@@ -18,7 +18,7 @@ public Plugin:myinfo =
 	name = "smac_hax",
 	author = "mukunda",
 	description = "!hax",
-	version = "1.0.1",
+	version = "1.0.2",
 	url = "www.mukunda.com"
 };
 
@@ -54,6 +54,10 @@ public OnPluginStart() {
 	g_HaxBanForward = CreateGlobalForward("OnHaxBan", ET_Ignore, Param_Cell, Param_Cell );
 	
 	RegConsoleCmd( "hax", Command_hax );
+}
+
+public OnMapStart() {
+	last_cmd_use_time = -COOLDOWN;
 }
 
 FlagClient( client, flag ) {
