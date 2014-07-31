@@ -16,6 +16,8 @@
 #pragma semicolon 1
 
 
+// 1.2.1
+//   fix target checking
 // version 1.2.0
 //   called on +lookatweapon
 // version 1.1.0
@@ -32,7 +34,7 @@ public Plugin:myinfo = {
 	name = "Watching",
 	author = "mukunda",
 	description = "Command to see how many players are sharing your view.",
-	version = "1.2.0",
+	version = "1.2.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -72,11 +74,12 @@ ShowWatching( client ) {
 		}
 		
 		target = GetEntPropEnt( client, Prop_Send, "m_hObserverTarget" );
+		
 	} else {
 		target = client;
 	}
 	
-	if( target == 0 ) return ;
+	if( target < 1 || target > MaxClients ) return; // invalid target
 	
 	new count = 0;
 	
