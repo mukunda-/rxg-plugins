@@ -8,6 +8,8 @@
 
 #pragma semicolon 1
 
+// 1.0.3
+//  - reset !hax cooldown when a client gets flagged
 // 1.0.1
 //  - only ban if 3 or more aimbot detections
 //
@@ -18,7 +20,7 @@ public Plugin:myinfo =
 	name = "smac_hax",
 	author = "mukunda",
 	description = "!hax",
-	version = "1.0.2",
+	version = "1.0.3",
 	url = "www.mukunda.com"
 };
 
@@ -67,6 +69,7 @@ FlagClient( client, flag ) {
 		client_flagged[client] = 0;
 	}
 	client_flagged[client] |= 1<<flag;
+	last_cmd_use_time = -COOLDOWN; // reset cooldown so people can !hax him
 }
 
 public Action:SMAC_OnCheatDetected(client, const String:module[], DetectionType:type, Handle:info ) {
