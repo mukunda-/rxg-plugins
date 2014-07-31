@@ -14,7 +14,7 @@ public Plugin:myinfo = {
 	name        = "revocomp scoring",
 	author      = "mukunda",
 	description = "revocomp scoring",
-	version     = "1.1.1",
+	version     = "1.1.2",
 	url         = "www.mukunda.com"
 };
 
@@ -22,6 +22,10 @@ public Plugin:myinfo = {
 new kill_streaks[MAXPLAYERS+1];
 
 new Float:client_last_kill[MAXPLAYERS+1];
+new Float:client_last_hurt[MAXPLAYERS+1];
+
+new Float:client_last_pos[MAXPLAYERS+1][3];
+new Float:client_last_move[MAXPLAYERS+1];
 
 new bool:round_end;
 new bool:warmup;
@@ -30,6 +34,7 @@ new bool:warmup;
 public OnPluginStart() {
 	HookEvent( "player_death", OnPlayerDeath );
 	HookEvent( "player_spawn", OnPlayerSpawn );
+	HookEvent( "player_hurt", OnPlayerHurt );
 	HookEvent( "round_start", OnRoundStart );
 	HookEvent( "round_end", OnRoundEnd );
 	
@@ -38,6 +43,7 @@ public OnPluginStart() {
 	
 	CreateTimer( 60.0, OnMinute, _, TIMER_REPEAT );
 	
+	CreateTimer( 1.0, OnMoveTimer, _, TIMER_REPEAT );
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -74,10 +80,38 @@ public OnRoundEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
 public OnPlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new client = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	kill_streaks[client] = 0;
+	
+	GetClientAbsOrigin( client, client_last_pos[client] );
+
+}
+
+public Action:OnMoveTimer( Handle:timer ) {
+	for( new client = 1; client <= MaxClients; client++ ) {
+		if( IsClientInGame(client) && !IsFakeClient(client) && IsPlayerAlive(client) ) {
+			new Float:pos2[3];
+			GetClientAbsOrigin( client, pos2 );
+			if( GetVectorDistance( client_last_pos[client], pos2, true ) > (700.0*700.0) ) {
+				client_last_move[client] = GetGameTime();
+				GetClientAbsOrigin( client, client_last_pos[client] );
+			}
+		}
+	}
+	return Plugin_Continue;
 }
 
 public OnClientPutInServer( client ) {
 	client_last_kill[client] = -2000.0;
+	client_last_hurt[client] = -2000.0;
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+public OnPlayerHurt( Handle:event, const String:name[], bool:dontBroadcast ) {
+
+	new attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
+	new victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
+	if( attacker != victim ) {
+		client_last_hurt[attacker] = GetGameTime();
+	}
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -184,7 +218,10 @@ public Action:OnMinute( Handle:timer ) {
 		if( !IsClientInGame(i) ) continue;
 		
 		if( GetClientTeam(i) >= 2 ) { 
-			if( (time - client_last_kill[i]) < 600.0 && (GetClientIdleTime(i) < 30.0 || !IsPlayerAlive(i))  ) {
+			if( (time - client_last_kill[i]) < 300.0 || 
+				(time - client_last_hurt[i]) < 200.0 &&
+				((time - client_last_move[i] < 45.0) || !IsPlayerAlive(i)) &&
+				(GetClientIdleTime(i) < 20.0 || !IsPlayerAlive(i))  ) {
 				COMPO_AddPoints( i, bonus, "{points} for playing.", ADDPOINTS_ALWAYS );
 			}
 		} else {
