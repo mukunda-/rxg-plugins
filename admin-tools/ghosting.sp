@@ -46,6 +46,8 @@
 // donators can use ghost in designated ghosting zones
 // and can USE items as a ghost
 
+// 1.2.0
+//   possession
 // 1.1.4
 //   removed quick ghost buttons, "just use !ghost".
 // CHANGES - 1.1.2
@@ -62,7 +64,7 @@ public Plugin:myinfo = {
 	name = "ghosting",
 	author = "mukunda",
 	description = "the real kind of ghosting",
-	version = "1.1.4",
+	version = "1.2.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -70,6 +72,7 @@ public Plugin:myinfo = {
 
 #define SPECMODE_FIRSTPERSON 4
 #define SPECMODE_3RDPERSON 5
+#define SPECMODE_ROAMING 6
 
 
 #define LASER_LASER_POWER 20.0
@@ -93,6 +96,8 @@ public Plugin:myinfo = {
 
 new Float:g_fire_size;
 new Float:g_fire_dmgscale;
+
+
 
 new String:downloads_csgo[][] = {
 	"materials/ghosting/ghost.vmt",
@@ -157,7 +162,13 @@ new laser_counter[MAXPLAYERS+1];
 
 //new being_possessed_by[MAXPLAYERS+1];
 //new ghost_possession[MAXPLAYERS+1];
-new bool:ghost_forcefire[MAXPLAYERS+1];
+//new bool:ghost_forcefire[MAXPLAYERS+1];
+
+
+new g_under_control[MAXPLAYERS+1];	// index of controller
+new g_controlling[MAXPLAYERS+1];	// index of target
+new g_ctrl_buttons[MAXPLAYERS+1]; 
+new Float:g_ctrl_angles[MAXPLAYERS+1][3];
 
 //new client_buttons[MAXPLAYERS+1];
 
@@ -323,9 +334,9 @@ public OnPluginStart() {
 	RegServerCmd( "sm_gban", Command_gban );
 	RegServerCmd( "sm_gunban", Command_gunban );
 
-	//RegAdminCmd( "sm_gpossess", Command_gpossess, AFLAG );
-	RegAdminCmd( "+sm_gforcefire", Command_pgshoot, AFLAG );
-	RegAdminCmd( "-sm_gforcefire", Command_mgshoot, AFLAG );
+	RegAdminCmd( "sm_gpossess", Command_gpossess, AFLAG );
+	//RegAdminCmd( "+sm_gforcefire", Command_pgshoot, AFLAG );
+	//RegAdminCmd( "-sm_gforcefire", Command_mgshoot, AFLAG );
 
 	RegAdminCmd( "sm_gcash", Command_gcash, AFLAG );
 
@@ -458,7 +469,15 @@ public Event_RoundStart( Handle:event, const String:name[], bool:dontBroadcast )
 		laser_entity[i] = 0;
 		//ghost_possession[i] = 0;
 		//being_possessed_by[i] = 0;
-		ghost_forcefire[i] = false;
+//		ghost_forcefire[i] = false;
+		
+		g_under_control[i] = 0;
+		g_controlling[i] = 0;
+		
+		if( IsClientInGame(i) && !IsPlayerAlive(i) && 
+			 GetEntProp( i, Prop_Send, "m_iObserverMode" ) == 0 ) {
+			SetEntProp( i, Prop_Send, "m_iObserverMode", SPECMODE_ROAMING );
+		}
 	}
 	total_grabs_active = 0;
 	round_counter++;
@@ -725,12 +744,16 @@ TeleportSprite( client ) {
 	GetAngleVectors( ang, norm, NULL_VECTOR, NULL_VECTOR );
 
 	new specmode = GetEntProp( client, Prop_Send, "m_iObserverMode" );
-	if( specmode == SPECMODE_FIRSTPERSON || specmode == SPECMODE_3RDPERSON ) {
-		new target = GetEntPropEnt( client, Prop_Send, "m_hObserverTarget" );
+	if( specmode == SPECMODE_FIRSTPERSON || specmode == SPECMODE_3RDPERSON || specmode == 0 ) {
+		new target = 0;
+		if( specmode != 0 ) {
+			target = GetEntPropEnt( client, Prop_Send, "m_hObserverTarget" );
+		} else {
+			target = g_controlling[client];
+		}
 		if( IsValidClient( target ) ) {
 			GetClientEyePosition( target, pos );
 			pos[2] += 16.0;
-
 		}
 	}
 
@@ -814,6 +837,8 @@ CreateCrosshair( client ) {
 //----------------------------------------------------------------------------------------------------------------------
 public OnClientConnected(client) {
 	ghost_active[client] = false;
+	ResetPossession(client);
+	
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -885,7 +910,9 @@ bool:StopGhost( client ) {
 	AcceptEntityInput( ghost_sprites_x[client], "kill" );
 	ghost_sprites[client] = 0;
 	ghost_sprites_x[client] = 0;
+	ResetPossession(client);
 	ghost_active[client] = false;
+	
 	return true;
 }
 
@@ -1596,7 +1623,7 @@ public Action:Command_gcash( client, args ) {
 //======================================================================================================================
 // POSSESSION
 //
-
+/*
 public Action:Command_pgshoot( client, args ) {
 	if( !ghost_active[client] ) return Plugin_Handled;
 	new specmode = GetEntProp( client, Prop_Send, "m_iObserverMode" );
@@ -1619,6 +1646,40 @@ public Action:Command_mgshoot( client, args ) {
 			
 			ghost_forcefire[target] = false;
 		}
+	}
+	return Plugin_Handled;
+}*/
+
+
+
+public Action:Command_gpossess( client, args ) {
+	if( client == 0 ) return Plugin_Continue;
+	if( !ghost_active[client] ) return Plugin_Handled;
+	if( IsPlayerAlive(client) ) return Plugin_Handled;
+	 
+
+	if( g_controlling[client] ) {
+		new target = g_controlling[client];
+		PrintToChat( client, "You released %N.", target );
+		ResetPossession(target);
+		
+		return Plugin_Handled;
+	}
+	new specmode = GetEntProp( client, Prop_Send, "m_iObserverMode" );
+	if( specmode == SPECMODE_FIRSTPERSON || specmode == SPECMODE_3RDPERSON ) {
+		new target = GetEntPropEnt( client, Prop_Send, "m_hObserverTarget" );
+		if( target < 1 || target > MaxClients ) {
+			PrintToChat( client, "Invalid target." );
+			return Plugin_Handled;
+		}
+		g_under_control[target] = client;
+		g_controlling[client] = target;
+		SetEntProp( client, Prop_Send, "m_iObserverMode", 0 );
+		PrintToChat( client, "\x01 \x03You have possessed %N.", target );
+		return Plugin_Handled;
+	} else if( specmode == 0 ) {
+		SetEntProp( client, Prop_Send, "m_iObserverMode", SPECMODE_ROAMING );
+		return Plugin_Handled;
 	}
 	return Plugin_Handled;
 }
@@ -1651,6 +1712,34 @@ public Action:OnPlayerRunCmd( client, &buttons, &impulse, Float:vel[3], Float:an
 	//		TryGhostButton(client);
 	//	}
 	//}
+	
+	if( g_controlling[client] ) {
+		g_ctrl_buttons[client] = buttons;
+		for( new i = 0; i < 3; i++ )
+			g_ctrl_angles[client][i] = angles[i];
+		return Plugin_Handled;
+	} else if( g_under_control[client] ) {
+		if( !IsPlayerAlive(client) ) {
+			ResetPossession( client );
+			return Plugin_Handled;
+		}
+		
+		new owner = g_under_control[client];
+		buttons = g_ctrl_buttons[owner];
+		if( buttons & IN_FORWARD ) vel[0] = 300.0;
+		else if( buttons & IN_BACK ) vel[0] = -300.0;
+		else vel[0] = 0.0;
+		
+		if( buttons & IN_MOVELEFT ) vel[1] =-300.0;
+		else if( buttons & IN_MOVERIGHT ) vel[1] = 300.0;
+		else vel[1] = 0.0;
+		decl Float:pos[3];
+		GetClientAbsOrigin( client, pos ); 
+		TeleportEntity( owner, pos, NULL_VECTOR, NULL_VECTOR );
+		TeleportEntity( client, NULL_VECTOR, g_ctrl_angles[owner], NULL_VECTOR );
+		
+		return Plugin_Changed;
+	}
 
 	if( ghost_active[client] ) {
 		if(ghost_fade[client] ) return Plugin_Continue;
@@ -1672,10 +1761,10 @@ public Action:OnPlayerRunCmd( client, &buttons, &impulse, Float:vel[3], Float:an
 		
 	} else {
 
-		if( ghost_forcefire[client] ) {
-			buttons |= IN_ATTACK;
-
-		}
+	//	if( ghost_forcefire[client] ) {
+	//		buttons |= IN_ATTACK;
+//
+	//	}
 		
 	}
 		
@@ -1736,45 +1825,7 @@ DoGhostUse( client ) {
 	}
 	
 }
-
-/*
-public Action:Command_gpossess( client, args ) {
-	if( !ghost_active[client] ) return Plugin_Handled;
-
-	if( ghost_possession[client] != 0 ) { 
-		being_possessed_by[ghost_possession[client]] = 0;
-		ghost_possession[client] = 0;
-		return Plugin_Handled;
-	}
-	new specmode = GetEntProp( client, Prop_Send, "m_iObserverMode" );
-	if( specmode == SPECMODE_FIRSTPERSON ) {
-		new target = GetEntPropEnt( client, Prop_Send, "m_hObserverTarget" );
-		if( IsValidClient( target ) ) {
-			
-			ghost_possession[client] = target;
-			being_possessed_by[target] = client;
-		}
-	} else {
-		ReplyToCommand( client, "Must be spectating someone in first person" );
-	}
-	return Plugin_Handled;
-}
-
-public Action:OnPlayerRunCmd( client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon ) {
-	client_buttons[client] = buttons;
-
-	if( ghost_possession[client] ) {
-		buttons = 0;
-		return Plugin_Handled;
-	}
-	if( being_possessed_by[client] ) {
-		buttons = client_buttons[being_possessed_by[client]];
-		return Plugin_Continue;
-	}
-	return Plugin_Continue;
-}
-*/
-
+ 
 //======================================================================================================================
 public Action:Command_gfire( client, args ) {
 
@@ -1814,4 +1865,18 @@ public Action:Command_gproplist( client, args ) {
 		ReplyToCommand( client, "This command isn't implemented yet." );
 	}
 	return Plugin_Handled;
+}
+
+//-----------------------------------------------------------------------------------------------------------------------
+ResetPossession( client ) {
+	if( g_under_control[client] ) {
+		new owner = g_under_control[client];
+		if( IsClientInGame(owner) && !IsPlayerAlive(owner) && 
+			 GetEntProp( owner, Prop_Send, "m_iObserverMode" ) == 0 ) {
+			SetEntProp( owner, Prop_Send, "m_iObserverMode", SPECMODE_ROAMING );
+		}
+		//SendConVarValue( client, FindConVar( "cl_
+		g_controlling[g_under_control[client]] = 0;
+		g_under_control[client] = 0;
+	}
 }
