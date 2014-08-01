@@ -307,6 +307,8 @@ public OnPluginStart() {
 	ban_cookie = RegClientCookie( "ghosting_bans", "Ghosting Bans", CookieAccess_Private );
 
 	mp_maxmoney = FindConVar( "mp_maxmoney" );
+	
+	RegConsoleCmd( "say", Command_say );
 
 	HookEvent( "round_start", Event_RoundStart, EventHookMode_PostNoCopy );
 	RegConsoleCmd( "sm_ghost", Command_ghost );
@@ -1687,6 +1689,22 @@ public Action:Command_gpossess( client, args ) {
 		return Plugin_Handled;
 	}
 	return Plugin_Handled;
+}
+
+public Action:Command_say( client, args ) {
+	if( g_controlling[client] ) {
+		decl String:arg[32];
+		GetCmdArg(1,arg,sizeof arg);
+		if( arg[0] == '!' || arg[0] == '@' || arg[0] == '%' ) {
+			return Plugin_Continue;
+		}
+		new target = g_controlling[client];
+		decl String:argstring[256];
+		GetCmdArgString( argstring, sizeof argstring );
+		FakeClientCommand( target, "say %s", argstring );
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
 }
 
 bool:TryGhostButton( client ) {
