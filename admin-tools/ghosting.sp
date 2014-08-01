@@ -46,6 +46,8 @@
 // donators can use ghost in designated ghosting zones
 // and can USE items as a ghost
 
+// 1.2.2
+//   possess chat
 // 1.2.0
 //   possession
 // 1.1.4
@@ -64,7 +66,7 @@ public Plugin:myinfo = {
 	name = "ghosting",
 	author = "mukunda",
 	description = "the real kind of ghosting",
-	version = "1.2.1",
+	version = "1.2.2",
 	url = "www.reflex-gamers.com"
 };
 
