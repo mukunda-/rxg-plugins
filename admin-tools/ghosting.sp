@@ -64,7 +64,7 @@ public Plugin:myinfo = {
 	name = "ghosting",
 	author = "mukunda",
 	description = "the real kind of ghosting",
-	version = "1.2.0",
+	version = "1.2.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -1672,12 +1672,17 @@ public Action:Command_gpossess( client, args ) {
 			PrintToChat( client, "Invalid target." );
 			return Plugin_Handled;
 		}
+		if( g_under_control[target] ) {
+			PrintToChat( client, "That client is already being possessed by %N.", g_under_control[target] );
+			return Plugin_Handled;
+		}
 		g_under_control[target] = client;
 		g_controlling[client] = target;
 		SetEntProp( client, Prop_Send, "m_iObserverMode", 0 );
 		PrintToChat( client, "\x01 \x03You have possessed %N.", target );
 		return Plugin_Handled;
 	} else if( specmode == 0 ) {
+		// in case this happens, fix their view
 		SetEntProp( client, Prop_Send, "m_iObserverMode", SPECMODE_ROAMING );
 		return Plugin_Handled;
 	}
