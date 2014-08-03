@@ -11,7 +11,7 @@ public Plugin:myinfo = {
 	name = "pumpkin item",
 	author = "WhiteThunder",
 	description = "spawnable pumpkin bombs",
-	version = "2.1.0",
+	version = "2.1.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -24,7 +24,7 @@ public Plugin:myinfo = {
 
 #define BROADCAST_COOLDOWN 5.0
 #define MAX_PUMPKINS_PER_PLAYER 10
-#define ACTIVATION_DELAY 3.0
+#define ACTIVATION_DELAY 1.5
 
 new g_pumpkin_userid[MAXENTITIES];
 new bool:g_pumpkin_taking_damage[MAXENTITIES];
@@ -159,7 +159,7 @@ bool:SpawnPumpkin( client ) {
 	//Throttle broadcasts
 	new Float:time = GetGameTime();
 	if( time >= g_last_broadcast[client] + BROADCAST_COOLDOWN ) {
-		PrintToChatAll( "\x07%s%s \x07FFD800has spawned a \x07FF6600Pumpkin!", team_color, name );
+		PrintToChatAll( "\x07%s%s \x07FFD800has planted a \x07FF6600Pumpkin Bomb!", team_color, name );
 		g_last_broadcast[client] = time;
 	}
 	
