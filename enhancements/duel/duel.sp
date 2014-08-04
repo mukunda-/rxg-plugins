@@ -2,7 +2,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <cstrike>
-#include <cstrike_weapons>
+//#include <cstrike_weapons>
 
 #undef REQUIRE_PLUGIN
 //#include <restrict>
@@ -10,6 +10,8 @@
 #pragma semicolon 1
 
 // CHANGES:
+//  1.3.0
+//    changed to sm cstrike functions
 //  1.2.1 
 //    exposed OnDuelEnd
 //  1.2.0
@@ -39,7 +41,7 @@ public Plugin:myinfo = {
 	name = "duel",
 	author = "mukunda",
 	description = "i demand satisfaction",
-	version = "1.2.1",
+	version = "1.3.0",
 	url = "www.mukunda.com"
 };
 
@@ -54,6 +56,25 @@ public Plugin:myinfo = {
 
 #define SNDF_DUEL_DRAW	"sound/duel/revolver_ocelot_draw.mp3"
 
+#define CS_SLOT_KNIFE 2
+#define CS_SLOT_UNKNOWN 5
+
+new weapon_supported[] = {
+	0,1,1,1,
+	0,0,0,1,
+	1,0,1,1,
+	1,1,1,1,
+	1,1,1,1,
+	1,1,1,1,
+	0,1,1,1,
+	1,1,0,0,
+	0,0,1,1,
+	1,1,1,1,
+	1,1,1,1,
+	1,1,1,1,
+	1,1,1,0,
+	0,0,0
+};
 
 new bool:vote_used_this_round;
 new bool:duel_active;
@@ -82,12 +103,12 @@ new Float:duel_vectors[3][4][3];	// [range][pos1,ang1,pos2,ang2][vector index]
 new bool:duel_challenging;
 new challenge_round;
 new Float:challenge_time;
-new WeaponID:duel_weapon;
+new String:duel_weapon[64];
 new duel_range;
 new duel_loser;
 
 new bool:restore_weapons;
-new WeaponID:old_weapons[2][CLIENT_WEAPONS_MAX];
+new CSWeaponID:old_weapons[2][CLIENT_WEAPONS_MAX];
 new old_weapons_count[2];
 
 new new_weapons[2];
@@ -358,7 +379,7 @@ public Event_RoundEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
 			new client = GetClientOfUserId( duel_userid[i] );
 			if( !client ) continue;
 			
-			if( IsPlayerAlive(i) ) {
+			if( IsPlayerAlive(client) ) {
 				if( winner != 0 ) {
 					// both alive - they let the time expire, no winner.
 					winner = 0;
@@ -444,14 +465,14 @@ bool:DuelersAreRetardedAndCantDoOneFuckingThingRightInTheirLives() {
 
 
 
-		new prim = GetPlayerWeaponSlot( client, _:SlotPrimmary );
+		new prim = GetPlayerWeaponSlot( client, CS_SLOT_PRIMARY );
 		if( prim != -1 ) {
 		//	if( GetEntProp( prim, Prop_Send, "m_iClip1" ) != 0 ) {
 
 			return false; // player still has a gun and bullets
 		//	}
 		}
-		new pistol = GetPlayerWeaponSlot( client, _:SlotPistol );
+		new pistol = GetPlayerWeaponSlot( client, CS_SLOT_SECONDARY );
 		if( pistol != -1 ) {
 			
 		//	if( GetEntProp( pistol, Prop_Send, "m_iClip1" ) != 0 ) {
@@ -607,7 +628,8 @@ SetDuelRound() {
 	RemoveAllWeapons();
 	
 	decl String:weapon_name[64];
-	Format( weapon_name, sizeof(weapon_name), "weapon_%s", weaponNames[duel_weapon] );
+	//CS_WeaponIDToAlias( duel_weapon, weapon_name, sizeof weapon_name );
+	Format( weapon_name, sizeof(weapon_name), "weapon_%s", duel_weapon );
 	SetPlayerWeapons( weapon_name );
 	
 	for( new i = 0; i < 2; i++ ) {
@@ -705,7 +727,7 @@ public DuelMenuHandler( Handle:menu, MenuAction:action, param1, param2 ) {
 		vote_used_this_round = true;
 		PrintCenterTextAll( "The duel was declined." );
 		PrintToChatAll( "\x01 \x0CThe duel was declined." );
-	}
+	} 
 	return 0;
 }
 
@@ -820,8 +842,8 @@ RemoveAllWeapons()
 			GetEdictClassname(i, name, sizeof(name));
 			if( (strncmp(name, "weapon_", 7, false) == 0) ) {
 
-				new WeaponID:id = GetWeaponID(name[7]);
-				if( id != WEAPON_NONE ) {
+				new CSWeaponID:id = CS_AliasToWeaponID(name[7]);
+				if( id != CSWeapon_NONE ) {
 					new owner = GetEntPropEnt(i, Prop_Data, "m_hOwnerEntity");
 					if( owner == -1 ) {
 						AcceptEntityInput(i, "Kill");
@@ -855,12 +877,12 @@ RestorePlayerWeapons() {
 	}
 }
 
-WeaponID:WeaponIDfromEntity( ent ) {
-	if( ent == -1 ) return WEAPON_NONE;
+CSWeaponID:WeaponIDfromEntity( ent ) {
+	if( ent == -1 ) return CSWeapon_NONE;
 	decl String:classname[64];
 	GetEntityClassname( ent, classname, sizeof(classname) );
 	ReplaceString( classname, sizeof(classname), "weapon_", "" );
-	return GetWeaponID( classname );
+	return CS_AliasToWeaponID( classname );
 }	
 /*
 //----------------------------------------------------------------------------------------------------------------------
@@ -891,8 +913,8 @@ SavePlayerWeapon( index, ent ) {
 	new r = ReplaceString( name, sizeof(name), "weapon_", "" );
 	if( r == 0 ) return;
 	*/
-	new WeaponID:weap = WeaponIDfromEntity(ent);
-	if( weap == WEAPON_NONE ) return;
+	new CSWeaponID:weap = WeaponIDfromEntity(ent);
+	if( weap == CSWeapon_NONE ) return;
 	//todo:more checks required?
 	//PrintToServer( "Saving player weapon (%d), %d", client, _:weap );
 	old_weapons[index][old_weapons_count[index]] = WeaponIDfromEntity(ent);// GetWeaponID(name);//ent;
@@ -912,8 +934,10 @@ LoadPlayerWeapons( index ) {
 	
 	for( new i = 0; i < old_weapons_count[index]; i++ ) {
 		decl String:name[64];
-		name = "weapon_";
-		StrCat( name, sizeof(name), weaponNames[old_weapons[index][i]] );
+		CS_WeaponIDToAlias( old_weapons[index][i], name, sizeof name );
+		Format( name, sizeof name, "weapon_%s", name );
+		//name = "weapon_";
+		//StrCat( name, sizeof(name), weaponNames[old_weapons[index][i]] );
 		//PrintToServer( "Restoring player weapons (%d), %s", client, name );
 		GivePlayerItem( client, name );
 	}
@@ -923,9 +947,9 @@ StripPlayerWeapons( client ) {
 	for( new i = 0; i < CLIENT_WEAPONS_MAX; i++ ) {
 		new ent = GetEntPropEnt( client, Prop_Send, "m_hMyWeapons", i );
 		if( ent <= 0 ) continue;
-		if( ent == GetPlayerWeaponSlot( client, int:SlotKnife ) ||
-			ent == GetPlayerWeaponSlot( client, int:SlotC4 ) ||
-			ent == GetPlayerWeaponSlot( client, int:SlotUnknown ) ) continue;
+		if( ent == GetPlayerWeaponSlot( client, CS_SLOT_KNIFE ) ||
+			ent == GetPlayerWeaponSlot( client, CS_SLOT_C4 ) ||
+			ent == GetPlayerWeaponSlot( client, CS_SLOT_UNKNOWN ) ) continue;
 		
 		CS_DropWeapon(client, ent, true, true);
 		AcceptEntityInput(ent, "Kill");
@@ -947,9 +971,9 @@ SetPlayerWeapon( index, const String:item[] ) {
 	for( new i = 0; i < CLIENT_WEAPONS_MAX; i++ ) {
 		new ent = GetEntPropEnt( client, Prop_Send, "m_hMyWeapons", i );
 		if( ent <= 0 ) continue;
-		if( ent == GetPlayerWeaponSlot( client, int:SlotKnife ) ||
-			ent == GetPlayerWeaponSlot( client, int:SlotC4 ) ||
-			ent == GetPlayerWeaponSlot( client, int:SlotUnknown ) ) continue;
+		if( ent == GetPlayerWeaponSlot( client, CS_SLOT_KNIFE ) ||
+			ent == GetPlayerWeaponSlot( client, CS_SLOT_C4 ) ||
+			ent == GetPlayerWeaponSlot( client, CS_SLOT_UNKNOWN ) ) continue;
 		SavePlayerWeapon( index, ent );
 	}
 	
@@ -976,9 +1000,12 @@ public Action:OnPlayerRunCmd( client, &buttons, &impulse, Float:vel[3], Float:an
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-bool:ProcessDuelArg( client, arg_index, &WeaponID:weapon, &range ) {
+bool:ProcessDuelArg( client, arg_index, String:weapon[], maxlen, &range, &CSWeaponID:weapid ) {
 	decl String:arg[64];
 	GetCmdArg( arg_index, arg, sizeof(arg) );
+	for( new i = 0; arg[i]; i++ ) {
+		arg[i] = CharToLower(arg[i]);
+	}
 	if( StrEqual( arg, "help", false ) ) {
 		ReplyToCommand( client, "duel <weapon> <long/mid/close>, type 'buy' in console for weapon list." );
 		return false;
@@ -994,47 +1021,51 @@ bool:ProcessDuelArg( client, arg_index, &WeaponID:weapon, &range ) {
 		return true;
 	}
 	
-	new WeaponID:id = GetWeaponID( arg );
-	if( id == WEAPON_NONE ) {
+	decl String:alias2[64];
+	CS_GetTranslatedWeaponAlias( arg, alias2, sizeof alias2 );
+	new CSWeaponID:id = CS_AliasToWeaponID( alias2 );
+	if( id == CSWeapon_NONE ) {
 		ReplyToCommand( client, "duel: Unknown arg: \"%s\"", arg );
 		return false;
 	}
 	
-	new WeaponType:type = GetWeaponTypeFromID( id );
-	if( type == WeaponTypeGrenade ) {
-		ReplyToCommand( client, "duel: Grenades aren't supported.", arg );
+	if( !CS_IsValidWeaponID(id) || !weapon_supported[id] ) {
+		ReplyToCommand( client, "duel: That weapon is not supported.", arg );
 		return false;
 	}
-	if( type == WeaponTypeArmor || type == WeaponTypeShield || type == WeaponTypeOther || type == WeaponTypeNone ) {
-		ReplyToCommand( client, "duel: no" );
-		return false;
-	}
-	if( AllowedGame[id] == 2 || AllowedGame[id] == -1 || id == WEAPON_SG550 || id == WEAPON_SG552 || id == WEAPON_USP || id == WEAPON_MP5NAVY || id == WEAPON_M3 || id == WEAPON_TMP || id == WEAPON_GALIL || id == WEAPON_SCAR17 || id == WEAPON_KNIFE_GG || id == WEAPON_SCOUT ) {
-		ReplyToCommand( client, "duel: Unknown arg: \"%s\"", arg );
-		return false;
-	}
+	//if( type == WeaponTypeArmor || type == WeaponTypeShield || type == WeaponTypeOther || type == WeaponTypeNone ) {
+	//	ReplyToCommand( client, "duel: no" );
+	//	return false;
+	//}
+	//if( AllowedGame[id] == 2 || AllowedGame[id] == -1 || id == WEAPON_SG550 || id == WEAPON_SG552 || id == WEAPON_USP || id == WEAPON_MP5NAVY || id == WEAPON_M3 || id == WEAPON_TMP || id == WEAPON_GALIL || 
+	//id == WEAPON_SCAR17 || id == WEAPON_KNIFE_GG || id == WEAPON_SCOUT ) {
+	//	ReplyToCommand( client, "duel: Unknown arg: \"%s\"", arg );
+	//	return false;
+	//}
 
-	
-	weapon = id;
+	strcopy( weapon, maxlen, arg );
+	weapid = id;
+	//weapon = id;
 	return true;
 }
 
 bool:ProcessDuelArgs( client, args ) {
-	new WeaponID:weapon = WEAPON_DEAGLE;
+	new String:weapon[64] = "deagle";
 	new range = RANGE_MID;
+	new CSWeaponID:weapid = CSWeapon_DEAGLE;
 	
 	if( args > 0 ) {
-		if( !ProcessDuelArg( client, 1, weapon, range ) ) return false;
+		if( !ProcessDuelArg( client, 1, weapon, sizeof weapon, range, weapid ) ) return false;
 	}
 	if( args > 1 ) {
-		if( !ProcessDuelArg( client, 2, weapon, range ) ) return false;
+		if( !ProcessDuelArg( client, 2, weapon, sizeof weapon, range, weapid ) ) return false;
 	}
 	
-	if( weapon == WEAPON_TASER || weapon == WEAPON_KNIFE ) {
+	if( weapid == CSWeapon_TASER || weapid == CSWeapon_KNIFE ) {
 		range = RANGE_CLOSE;
 	}
 	
-	duel_weapon = weapon;
+	strcopy( duel_weapon, sizeof duel_weapon, weapon );
 	duel_range = range;
 	
 	return true;
