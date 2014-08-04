@@ -1,6 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <cstrike>
+#include <cssdroppedammo>
 
 // 1.0.1
 //  beeper marks on radar.
@@ -10,7 +11,7 @@ public Plugin:myinfo = {
 	name = "rxgice",
 	author = "mukunda",
 	description = "rxg iceworld shit",
-	version = "1.0.1",
+	version = "1.0.2",
 	url = "www.mukunda.com"
 };
 
@@ -23,10 +24,16 @@ new Float:c_beep_time = 6.0;
 new Float:c_beep_repeat_time = 3.0;
 new String:c_beep_sound[128] = "buttons/blip2.wav";
 
+new Handle:rxgice_cash_per_kill;
+new c_cash_per_kill;
+new Handle:mp_maxmoney;
+new c_maxmoney;
+
 new Float:g_last_sound_time[MAXPLAYERS+1];
 new bool:g_game_active;
 new bool:g_round_end;
 
+//----------------------------------------------------------------------------------------------------------------------
 LoadConfig() {
 	decl String:path[128];
 	BuildPath( Path_SM, path, sizeof path, "configs/rxgice.cfg" );
@@ -50,7 +57,24 @@ LoadConfig() {
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+CacheConVars() {
+	c_cash_per_kill = GetConVarInt( rxgice_cash_per_kill );
+	c_maxmoney = GetConVarInt( mp_maxmoney );
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+public OnConVarChanged( Handle:convar, const String:oldValue[], const String:newValue[] ) {
+	CacheConVars();
+}
+
+//----------------------------------------------------------------------------------------------------------------------
 public OnPluginStart() {
+
+	rxgice_cash_per_kill = CreateConVar( "rxgice_cash_per_kill", "150", "Cash per kill, ignores weapon modifiers.", FCVAR_PLUGIN );
+	HookConVarChange( rxgice_cash_per_kill, OnConVarChanged );
+	mp_maxmoney = FindConVar( "mp_maxmoney" );
+	HookConVarChange( mp_maxmoney, OnConVarChanged );
+	CacheConVars();
 
 	LoadConfig(); 
 	
@@ -64,6 +88,8 @@ public OnPluginStart() {
 	HookEvent( "weapon_fire", OnWeaponFire );
 	
 	CreateTimer( 1.0, OnSecond, _, TIMER_REPEAT );
+	
+	//RegConsoleCmd( "icetest", test );
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -86,6 +112,8 @@ public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
 	}
 	g_round_start_time = GetGameTime();
 	g_round_end = false;
+	
+	ProcessWeapons();
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -116,6 +144,15 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new attacker = GetClientOfUserId( GetEventInt( event, "attacker" ) );
 	if( client == 0 || attacker == 0 ) return;
 	if( client == attacker ) return;
+	
+	if( c_cash_per_kill != 0 ) {
+		new cash = GetEntProp( client, Prop_Send, "m_iAccount" );
+		cash += c_cash_per_kill;
+		if( cash > c_maxmoney ) cash = c_maxmoney;
+		SetEntProp( client, Prop_Send, "m_iAccount", cash );
+		PrintToChat( attacker, "\x01 \x06+$%d\x01: Award for neutralizing an enemy.", c_cash_per_kill );
+	}
+	
 	if( g_respawned_this_round[client] ) return;
 	if( (GetGameTime() - g_round_start_time) < c_bonuslife_time ) {
 		g_respawned_this_round[client] = true;
@@ -177,3 +214,84 @@ public Action:OnSecond( Handle:timer ) {
 	
 	return Plugin_Continue;
 }
+
+
+//--------------------------------------------------------------------------
+public Action:CS_OnBuyCommand( client, const String:weapon[] ) {
+	new CSWeaponID:id = CS_AliasToWeaponID( weapon );
+	if( id == CSWeapon_SMOKEGRENADE ||
+		id == CSWeapon_MOLOTOV ||
+		id == CSWeapon_INCGRENADE || id == CSWeapon_FLASHBANG ) {
+
+		// todo: make sound?
+		PrintToChat( client, "\x01You are not allowed to purchase \"%s\".", weapon );
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
+}
+
+ProcessWeapons() {
+	// todo.
+	/*
+	new ent = -1;
+	for( ent = MaxClients+1; ent <= 2047; ent++ ) {
+		if( IsValidEntity(ent) ){
+			decl String:classname[64];
+			GetEntityClassname( ent, classname, sizeof classname );
+			if( strncmp( classname, "weapon_", 7 ) == 0 ) {
+				new owner = GetEntPropEnt( ent, Prop_Send,"m_hOwner" );
+				if( owner < 1 ) {
+					PrintToServer(" Setting ammo for %s (%d)", classname, CS_GetDroppedWeaponAmmo(ent) );
+					//PrintToServer(" VALUE2 (%d)", GetEntProp(ent, Prop_Data,"m_iPrimaryAmmoCount") );
+					new start = FindSendPropInfo("CWeaponCSBase", "m_fAccuracyPenalty");
+					for( new offset = 0; offset < 128; offset += 4 ) {
+						//if( GetEntData( ent, start+offset ) == 200 ) {
+							PrintToServer("Found ammo match, offset %d %d", offset, GetEntData(ent,start+offset) );
+						//}
+					}
+					
+					//CS_SetDroppedWeaponAmmo( ent, 0 );
+				}
+			}
+		}
+	}
+	
+	for( new i = 0; i < 32; i++ ) {
+		PrintToServer( "Ammo %d = %d", i, GetEntProp( 2, Prop_Send, "m_iAmmo", _, i ) );
+	}*/
+}
+/*
+public Action:test(client,args ) {
+	new ent = -1;
+	for( ent = MaxClients+1; ent <= 2047; ent++ ) {
+		if( IsValidEntity(ent) ){
+			decl String:classname[64];
+			GetEntityClassname( ent, classname, sizeof classname );
+			if( strncmp( classname, "weapon_", 7 ) == 0 ) {
+				new owner = GetEntPropEnt( ent, Prop_Send,"m_hOwner" );
+				if( owner < 1 ) {
+					SetEntityMoveType(ent,MOVETYPE_VPHYSICS);
+					PrintToServer(" Setting ammo for %s (%d) %d +%d -%d", classname, 
+						CS_GetDroppedWeaponAmmo(ent),
+						GetEntProp( ent, Prop_Send, "m_bInitialized"),
+						GetEntProp( ent, Prop_Send, "m_iClip1")	,
+						GetEntPropFloat( ent, Prop_Data, "m_pConstraint" )
+						);
+					//PrintToServer(" VALUE2 (%d)", GetEntProp(ent, Prop_Data,"m_iPrimaryAmmoCount") );
+					//new start =4;// FindSendPropInfo("CWeaponCSBase", "m_fAccuracyPenalty");
+					//for( new offset = 0; offset < 2700; offset += 1 ) {
+					//	if( GetEntData( ent, start+offset,1 ) == 200 ) {
+					//		PrintToServer("Found ammo match, offset %d %d", offset, GetEntData(ent,start+offset) );
+					//	}
+					//}
+					
+					CS_SetDroppedWeaponAmmo( ent, 0 );
+				}
+			}
+		}
+	}
+	
+	for( new i = 0; i < 32; i++ ) {
+		PrintToServer( "Ammo %d = %d", i, GetEntProp( 2, Prop_Send, "m_iAmmo", _, i ) );
+	}
+}*/
