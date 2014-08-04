@@ -19,12 +19,12 @@ public Plugin:myinfo = {
 #define PUMPKIN_ARM_SOUND "misc/doomsday_warhead.wav"
 
 #define MIN_DISTANCE 50.0
-#define MAX_DISTANCE 300.0
+#define MAX_DISTANCE 250.0
 #define MAXENTITIES 2048
 
-#define BROADCAST_COOLDOWN 15.0
+#define BROADCAST_COOLDOWN 5.0
 #define MAX_PUMPKINS_PER_PLAYER 10
-#define ACTIVATION_DELAY 0.9
+#define ACTIVATION_DELAY 1.5
 
 new g_pumpkin_userid[MAXENTITIES];
 new bool:g_pumpkin_taking_damage[MAXENTITIES];
@@ -159,7 +159,7 @@ bool:SpawnPumpkin( client ) {
 	//Throttle broadcasts
 	new Float:time = GetGameTime();
 	if( time >= g_last_broadcast[client] + BROADCAST_COOLDOWN ) {
-		PrintToChatAll( "\x07%s%s \x07FFD800is planting \x07FF6600Pumpkin Bombs!", team_color, name );
+		PrintToChatAll( "\x07%s%s \x07FFD800has planted a \x07FF6600Pumpkin Bomb!", team_color, name );
 		g_last_broadcast[client] = time;
 	}
 	
