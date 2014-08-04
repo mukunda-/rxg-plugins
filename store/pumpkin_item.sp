@@ -11,7 +11,7 @@ public Plugin:myinfo = {
 	name = "pumpkin item",
 	author = "WhiteThunder",
 	description = "spawnable pumpkin bombs",
-	version = "2.1.1",
+	version = "2.1.2",
 	url = "www.reflex-gamers.com"
 };
 
