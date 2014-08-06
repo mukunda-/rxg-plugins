@@ -11,7 +11,7 @@ public Plugin:myinfo = {
 	name = "pumpkin item",
 	author = "WhiteThunder",
 	description = "spawnable pumpkin bombs",
-	version = "2.1.2",
+	version = "2.1.3",
 	url = "www.reflex-gamers.com"
 };
 
@@ -19,7 +19,7 @@ public Plugin:myinfo = {
 #define PUMPKIN_ARM_SOUND "misc/doomsday_warhead.wav"
 
 #define MIN_DISTANCE 50.0
-#define MAX_DISTANCE 300.0
+#define MAX_DISTANCE 400.0
 #define MAXENTITIES 2048
 
 #define BROADCAST_COOLDOWN 15.0
@@ -90,7 +90,7 @@ bool:SpawnPumpkin( client ) {
 		g_client_userid[client] = userid;
 		g_client_pumpkins[client] = 0;
 	} else if( g_client_pumpkins[client] >= MAX_PUMPKINS_PER_PLAYER ) {
-		PrintToChat( client, "\x07FFD800You may not have more than %i Pumpkins planted at once.", MAX_PUMPKINS_PER_PLAYER );
+		PrintToChat( client, "\x07FFD800You may not have more than \x073EFF3E%i \x07FF6600Pumpkins \x07FFD800planted at once.", MAX_PUMPKINS_PER_PLAYER );
 		RXGSTORE_ShowUseItemMenu(client);
 		return false;
 	}
