@@ -12,7 +12,7 @@ public Plugin:myinfo = {
 	name = "RXG TF2 Store Weapons",
 	author = "WhiteThunder",
 	description = "give weapons to players via the store",
-	version = "1.0",
+	version = "1.0.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -195,8 +195,10 @@ bool:GiveWeapon( client, weapon_index, TFClassType:class_restriction, const Stri
 	}
 	
 	new Float:time = GetGameTime();
-	if( time < g_last_used[client] + CUSTOM_WEAPON_COOLDOWN ) {
-		PrintToChat( client, "\x07FFD800You recently used a Special Weapon and must wait." );
+	new Float:next_use = g_last_used[client] + CUSTOM_WEAPON_COOLDOWN;
+	
+	if( time < next_use ) {
+		PrintToChat( client, "\x07FFD800Please wait \x073EFF3E%d \x07FFD800seconds before equipping another Special Weapon.", RoundToCeil(next_use - time) );
 		return false;
 	}
 	
