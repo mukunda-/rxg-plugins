@@ -20,7 +20,7 @@ public Plugin:myinfo = {
 	name = "cookie item",
 	author = "mukunda",
 	description = "delicious",
-	version = "1.3.0",
+	version = "1.3.1",
 	url = "www.mukunda.com"
 };
 
@@ -49,7 +49,7 @@ new String:cookie_sound[64] = "rxg/items/cookie.mp3";
 new Float:cookie_last_use[MAXPLAYERS];
 #define COOLDOWN 2.0
 
-#define COOKIE_HP 35
+#define COOKIE_HP 20
 #define COOKIE_HP_TF2 85
 #define TF2_COOKIE_SCALE 1.5
 #define TF2_COOKIE_FADE_TIME 2.0
