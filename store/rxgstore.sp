@@ -18,7 +18,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "1.2.0",
+    version     = "1.2.1",
     url         = "www.mukunda.com"
 };
 
@@ -886,6 +886,23 @@ public OnQuickAuthFetch( Handle:owner, Handle:hndl, const String:error[], any:da
 public Action:Command_store( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	
+	QueryClientConVar(client, "cl_disablehtmlmotd", ConVar_QueryClient);
+	
+	return Plugin_Handled;
+}
+
+//-------------------------------------------------------------------------------------------------
+public ConVar_QueryClient( QueryCookie:cookie, client, ConVarQueryResult:result, const String:cvarName[], const String:cvarValue[] ) {
+
+	if( cookie == QUERYCOOKIE_FAILED ) {
+		return;
+	}
+	
+	if( StringToInt(cvarValue) == 1 ) {
+		PrintToChat( client, "\x01You have web pages blocked. Please visit \x04store.reflex-gamers.com \x01or unblock web pages by entering \x04cl_disablehtmlmotd 0 \x01in console." );
+		return;
+	}
+
 	new token = GetRandomInt( 10000, 100000 );
 	
 	decl String:query[1024];
@@ -901,6 +918,5 @@ public Action:Command_store( client, args ) {
 	SQL_TQuery( g_db, OnQuickAuthSave, query, pack );
 	
 	//ReplyToCommand( client, "Visit our store at store.reflex-gamers.com" );
-	
-	return Plugin_Handled;
 }
+
