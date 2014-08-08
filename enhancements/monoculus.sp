@@ -11,7 +11,7 @@ public Plugin:myinfo = {
 	name = "Spawn Monoculus",
 	author = "WhiteThunder",
 	description = "Spawnable Monoculus",
-	version = "1.3.0",
+	version = "1.3.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -42,11 +42,17 @@ new Float:g_last_summon;
 new g_red_spectral_count;
 new g_blu_spectral_count;
 
+new g_client_userid[MAXPLAYERS+1];
+
 //-------------------------------------------------------------------------------------------------
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) {
 	CreateNative( "MONO_SpawnMonoculus", Native_SpawnMonoculus );
-	RegAdminCmd( "sm_spawnmonoculus", Command_SpawnMonoculus, ADMFLAG_RCON );
 	RegPluginLibrary("monoculus");
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnPluginStart() {
+	RegAdminCmd( "sm_spawnmonoculus", Command_SpawnMonoculus, ADMFLAG_RCON );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -106,21 +112,32 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 			return false;
 		}
 	
-	} else if( time < g_client_last_spectral_summon[client] + SPECTRAL_SUMMON_COOLDOWN ) {
-		
-		new Float:timeleft = g_client_last_spectral_summon[client] + SPECTRAL_SUMMON_COOLDOWN - time;
-		
-		PrintToChat( client, "\x07FFD800Please wait \x073EFF3E%d \x07FFD800seconds before summoning another \x07%sSpectral Monoculus.", RoundToCeil(timeleft), team_color );
-		RXGSTORE_ShowUseItemMenu(client);
-		return false;
-		
-	} else if( team == TFTeam_Red && g_red_spectral_count >= MAX_SPECTRALS_PER_TEAM ||
-				team == TFTeam_Blue && g_blu_spectral_count >= MAX_SPECTRALS_PER_TEAM ) {
-		
-		PrintToChat( client, "\x07FFD800Your team is only allowed to have \x073EFF3E%d \x07%sSpectral Monoculi \x07FFD800at once. Please try again later.", MAX_SPECTRALS_PER_TEAM, team_color );
-		RXGSTORE_ShowUseItemMenu(client);
-		return false;
+	} else {
 	
+		new userid = GetClientUserId(client);
+		
+		if( g_client_userid[client] != userid ) {
+			//Client index changed hands
+			g_client_userid[client] = userid;
+			g_client_last_spectral_summon[client] = -SPECTRAL_SUMMON_COOLDOWN;
+		}
+		
+		if( time < g_client_last_spectral_summon[client] + SPECTRAL_SUMMON_COOLDOWN ) {
+		
+			new Float:timeleft = g_client_last_spectral_summon[client] + SPECTRAL_SUMMON_COOLDOWN - time;
+			
+			PrintToChat( client, "\x07FFD800Please wait \x073EFF3E%d \x07FFD800seconds before summoning another \x07%sSpectral Monoculus.", RoundToCeil(timeleft), team_color );
+			RXGSTORE_ShowUseItemMenu(client);
+			return false;
+			
+		} else if( team == TFTeam_Red && g_red_spectral_count >= MAX_SPECTRALS_PER_TEAM ||
+					team == TFTeam_Blue && g_blu_spectral_count >= MAX_SPECTRALS_PER_TEAM ) {
+			
+			PrintToChat( client, "\x07FFD800Your team is only allowed to have \x073EFF3E%d \x07%sSpectral Monoculi \x07FFD800at once. Please try again later.", MAX_SPECTRALS_PER_TEAM, team_color );
+			RXGSTORE_ShowUseItemMenu(client);
+			return false;
+			
+		}
 	}
 	
 	decl Float:start[3], Float:angle[3], Float:end[3], Float:feet[3];
