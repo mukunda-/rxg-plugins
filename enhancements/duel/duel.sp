@@ -10,6 +10,8 @@
 #pragma semicolon 1
 
 // CHANGES:
+//  1.3.2
+//    allbutter
 //  1.3.0
 //    changed to sm cstrike functions
 //  1.2.1 
@@ -41,7 +43,7 @@ public Plugin:myinfo = {
 	name = "duel",
 	author = "mukunda",
 	description = "i demand satisfaction",
-	version = "1.3.1",
+	version = "1.3.2",
 	url = "www.mukunda.com"
 };
 
@@ -373,9 +375,8 @@ public Event_RoundStart( Handle:event, const String:name[], bool:dontBroadcast )
 	bomb_planted = false;
 	vote_used_this_round = false;
 
-	if( !restore_weapons_immediately ) {
-		StopSpecialRound();
-	}
+	StopSpecialRound();
+
 	DisableFulltalk();
 
 //	newround_time = GetGameTime();
