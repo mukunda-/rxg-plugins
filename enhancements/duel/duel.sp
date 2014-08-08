@@ -10,6 +10,8 @@
 #pragma semicolon 1
 
 // CHANGES:
+//  1.3.3
+//    allbutter v2
 //  1.3.2
 //    allbutter
 //  1.3.0
@@ -43,7 +45,7 @@ public Plugin:myinfo = {
 	name = "duel",
 	author = "mukunda",
 	description = "i demand satisfaction",
-	version = "1.3.2",
+	version = "1.3.3",
 	url = "www.mukunda.com"
 };
 
@@ -374,6 +376,7 @@ public Event_RoundStart( Handle:event, const String:name[], bool:dontBroadcast )
 	round_counter++;
 	bomb_planted = false;
 	vote_used_this_round = false;
+	duel_challenging=false;
 
 	StopSpecialRound();
 
