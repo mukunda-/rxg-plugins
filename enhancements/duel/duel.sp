@@ -41,7 +41,7 @@ public Plugin:myinfo = {
 	name = "duel",
 	author = "mukunda",
 	description = "i demand satisfaction",
-	version = "1.3.0",
+	version = "1.3.1",
 	url = "www.mukunda.com"
 };
 
@@ -58,6 +58,8 @@ public Plugin:myinfo = {
 
 #define CS_SLOT_KNIFE 2
 #define CS_SLOT_UNKNOWN 5
+
+#define IMMEDIATE_RESTORE_DELAY 0.5
 
 new weapon_supported[] = {
 	0,1,1,1,
@@ -112,6 +114,9 @@ new CSWeaponID:old_weapons[2][CLIENT_WEAPONS_MAX];
 new old_weapons_count[2];
 
 new new_weapons[2];
+
+new Handle:sm_duel_restore_weapons_immediately;
+new bool:restore_weapons_immediately;
 
 new Handle:sv_alltalk			= INVALID_HANDLE;	// CVARS
 new Handle:sv_deadtalk			= INVALID_HANDLE;	//
@@ -205,10 +210,16 @@ public OnPluginStart() {
 	AddMenuItem( duelmenu, "accept", "Accept." );
 	AddMenuItem( duelmenu, "deny", "Deny." );
 	SetMenuExitButton(duelmenu, false);
-	 
+	
+	sm_duel_restore_weapons_immediately = CreateConVar( "sm_duel_restore_weapons_immediately", "0", "Restore weapons immediately or on next round start.", FCVAR_PLUGIN );
+	restore_weapons_immediately = GetConVarBool(sm_duel_restore_weapons_immediately);
+	
 	RegConsoleCmd( "duel", Command_duel, "duel <weapon> <long/mid/close>, type 'buy' for weapon list" );
 	RegAdminCmd( "forceduel", Command_forceduel, ADMFLAG_SLAY, "forceduel <weapon> <long/mid/close>, admin force" );
 	RegServerCmd( "duel_reloadconfig", Command_reloadconfig );
+	RegConsoleCmd( "buy", Command_buy );
+	RegConsoleCmd( "rebuy", Command_buy );
+	RegConsoleCmd( "autobuy", Command_buy );
 
 	HookEvent( "round_start", Event_RoundStart );
 	HookEvent( "round_end", Event_RoundEnd );
@@ -339,6 +350,12 @@ StopSpecialRound() {
 	}
 	
 }
+
+//----------------------------------------------------------------------------------------------------------------------
+public Action:Timer_StopSpecialRound( Handle:timer, any:none ) {
+	StopSpecialRound();
+}
+
 /*
 //----------------------------------------------------------------------------------------------------------------------
 CancelActiveVote() {
@@ -356,7 +373,9 @@ public Event_RoundStart( Handle:event, const String:name[], bool:dontBroadcast )
 	bomb_planted = false;
 	vote_used_this_round = false;
 
-	StopSpecialRound();
+	if( !restore_weapons_immediately ) {
+		StopSpecialRound();
+	}
 	DisableFulltalk();
 
 //	newround_time = GetGameTime();
@@ -392,6 +411,10 @@ public Event_RoundEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
  
 		//	SetEntityFlags( clients[i], GetEntityFlags(clients[i]) & ~FL_FROZEN ); might fuck up intermission freeze?
 			SetEntityMoveType( client, MOVETYPE_WALK );
+			
+			if( restore_weapons_immediately ) {
+				CreateTimer( IMMEDIATE_RESTORE_DELAY, Timer_StopSpecialRound );
+			}
 		}
 		if( winner ) {
 			Call_StartForward( g_OnDuelEnd );
@@ -1174,4 +1197,9 @@ ScreenFlash() {
 	PbSetInt(message, "flags", flags);
 	PbSetColor(message, "clr", color);
 	EndMessage();
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:Command_buy( client, args ) {
+	return duel_active ? Plugin_Handled : Plugin_Continue;
 }
