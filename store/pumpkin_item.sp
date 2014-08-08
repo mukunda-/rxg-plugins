@@ -11,7 +11,7 @@ public Plugin:myinfo = {
 	name = "pumpkin item",
 	author = "WhiteThunder",
 	description = "spawnable pumpkin bombs",
-	version = "2.1.4",
+	version = "2.1.5",
 	url = "www.reflex-gamers.com"
 };
 
@@ -22,8 +22,8 @@ public Plugin:myinfo = {
 #define MAX_DISTANCE 750.0
 #define MAXENTITIES 2048
 
-#define BROADCAST_COOLDOWN 15.0
-#define MAX_PUMPKINS_PER_PLAYER 10
+#define BROADCAST_COOLDOWN 30.0
+#define MAX_PUMPKINS_PER_PLAYER 15
 #define ACTIVATION_DELAY 0.9
 
 new g_pumpkin_userid[MAXENTITIES];
@@ -89,6 +89,7 @@ bool:SpawnPumpkin( client ) {
 		//Client index changed hands
 		g_client_userid[client] = userid;
 		g_client_pumpkins[client] = 0;
+		g_last_broadcast[client] = -BROADCAST_COOLDOWN;
 	} else if( g_client_pumpkins[client] >= MAX_PUMPKINS_PER_PLAYER ) {
 		PrintToChat( client, "\x07FFD800You may not have more than \x073EFF3E%i \x07FF6600Pumpkins \x07FFD800planted at once.", MAX_PUMPKINS_PER_PLAYER );
 		RXGSTORE_ShowUseItemMenu(client);
@@ -199,15 +200,14 @@ public Action:OnPumpkinHit( pumpkin, &attacker, &inflictor, &Float:damage, &dama
 	new userid = g_pumpkin_userid[pumpkin];
 	new client = GetClientOfUserId(userid);
 	
-	//Damage is from owner
-	attacker = client;
-	
-	//Client must be original user
-	if( g_client_userid[client] == userid ) {
+	//Attribute damage to pumpkin owner if still in server
+	if( client != 0 ) {
+		attacker = client;
 		g_client_pumpkins[client]--;
+		return Plugin_Changed;
 	}
 	
-	return Plugin_Changed;
+	return Plugin_Continue;
 }
 
 //-------------------------------------------------------------------------------------------------
