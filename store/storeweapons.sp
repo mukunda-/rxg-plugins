@@ -12,7 +12,7 @@ public Plugin:myinfo = {
 	name = "RXG TF2 Store Weapons",
 	author = "WhiteThunder",
 	description = "give weapons to players via the store",
-	version = "1.0.1",
+	version = "1.0.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -22,6 +22,8 @@ public Plugin:myinfo = {
 new g_num_active_weapons;
 new g_client_weapon[MAXPLAYERS+1];
 new Float:g_last_used[MAXPLAYERS+1];
+
+new g_client_userid[MAXPLAYERS+1];
 
 new String:class_names[][] = {
 	"Unknown",
@@ -45,7 +47,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) 
 
 //-----------------------------------------------------------------------------
 public OnPluginStart() {
-	HookEvent( "post_inventory_application", LockerWepReset,  EventHookMode_Post );
+	HookEvent( "post_inventory_application", Event_LockerWepReset,  EventHookMode_Post );
 	HookEvent( "player_death", Event_PlayerDeath );
 	HookEvent( "player_changeclass", Event_ChangeClass );
 	//HookEvent( "player_spawn", Event_PlayerSpawn );
@@ -162,7 +164,7 @@ public Event_PlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast 
 }
 
 //-----------------------------------------------------------------------------
-public LockerWepReset( Handle:event, const String:name[], bool:dontBroadcast ) {
+public Event_LockerWepReset( Handle:event, const String:name[], bool:dontBroadcast ) {
 	CreateTimer( 0.1, Timer_LockerWeaponReset, GetEventInt( event, "userid" ) );
 }
 
@@ -179,11 +181,20 @@ public Action:Timer_LockerWeaponReset( Handle:timer, any:userid ) {
 //-----------------------------------------------------------------------------
 bool:GiveWeapon( client, weapon_index, TFClassType:class_restriction, const String:weapon_name[], const String:weapon_text_color[] ) {
 	
+	new userid = GetClientUserId(client);
+	
+	if( g_client_userid[client] != userid ) {
+		//Client index changed hands
+		g_client_userid[client] = userid;
+		g_last_used[client] = -CUSTOM_WEAPON_COOLDOWN;
+		ResetClientWeapon(client);
+	}
+	
 	if( g_client_weapon[client] != 0 ) {
 		PrintToChat( client, "\x07FFD800You already have a Special Weapon equipped!" );
 		return false;
 	}
-
+	
 	if( g_num_active_weapons >= MAX_ACTIVE_WEAPONS ) {
 		PrintToChat( client, "\x07FFD800There are too many active Special Weapons right now! Please try again later." );
 		return false;
@@ -199,6 +210,11 @@ bool:GiveWeapon( client, weapon_index, TFClassType:class_restriction, const Stri
 	
 	if( time < next_use ) {
 		PrintToChat( client, "\x07FFD800Please wait \x073EFF3E%d \x07FFD800seconds before equipping another Special Weapon.", RoundToCeil(next_use - time) );
+		return false;
+	}
+	
+	if( !TF2Items_CheckWeapon(weapon_index) ) {
+		PrintToChat( client, "\x07FFD800Oops! The \x07%s%s \x07FFD800is missing on this server. Please contact an administrator.", weapon_text_color, weapon_name );
 		return false;
 	}
 	
