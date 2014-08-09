@@ -45,7 +45,7 @@ public Plugin:myinfo = {
 	name = "duel",
 	author = "mukunda",
 	description = "i demand satisfaction",
-	version = "1.3.3",
+	version = "1.3.4",
 	url = "www.mukunda.com"
 };
 
@@ -120,7 +120,6 @@ new old_weapons_count[2];
 new new_weapons[2];
 
 new Handle:sm_duel_restore_weapons_immediately;
-new bool:restore_weapons_immediately;
 
 new Handle:sv_alltalk			= INVALID_HANDLE;	// CVARS
 new Handle:sv_deadtalk			= INVALID_HANDLE;	//
@@ -216,7 +215,6 @@ public OnPluginStart() {
 	SetMenuExitButton(duelmenu, false);
 	
 	sm_duel_restore_weapons_immediately = CreateConVar( "sm_duel_restore_weapons_immediately", "0", "Restore weapons immediately or on next round start.", FCVAR_PLUGIN );
-	restore_weapons_immediately = GetConVarBool(sm_duel_restore_weapons_immediately);
 	
 	RegConsoleCmd( "duel", Command_duel, "duel <weapon> <long/mid/close>, type 'buy' for weapon list" );
 	RegAdminCmd( "forceduel", Command_forceduel, ADMFLAG_SLAY, "forceduel <weapon> <long/mid/close>, admin force" );
@@ -416,7 +414,7 @@ public Event_RoundEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
 		//	SetEntityFlags( clients[i], GetEntityFlags(clients[i]) & ~FL_FROZEN ); might fuck up intermission freeze?
 			SetEntityMoveType( client, MOVETYPE_WALK );
 			
-			if( restore_weapons_immediately ) {
+			if( GetConVarBool(sm_duel_restore_weapons_immediately) ) {
 				CreateTimer( IMMEDIATE_RESTORE_DELAY, Timer_StopSpecialRound );
 			}
 		}
