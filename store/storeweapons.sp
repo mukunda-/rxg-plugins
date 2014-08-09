@@ -23,6 +23,8 @@ new g_num_active_weapons;
 new g_client_weapon[MAXPLAYERS+1];
 new Float:g_last_used[MAXPLAYERS+1];
 
+new g_client_userid[MAXPLAYERS+1];
+
 new String:class_names[][] = {
 	"Unknown",
 	"Scout",
