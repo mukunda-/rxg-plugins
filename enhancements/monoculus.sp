@@ -11,28 +11,35 @@ public Plugin:myinfo = {
 	name = "Spawn Monoculus",
 	author = "WhiteThunder",
 	description = "Spawnable Monoculus",
-	version = "1.3.1",
+	version = "1.4.0",
 	url = "www.reflex-gamers.com"
 };
 
 //-------------------------------------------------------------------------------------------------
-#define MIN_DISTANCE 100.0
-#define MAX_DISTANCE 750.0
-#define VERTICAL_OFFSET 50.0
+new Handle:sm_monoculus_max_summon_distance;
+new Handle:sm_monoculus_max_spectrals_per_team;
+new Handle:sm_monoculus_boss_base_health;
+new Handle:sm_monoculus_boss_health_per_player_above_threshold;
+new Handle:sm_monoculus_boss_health_player_threshold;
+new Handle:sm_monoculus_boss_max_duration;
+new Handle:sm_monoculus_spectral_summon_cooldown;
+new Handle:sm_monoculus_boss_team_summon_cooldown;
+new Handle:sm_monoculus_boss_enemy_summon_cooldown;
+
+new Float:c_max_summon_distance;
+new c_max_spectrals_per_team;
+new c_boss_base_health;
+new c_boss_health_per_player_above_threshold;
+new c_boss_health_player_threshold;
+new Float:c_boss_max_duration;
+new Float:c_spectral_summon_cooldown;
+new Float:c_boss_team_summon_cooldown;
+new Float:c_boss_enemy_summon_cooldown;
 
 #define TEAM_BOSS 5
-#define BOSS_BASE_HEALTH 4000
-#define BOSS_HEALTH_PER_PLAYER_ABOVE_THRESHOLD 200
-#define BOSS_HEALTH_PLAYER_THRESHOLD 10
+#define VERTICAL_OFFSET 50.0
 #define BOSS_COLLISION_DELAY 1.0
-
-#define MAX_SPECTRALS_PER_TEAM 2
 #define SPECTRAL_FIXED_DURATION 20.0 //This value does not affect the duration
-
-#define BOSS_EXPIRE_TIMER 125.0
-#define SPECTRAL_SUMMON_COOLDOWN 60.0
-#define BOSS_TEAM_SUMMON_COOLDOWN 300.0
-#define BOSS_ENEMY_SUMMON_COOLDOWN 125.0 //Prevents enemy team from spawning this long after your team
 #define SUMMON_SOUND_COOLDOWN 10.0
 
 new Float:g_client_last_spectral_summon[MAXPLAYERS+1];
@@ -51,7 +58,47 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) 
 }
 
 //-------------------------------------------------------------------------------------------------
+RecacheConvars() {
+	c_max_summon_distance = GetConVarFloat( sm_monoculus_max_summon_distance );
+	c_max_spectrals_per_team = GetConVarInt( sm_monoculus_max_spectrals_per_team );
+	c_boss_base_health = GetConVarInt( sm_monoculus_boss_base_health );
+	c_boss_health_per_player_above_threshold = GetConVarInt( sm_monoculus_boss_health_per_player_above_threshold );
+	c_boss_health_player_threshold = GetConVarInt( sm_monoculus_boss_health_player_threshold );
+	c_boss_max_duration = GetConVarFloat( sm_monoculus_boss_max_duration );
+	c_spectral_summon_cooldown = GetConVarFloat( sm_monoculus_spectral_summon_cooldown );
+	c_boss_team_summon_cooldown = GetConVarFloat( sm_monoculus_boss_team_summon_cooldown );
+	c_boss_enemy_summon_cooldown = GetConVarFloat( sm_monoculus_boss_enemy_summon_cooldown );
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[] ) {
+	RecacheConvars();
+}
+
+//-------------------------------------------------------------------------------------------------
 public OnPluginStart() {
+
+	sm_monoculus_max_summon_distance = CreateConVar( "sm_monoculus_max_summon_distance", "750", "The maximum distance you may summon a Monoculus away from yourself. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
+	sm_monoculus_max_spectrals_per_team = CreateConVar( "sm_monoculus_max_spectrals_per_team", "2", "The maximum number of Spectral Monoculi allowed per team. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
+	sm_monoculus_boss_base_health = CreateConVar( "sm_monoculus_boss_base_health", "4000", "The base health the Boss MONOCULUS should have before considering player count.", FCVAR_PLUGIN, true, 1.0, true, 50000.0 );
+	sm_monoculus_boss_health_per_player_above_threshold = CreateConVar( "sm_monoculus_boss_health_per_player_above_threshold", "200", "The additional health the Boss MONOCULUS should get per player above the threshold set by sm_monoculus_boss_health_player_threshold.", FCVAR_PLUGIN, true, 0.0, true, 5000.0 );
+	sm_monoculus_boss_health_player_threshold = CreateConVar( "sm_monoculus_boss_health_player_threshold", "10", "The number of players required to start adding additional health to the Boss MONOCULUS.", FCVAR_PLUGIN, true, 0.0 );
+	sm_monoculus_boss_max_duration = CreateConVar( "sm_monoculus_boss_max_duration", "125", "The maximum duration in seconds that the Boss MONOCULUS should remain in the realm after being summoned.", FCVAR_PLUGIN, true, 30.0, true, 300.0 );
+	sm_monoculus_spectral_summon_cooldown = CreateConVar( "sm_monoculus_spectral_summon_cooldown", "60", "The number of seconds you must wait between summoning Spectral Monoculi.", FCVAR_PLUGIN, true, 0.0 );
+	sm_monoculus_boss_team_summon_cooldown = CreateConVar( "sm_monoculus_boss_team_summon_cooldown", "300", "The number of seconds your team must wait after summoning the Boss MONOCULUS before summoning him again.", FCVAR_PLUGIN, true, 0.0 );
+	sm_monoculus_boss_enemy_summon_cooldown = CreateConVar( "sm_monoculus_boss_enemy_summon_cooldown", "125", "The number of seconds the enemy team must wait to summon the Boss MONOCULUS after your team has summoned him. For best results, set to the value of sm_monoculus_boss_max_duration to prevent more than one at a time.", FCVAR_PLUGIN, true, 0.0 );
+	
+	HookConVarChange( sm_monoculus_max_summon_distance, OnConVarChanged );
+	HookConVarChange( sm_monoculus_max_spectrals_per_team, OnConVarChanged );
+	HookConVarChange( sm_monoculus_boss_base_health, OnConVarChanged );
+	HookConVarChange( sm_monoculus_boss_health_per_player_above_threshold, OnConVarChanged );
+	HookConVarChange( sm_monoculus_boss_health_player_threshold, OnConVarChanged );
+	HookConVarChange( sm_monoculus_boss_max_duration, OnConVarChanged );
+	HookConVarChange( sm_monoculus_spectral_summon_cooldown, OnConVarChanged );
+	HookConVarChange( sm_monoculus_boss_team_summon_cooldown, OnConVarChanged );
+	HookConVarChange( sm_monoculus_boss_enemy_summon_cooldown, OnConVarChanged );
+	RecacheConvars();
+	
 	RegAdminCmd( "sm_spawnmonoculus", Command_SpawnMonoculus, ADMFLAG_RCON );
 }
 
@@ -60,13 +107,13 @@ public OnMapStart() {
 	PrecacheMonoculus();
 	
 	for( new i = 1; i <= MaxClients; i++ ) {
-		g_client_last_spectral_summon[i] = -SPECTRAL_SUMMON_COOLDOWN;
+		g_client_last_spectral_summon[i] = -c_spectral_summon_cooldown;
 	}
 	
 	g_red_spectral_count = 0;
 	g_blu_spectral_count = 0;
-	g_red_boss_last_summon = -BOSS_TEAM_SUMMON_COOLDOWN;
-	g_blu_boss_last_summon = -BOSS_TEAM_SUMMON_COOLDOWN;
+	g_red_boss_last_summon = -c_boss_team_summon_cooldown;
+	g_blu_boss_last_summon = -c_boss_team_summon_cooldown;
 	g_last_summon = -SUMMON_SOUND_COOLDOWN;
 }
 
@@ -80,8 +127,10 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 	
 	if( client_team == TFTeam_Red ){
 		team_color = "ff3d3d";
-	} else {
+	} else if ( client_team == TFTeam_Blue ){
 		team_color = "84d8f4";
+	} else {
+		team_color = "874fad";
 	}
 	
 	if( team == TFTeam:TEAM_BOSS ) {
@@ -90,11 +139,11 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 		new Float:enemy_next_summon; //Time your team can next summon as a result of a recent enemy summon
 		
 		if( client_team == TFTeam_Red ) {
-			team_next_summon = g_red_boss_last_summon + BOSS_TEAM_SUMMON_COOLDOWN;
-			enemy_next_summon = g_blu_boss_last_summon + BOSS_ENEMY_SUMMON_COOLDOWN;
+			team_next_summon = g_red_boss_last_summon + c_boss_team_summon_cooldown;
+			enemy_next_summon = g_blu_boss_last_summon + c_boss_enemy_summon_cooldown;
 		} else {
-			team_next_summon = g_blu_boss_last_summon + BOSS_TEAM_SUMMON_COOLDOWN;
-			enemy_next_summon = g_red_boss_last_summon + BOSS_ENEMY_SUMMON_COOLDOWN;
+			team_next_summon = g_blu_boss_last_summon + c_boss_team_summon_cooldown;
+			enemy_next_summon = g_red_boss_last_summon + c_boss_enemy_summon_cooldown;
 		}
 		
 		new Float:next_summon = (team_next_summon > enemy_next_summon) ? team_next_summon : enemy_next_summon;
@@ -119,21 +168,22 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 		if( g_client_userid[client] != userid ) {
 			//Client index changed hands
 			g_client_userid[client] = userid;
-			g_client_last_spectral_summon[client] = -SPECTRAL_SUMMON_COOLDOWN;
+			g_client_last_spectral_summon[client] = -c_spectral_summon_cooldown;
 		}
 		
-		if( time < g_client_last_spectral_summon[client] + SPECTRAL_SUMMON_COOLDOWN ) {
+		if( time < g_client_last_spectral_summon[client] + c_spectral_summon_cooldown ) {
 		
-			new Float:timeleft = g_client_last_spectral_summon[client] + SPECTRAL_SUMMON_COOLDOWN - time;
+			new Float:timeleft = g_client_last_spectral_summon[client] + c_spectral_summon_cooldown - time;
 			
 			PrintToChat( client, "\x07FFD800Please wait \x073EFF3E%d \x07FFD800seconds before summoning another \x07%sSpectral Monoculus.", RoundToCeil(timeleft), team_color );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 			
-		} else if( team == TFTeam_Red && g_red_spectral_count >= MAX_SPECTRALS_PER_TEAM ||
-					team == TFTeam_Blue && g_blu_spectral_count >= MAX_SPECTRALS_PER_TEAM ) {
+		} else if( c_max_spectrals_per_team != 0 && (
+					team == TFTeam_Red && g_red_spectral_count >= c_max_spectrals_per_team ||
+					team == TFTeam_Blue && g_blu_spectral_count >= c_max_spectrals_per_team ) ) {
 			
-			PrintToChat( client, "\x07FFD800Your team is only allowed to have \x073EFF3E%d \x07%sSpectral Monoculi \x07FFD800at once. Please try again later.", MAX_SPECTRALS_PER_TEAM, team_color );
+			PrintToChat( client, "\x07FFD800Your team is only allowed to have \x073EFF3E%d \x07%sSpectral Monoculi \x07FFD800at once. Please try again later.", c_max_spectrals_per_team, team_color );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 			
@@ -155,7 +205,7 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 
 		new Float:distance = GetVectorDistance( feet, end, true );
 
-		if( distance > MAX_DISTANCE * MAX_DISTANCE ) {
+		if( c_max_summon_distance != 0 && distance > c_max_summon_distance * c_max_summon_distance ) {
 			PrintToChat( client, "\x07FFD800Cannot summon that far away." );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
@@ -174,12 +224,7 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 	
 	new ent = CreateEntityByName("eyeball_boss");
 	SetEntProp( ent, Prop_Data, "m_iTeamNum", team );
-	
-	if( team == TFTeam:TEAM_BOSS ) {
-		DispatchKeyValue( ent, "targetname", "RXG_MONOCULUS" );
-	} else {
-		SetEntPropEnt( ent, Prop_Send, "m_hOwnerEntity", client );
-	}
+	SetEntPropEnt( ent, Prop_Send, "m_hOwnerEntity", client );
 	
 	DispatchSpawn( ent );
 	SetEntProp( ent, Prop_Send, "m_CollisionGroup", 2 );
@@ -190,9 +235,9 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 		CreateTimer( BOSS_COLLISION_DELAY, Timer_ActivateBossCollision, ent );
 	
 		new player_count = GetClientCount();
-		new boss_hp = BOSS_BASE_HEALTH;
-		if( player_count > BOSS_HEALTH_PLAYER_THRESHOLD ) {
-			boss_hp += (player_count - 10) * BOSS_HEALTH_PER_PLAYER_ABOVE_THRESHOLD;
+		new boss_hp = c_boss_base_health;
+		if( player_count > c_boss_health_player_threshold ) {
+			boss_hp += (player_count - 10) * c_boss_health_per_player_above_threshold;
 		}
 		
 		SetEntProp( ent, Prop_Data, "m_iMaxHealth", boss_hp );
@@ -205,7 +250,7 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 	if( team == TFTeam:TEAM_BOSS ) {
 	
 		PrintToChatAll( "\x07%s%s \x07FFD800has summoned a \x07874FADMONOCULUS!", team_color, name );
-		CreateTimer( BOSS_EXPIRE_TIMER, Timer_KillExpiredBossMonoculus, EntIndexToEntRef(ent) );
+		CreateTimer( c_boss_max_duration, Timer_KillExpiredBossMonoculus, EntIndexToEntRef(ent) );
 		
 		if( client_team == TFTeam_Red ) {
 			g_red_boss_last_summon = time;
