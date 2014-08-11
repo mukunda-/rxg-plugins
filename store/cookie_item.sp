@@ -20,7 +20,7 @@ public Plugin:myinfo = {
 	name = "cookie item",
 	author = "mukunda",
 	description = "delicious",
-	version = "1.3.1",
+	version = "1.3.2",
 	url = "www.mukunda.com"
 };
 
@@ -47,17 +47,33 @@ new String:cookie_sound[64] = "rxg/items/cookie.mp3";
 //#define COOKIE_SOUND "*rxg/items/cookie.mp3"
 
 new Float:cookie_last_use[MAXPLAYERS];
-#define COOLDOWN 2.0
 
-#define COOKIE_HP 20
-#define COOKIE_HP_TF2 85
-#define TF2_COOKIE_SCALE 1.5
+new Handle:sm_cookie_cooldown;
+new Handle:sm_cookie_scale;
+new Handle:sm_cookie_hp;
+
+new Float:c_cooldown;
+new Float:c_scale;
+new c_cookie_hp;
+
 #define TF2_COOKIE_FADE_TIME 2.0
 
 new GAME;
 
 #define GAME_CSGO	0
 #define GAME_TF2	1
+
+//-------------------------------------------------------------------------------------------------
+RecacheConvars() {
+	c_cooldown = GetConVarFloat( sm_cookie_cooldown );
+	c_scale = GetConVarFloat( sm_cookie_scale );
+	c_cookie_hp = GetConVarInt( sm_cookie_hp );
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[] ) {
+	RecacheConvars();
+}
 
 //-------------------------------------------------------------------------------------------------
 public OnPluginStart() {
@@ -79,6 +95,15 @@ public OnPluginStart() {
 		
 		ReplaceString( cookie_model, sizeof cookie_model, "{version}", "_tf2" );
 	}
+	
+	sm_cookie_cooldown = CreateConVar( "sm_cookie_cooldown", "2", "Seconds between eating cookies.", FCVAR_PLUGIN, true, 0.0 );
+	sm_cookie_scale = CreateConVar( "sm_cookie_scale", "1", "Scale of cookie model.", FCVAR_PLUGIN, true, 0.1 );
+	sm_cookie_hp = CreateConVar( "sm_cookie_hp", "10", "Percentage of HP to restore when eating a cookie.", FCVAR_PLUGIN, true, 1.0 );
+	
+	HookConVarChange( sm_cookie_cooldown, OnConVarChanged );
+	HookConVarChange( sm_cookie_scale, OnConVarChanged );
+	HookConVarChange( sm_cookie_hp, OnConVarChanged );
+	RecacheConvars();
 	
 	RXGSTORE_RegisterItem( ITEM_NAME, ITEMID, ITEM_FULLNAME );
 	RegAdminCmd( "sm_spawncookie", Command_spawncookie, ADMFLAG_RCON ); 
@@ -147,7 +172,7 @@ public bool:OnCookieTouch( client, entity ) {
 		return false;
 	}
 	
-	if( FloatAbs( GetGameTime() - cookie_last_use[client] ) < COOLDOWN ) {
+	if( FloatAbs( GetGameTime() - cookie_last_use[client] ) < c_cooldown ) {
 		if( GAME == GAME_CSGO ) {
 			PrintToChat( client, "\x01 \x08Your mouth is full!" );
 		} else {
@@ -157,7 +182,7 @@ public bool:OnCookieTouch( client, entity ) {
 	}
 	cookie_last_use[client] = GetGameTime();
 	
-	hp += (maxhealth * ( GAME == GAME_TF2 ? COOKIE_HP_TF2 : COOKIE_HP )) / 100;
+	hp += (maxhealth * c_cookie_hp) / 100;
 	if( GAME == GAME_CSGO ) {
 		if( hp > maxhealth ) hp = maxhealth;
 	} else {
@@ -245,8 +270,8 @@ SpawnCookie( Float:vec[3], Float:vel[3] ) {
 	DispatchKeyValue( ent, "targetname", "RXG_COOKIE" );
 	SetEntityModel( ent, cookie_model );
 	
-	if( GAME == GAME_TF2 ){
-		SetEntPropFloat( ent, Prop_Data, "m_flModelScale", TF2_COOKIE_SCALE );
+	if( c_scale != 1.0 ){
+		SetEntPropFloat( ent, Prop_Data, "m_flModelScale", c_scale );
 	}
 	
 	if( GAME==GAME_CSGO ){
