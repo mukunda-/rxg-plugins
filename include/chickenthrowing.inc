@@ -11,7 +11,7 @@
 // speed: speed of chicken
 // gravity: gravity of chicken
 //
-native CHKN_ThrowChicken( client, Float:scale, Float:speed, Float:gravity );
+native CHKN_ThrowChicken( client );
 
 //-------------------------------------------------------------------------------------------------
 public SharedPlugin:__pl_chickenthrowing = 

@@ -11,16 +11,11 @@ public Plugin:myinfo = {
 	name = "chicken item",
 	author = "WhiteThunder",
 	description = "throwable chickens",
-	version = "1.1.0",
+	version = "1.2.0",
 	url = "www.reflex-gamers.com"
 };
 
 //-------------------------------------------------------------------------------------------------
-#define GRAVITY 800.0
-#define GRAVITY_MULT 0.5
-#define SPEED 750.0
-#define SCALE 1.0
-
 #define ITEM_NAME "chicken"
 #define ITEM_FULLNAME "chicken"
 #define ITEMID 7
@@ -45,6 +40,6 @@ public OnPluginEnd() {
 //-------------------------------------------------------------------------------------------------
 public RXGSTORE_OnUse( client ) {
 	if( !IsPlayerAlive(client) ) return false;
-	CHKN_ThrowChicken(client, SCALE, SPEED, GRAVITY * GRAVITY_MULT);
+	CHKN_ThrowChicken(client);
 	return true;
 }

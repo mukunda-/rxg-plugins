@@ -84,8 +84,8 @@ public OnPluginStart() {
 
 	LoadTranslations("common.phrases");
 	
-	sm_chickens_gravity = CreateConVar( "sm_chickens_gravity", "800", "Chicken gravity.", FCVAR_PLUGIN, true, 0.1 );
-	sm_chickens_speed = CreateConVar( "sm_chickens_speed", "750", "Chicken speed.", FCVAR_PLUGIN, true, 0.0 );
+	sm_chickens_gravity = CreateConVar( "sm_chickens_gravity", "800", "Chicken gravity while flying.", FCVAR_PLUGIN, true, 0.1 );
+	sm_chickens_speed = CreateConVar( "sm_chickens_speed", "750", "Chicken speed while flying.", FCVAR_PLUGIN, true, 0.0 );
 	sm_chickens_growth_timer_interval = CreateConVar( "sm_chickens_growth_timer_interval", "0.1", "Seconds between growth intervals.", FCVAR_PLUGIN, true, 0.1, true, 1.0 );
 	sm_chickens_growth_scale_interval = CreateConVar( "sm_chickens_growth_scale_interval", "0.1", "Fraction of scale to grow per interval.", FCVAR_PLUGIN, true, 0.1, true, 10.0 );
 	sm_chickens_base_scale = CreateConVar( "sm_chickens_base_scale", "1.0", "Base size for all thrown chickens.", FCVAR_PLUGIN, true, 0.1 );
@@ -436,8 +436,5 @@ public Action:StopChicken(Handle:timer, any:chicken)
 //-------------------------------------------------------------------------------------------------
 public Native_ThrowChicken(Handle:plugin, numParams) {
 	new client = GetNativeCell(1);
-	new Float:scale = Float:GetNativeCell(2);
-	new Float:speed = Float:GetNativeCell(3);
-	new Float:gravity = Float:GetNativeCell(4);
-	ThrowChicken(client, scale, speed, gravity);
+	ThrowChicken(client, c_base_scale, c_speed, c_gravity);
 }
