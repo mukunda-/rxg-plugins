@@ -10,24 +10,37 @@ public Plugin:myinfo = {
 	name = "Chicken Throwing",
 	author = "WhiteThunder",
 	description = "Chicken throwing lel",
-	version = "1.1.0",
+	version = "1.2.0",
 	url = "www.reflex-gamers.com"
 };
 
 //-------------------------------------------------------------------------------------------------
+new Handle:sm_chickens_gravity;
+new Handle:sm_chickens_speed;
+new Handle:sm_chickens_growth_timer_interval;
+new Handle:sm_chickens_growth_scale_interval;
+new Handle:sm_chickens_base_scale;
+new Handle:sm_chickens_min_scale;
+new Handle:sm_chickens_max_scale;
+new Handle:sm_chickens_collision_radius;
+new Handle:sm_chickens_collision_landed_mult;
+new Handle:sm_chickens_combine_scale;
+new Handle:sm_chickens_max_air_time;
+
+new Float:c_gravity;
+new Float:c_speed;
+new Float:c_growth_timer_interval;
+new Float:c_growth_scale_interval;
+new Float:c_base_scale;
+new Float:c_min_scale;
+new Float:c_max_scale;
+new Float:c_collision_radius;
+new Float:c_collision_landed_mult;
+new Float:c_combine_scale;
+new Float:c_max_air_time;
+
 #define GRAVITY 800.0
-#define SPEED 750.0
 #define VERTICAL_OFFSET -10.0
-
-#define GROWTH_TIMER_INVERVAL 0.1
-#define GROWTH_SCALE_INTERVAL 0.1
-#define BASE_SCALE 1.0
-#define MIN_SCALE 0.4
-#define MAX_SCALE 6.0
-#define COLLISION_RADIUS 5.0
-#define COLLISION_LANDED_MULT 5.0
-#define COMBINATION_MULT 0.5
-
 #define CASHMODEL "models/props/cs_assault/money.mdl"
 #define MAXENTITIES 2048
 
@@ -35,6 +48,7 @@ new bool:g_chicken_flying[MAXENTITIES];
 new Float:g_chicken_scale[MAXENTITIES];
 new g_chicken_trigger[MAXENTITIES];
 
+//-------------------------------------------------------------------------------------------------
 public OnMapStart() {
 	PrecacheModel(CASHMODEL);
 }
@@ -46,8 +60,54 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) 
 }
 
 //-------------------------------------------------------------------------------------------------
+RecacheConvars() {
+	c_gravity = GetConVarFloat( sm_chickens_gravity );
+	c_speed = GetConVarFloat( sm_chickens_speed );
+	c_growth_timer_interval = GetConVarFloat( sm_chickens_growth_timer_interval );
+	c_growth_scale_interval = GetConVarFloat( sm_chickens_growth_scale_interval );
+	c_base_scale = GetConVarFloat( sm_chickens_base_scale );
+	c_min_scale = GetConVarFloat( sm_chickens_min_scale );
+	c_max_scale = GetConVarFloat( sm_chickens_max_scale );
+	c_collision_radius = GetConVarFloat( sm_chickens_collision_radius );
+	c_collision_landed_mult = GetConVarFloat( sm_chickens_collision_landed_mult );
+	c_combine_scale = GetConVarFloat( sm_chickens_combine_scale );
+	c_max_air_time = GetConVarFloat( sm_chickens_max_air_time );
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[] ) {
+	RecacheConvars();
+}
+
+//-------------------------------------------------------------------------------------------------
 public OnPluginStart() {
+
 	LoadTranslations("common.phrases");
+	
+	sm_chickens_gravity = CreateConVar( "sm_chickens_gravity", "800", "Chicken gravity.", FCVAR_PLUGIN, true, 0.1 );
+	sm_chickens_speed = CreateConVar( "sm_chickens_speed", "750", "Chicken speed.", FCVAR_PLUGIN, true, 0.0 );
+	sm_chickens_growth_timer_interval = CreateConVar( "sm_chickens_growth_timer_interval", "0.1", "Seconds between growth intervals.", FCVAR_PLUGIN, true, 0.1, true, 1.0 );
+	sm_chickens_growth_scale_interval = CreateConVar( "sm_chickens_growth_scale_interval", "0.1", "Fraction of scale to grow per interval.", FCVAR_PLUGIN, true, 0.1, true, 10.0 );
+	sm_chickens_base_scale = CreateConVar( "sm_chickens_base_scale", "1.0", "Base size for all thrown chickens.", FCVAR_PLUGIN, true, 0.1 );
+	sm_chickens_min_scale = CreateConVar( "sm_chickens_min_scale", "0.4", "Minimum chicken size allowed.", FCVAR_PLUGIN, true, 0.1 );
+	sm_chickens_max_scale = CreateConVar( "sm_chickens_max_scale", "6.0", "Maximum chicken size allowed.", FCVAR_PLUGIN, true, 0.1 );
+	sm_chickens_collision_radius = CreateConVar( "sm_chickens_collision_radius", "5.0", "Radius of collision box for interacting with non-world objects.", FCVAR_PLUGIN, true, 1.0 );
+	sm_chickens_collision_landed_mult = CreateConVar( "sm_chickens_collision_landed_mult", "5.0", "Multiplier by which to increase collision box after landing.", FCVAR_PLUGIN, true, 1.0 );
+	sm_chickens_combine_scale = CreateConVar( "sm_chickens_combine_scale", "0.5", "When chickens collide, this is the fraction of one chicken's scale that will be added to the other.", FCVAR_PLUGIN, true, 0.1 );
+	sm_chickens_max_air_time = CreateConVar( "sm_chickens_max_air_time", "10", "Maximum time a chicken may remain in flight.", FCVAR_PLUGIN, true, 0.1, true, 30.0 );
+	
+	HookConVarChange( sm_chickens_gravity, OnConVarChanged );
+	HookConVarChange( sm_chickens_speed, OnConVarChanged );
+	HookConVarChange( sm_chickens_growth_timer_interval, OnConVarChanged );
+	HookConVarChange( sm_chickens_growth_scale_interval, OnConVarChanged );
+	HookConVarChange( sm_chickens_base_scale, OnConVarChanged );
+	HookConVarChange( sm_chickens_min_scale, OnConVarChanged );
+	HookConVarChange( sm_chickens_max_scale, OnConVarChanged );
+	HookConVarChange( sm_chickens_collision_radius, OnConVarChanged );
+	HookConVarChange( sm_chickens_collision_landed_mult, OnConVarChanged );
+	HookConVarChange( sm_chickens_combine_scale, OnConVarChanged );
+	HookConVarChange( sm_chickens_max_air_time, OnConVarChanged );
+	RecacheConvars();
 	
 	RegAdminCmd("sm_throwchicken", Command_ThrowChicken, ADMFLAG_SLAY);
 }
@@ -57,9 +117,9 @@ public Action:Command_ThrowChicken(client, args) {
 	
 	if (client == 0 && args == 0) return Plugin_Handled;
 	
-	new Float:speed = SPEED;
-	new Float:gravity = GRAVITY;
-	new Float:scale = BASE_SCALE;
+	new Float:speed = c_speed;
+	new Float:gravity = c_gravity;
+	new Float:scale = c_base_scale;
 	decl String:target_name[MAX_TARGET_LENGTH];
 	decl target_list[MAXPLAYERS], target_count, bool:tn_is_ml;
 	
@@ -110,12 +170,13 @@ public Action:Command_ThrowChicken(client, args) {
 	for (new i = 0; i < target_count; i++) {
 		ThrowChicken(target_list[i], scale, speed, gravity);
 	}
+	
 	return Plugin_Handled;
 }
 
 //-------------------------------------------------------------------------------------------------
-ThrowChicken(client, Float:scale, Float:speed, Float:gravity)
-{
+ThrowChicken(client, Float:scale, Float:speed, Float:gravity) {
+
 	if (!IsPlayerAlive(client)) {
 		return false;
 	}
@@ -138,7 +199,7 @@ ThrowChicken(client, Float:scale, Float:speed, Float:gravity)
 	
 	//No dividing by 0
 	if (gravity == 0.0) {
-		gravity = GRAVITY;
+		gravity = c_gravity;
 	}
 	
 	velocity[0] *= speed;
@@ -155,10 +216,11 @@ ThrowChicken(client, Float:scale, Float:speed, Float:gravity)
 	new Float:upTime = velocity[2] / gravity;
 	new Float:height = gravity * upTime * upTime / 2 + eye_pos[2] - feet_pos[2];
 	new Float:time = upTime + SquareRoot(2 * height / gravity);
+	if( time > c_max_air_time ) time = c_max_air_time;
 	//PrintToChatAll("uptime: %f... height: %f... time: %f", upTime, height, time);
 	
-	if (scale < MIN_SCALE) scale = MIN_SCALE;
-	else if (scale > MAX_SCALE) scale = MAX_SCALE;
+	if (scale < c_min_scale) scale = c_min_scale;
+	else if (scale > c_max_scale) scale = c_max_scale;
 	
 	//Create chicken
 	new chicken = CreateEntityByName("chicken");
@@ -196,8 +258,8 @@ AddTrigger(parent, Float:collision_scale = 1.0) {
 	new Float:maxbounds[3];
 	new Float:scale = GetEntPropFloat(parent, Prop_Data, "m_flModelScale");
 	for (new i = 0; i < 3; i++) {
-		minbounds[i] = -COLLISION_RADIUS * scale * collision_scale;
-		maxbounds[i] = COLLISION_RADIUS * scale * collision_scale;
+		minbounds[i] = -c_collision_radius * scale * collision_scale;
+		maxbounds[i] = c_collision_radius * scale * collision_scale;
 	}
 
 	SetEntPropVector(ent, Prop_Send, "m_vecMins", minbounds);
@@ -236,8 +298,8 @@ public Action:OnChickenCollide(trigger, target) {
 
 		new bool:enemy_chickens = GetClientTeam(thrower) != GetClientTeam(other_thrower);
 
-		if (!enemy_chickens && (target_scale >= MAX_SCALE || chicken_scale >= MAX_SCALE) ||
-			enemy_chickens && (target_scale <= MIN_SCALE || chicken_scale <= MIN_SCALE)) {
+		if (!enemy_chickens && (target_scale >= c_max_scale || chicken_scale >= c_max_scale) ||
+			enemy_chickens && (target_scale <= c_min_scale || chicken_scale <= c_min_scale)) {
 			return;
 		}
 
@@ -261,7 +323,7 @@ public Action:OnChickenCollide(trigger, target) {
 			KillChicken(target);
 		}
 		
-		scale_change *= COMBINATION_MULT;
+		scale_change *= c_combine_scale;
 
 		if (g_chicken_flying[changing_chicken]) {
 			g_chicken_flying[changing_chicken] = false;
@@ -276,10 +338,10 @@ public Action:OnChickenCollide(trigger, target) {
 		} else {
 			if (enemy_chickens) {
 				g_chicken_scale[changing_chicken] -= scale_change;
-				CreateTimer(GROWTH_TIMER_INVERVAL, ShrinkChicken, EntIndexToEntRef(changing_chicken), TIMER_REPEAT);
+				CreateTimer(c_growth_timer_interval, ShrinkChicken, EntIndexToEntRef(changing_chicken), TIMER_REPEAT);
 			} else {
 				g_chicken_scale[changing_chicken] += scale_change;
-				CreateTimer(GROWTH_TIMER_INVERVAL, GrowChicken, EntIndexToEntRef(changing_chicken), TIMER_REPEAT);
+				CreateTimer(c_growth_timer_interval, GrowChicken, EntIndexToEntRef(changing_chicken), TIMER_REPEAT);
 			}
 		}
 
@@ -298,6 +360,7 @@ KillChicken(chicken) {
 	}
 }
 
+//-------------------------------------------------------------------------------------------------
 public Action:KillChickenTimer(Handle:timer, any:chicken) {
 	if (IsValidEntity(chicken)) {
 		AcceptEntityInput(chicken, "Break");
@@ -314,16 +377,16 @@ public Action:GrowChicken(Handle:timer, any:chicken) {
 	new chicken_index = EntRefToEntIndex(chicken);
 	new Float:scale = GetEntPropFloat(chicken, Prop_Data, "m_flModelScale");
 
-	if (FloatAbs(scale - g_chicken_scale[chicken_index]) < GROWTH_SCALE_INTERVAL) {
+	if (FloatAbs(scale - g_chicken_scale[chicken_index]) < c_growth_scale_interval) {
 		SetEntPropFloat(chicken, Prop_Data, "m_flModelScale", g_chicken_scale[chicken_index]);
 		return Plugin_Stop;
 	}
 	
-	if (scale >= g_chicken_scale[chicken_index] || scale >= MAX_SCALE) {
+	if (scale >= g_chicken_scale[chicken_index] || scale >= c_max_scale) {
 		return Plugin_Stop;
 	}
 
-	SetEntPropFloat(chicken, Prop_Data, "m_flModelScale", scale + GROWTH_SCALE_INTERVAL);
+	SetEntPropFloat(chicken, Prop_Data, "m_flModelScale", scale + c_growth_scale_interval);
 
 	return Plugin_Continue;
 }
@@ -338,16 +401,16 @@ public Action:ShrinkChicken(Handle:timer, any:chicken) {
 	new chicken_index = EntRefToEntIndex(chicken);
 	new Float:scale = GetEntPropFloat(chicken, Prop_Data, "m_flModelScale");
 	
-	if (FloatAbs(scale - g_chicken_scale[chicken_index]) < GROWTH_SCALE_INTERVAL) {
+	if (FloatAbs(scale - g_chicken_scale[chicken_index]) < c_growth_scale_interval) {
 		SetEntPropFloat(chicken, Prop_Data, "m_flModelScale", g_chicken_scale[chicken_index]);
 		return Plugin_Stop;
 	}
 	
-	if (scale <= g_chicken_scale[chicken_index] || scale <= MIN_SCALE) {
+	if (scale <= g_chicken_scale[chicken_index] || scale <= c_min_scale) {
 		return Plugin_Stop;
 	}
 	
-	SetEntPropFloat(chicken, Prop_Data, "m_flModelScale", scale - GROWTH_SCALE_INTERVAL);
+	SetEntPropFloat(chicken, Prop_Data, "m_flModelScale", scale - c_growth_scale_interval);
 	
 	return Plugin_Continue;
 }
@@ -365,7 +428,7 @@ public Action:StopChicken(Handle:timer, any:chicken)
 	g_chicken_flying[chicken_index] = false;
 
 	AcceptEntityInput(g_chicken_trigger[chicken_index], "Kill");
-	AddTrigger(chicken_index, COLLISION_LANDED_MULT);
+	AddTrigger(chicken_index, c_collision_landed_mult);
 	
 	return Plugin_Handled;
 }
