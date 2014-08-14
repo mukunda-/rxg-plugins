@@ -26,6 +26,8 @@ public Plugin:myinfo = {
 //-------------------------------------------------------------------------------------------------
 #define ITEM_MAX 16
 
+#define LOCK_DURATION_EXPIRE 30.0
+
 new String:c_ip[32];
 
 new String:item_map[4096]; // map of real items to item slots
@@ -47,7 +49,6 @@ new String:sql_itemid_filter[128];
 
 new g_client_items[MAXPLAYERS+1][ITEM_MAX]; // client item counts
 new bool:g_client_data_loaded[MAXPLAYERS+1]; // FALSE if inventory hasn't been loaded yet
-new bool:g_client_data_locked[MAXPLAYERS+1];
 
 new g_client_data_account[MAXPLAYERS+1]; // cache of the client accountid, used for commits (since client may disconnect)
 new g_client_items_change[MAXPLAYERS+1][ITEM_MAX];
@@ -124,6 +125,7 @@ public OnPluginStart() {
 	RegConsoleCmd( "sm_store", Command_store );
 	RegConsoleCmd( "sm_shop", Command_store );
 	RegConsoleCmd( "sm_buy", Command_store );
+	RegServerCmd( "sm_lock_user", Command_lock_user );
 	
 	if( g_update_method == UPDATE_METHOD_TIMED ) {
 		CreateTimer( UPDATE_TIMED_INTERVAL, OnTimedUpdate, _, TIMER_REPEAT );
@@ -133,6 +135,27 @@ public OnPluginStart() {
 	
 	GetConVarString(FindConVar("ip"), c_ip, sizeof c_ip);
 	BuildSQLItemIDFilter();
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:Command_lock_user( args ) {
+	
+	if( args > 0 ) {
+		
+		decl String:client_string[16];
+		GetCmdArg( 1, client_string, sizeof client_string );
+		new client = StringToInt(client_string);
+		
+		for( new i = 1; i <= MaxClients; i++ ) {
+			if( g_client_data_account[i] == client ) {
+				g_client_data_loaded[i] = false;
+				PrintToChat( i, "Your inventory has been unloaded to send the gift. It will reload soon." );
+				return Plugin_Handled;
+			}
+		}
+	}
+	
+	return Plugin_Handled;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -351,6 +374,73 @@ bool:LoadClientData( client, bool:chain=false ) {
 	new account = GetSteamAccountID( client );
 	g_client_data_account[client] = account;
 	
+	new Handle:pack = CreateDataPack();
+	WritePackCell( pack, GetClientUserId(client) );
+	WritePackCell( pack, account );
+	WritePackCell( pack, client );
+	WritePackCell( pack, chain );
+	
+	new time = GetTime();
+	decl String:query[1024];
+	FormatEx( query, sizeof query, 
+		"INSERT INTO sourcebans_store.user (user_id,server,ingame) VALUES(%d,'%s',%d) ON DUPLICATE KEY UPDATE server=VALUES(server),ingame=VALUES(ingame)",
+		account,c_ip,time,c_ip,time );
+	DBRELAY_TQuery( OnClientLoggedIn, query, pack );
+	
+	return true;
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnClientLoggedIn( Handle:owner, Handle:hndl, const String:error[], any:data ) {
+	
+	ResetPack(data);
+	new client = GetClientOfUserId( ReadPackCell(data) );
+	new account = ReadPackCell(data);
+	
+	if( client == 0 ) {
+		CloseHandle(data);
+		return;
+	}
+	if( !hndl ) {
+		CloseHandle(data);
+		LogError( "Error logging in user %L : %s", client, error );
+		return;
+	}
+	
+	decl String:query[1024];
+	FormatEx( query, sizeof query, "SELECT locked FROM sourcebans_store.user where user_id=%d", account );
+	DBRELAY_TQuery( OnClientLockChecked, query, data );
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnClientLockChecked( Handle:owner, Handle:hndl, const String:error[], any:data ) {
+	
+	ResetPack(data);
+	new client = GetClientOfUserId( ReadPackCell(data) );
+	new account = ReadPackCell(data);
+	
+	if( client == 0 ) {
+		CloseHandle(data);
+		return;
+	}
+	if( !hndl ) {
+		CloseHandle(data);
+		LogError( "Error checking player inventory lock for %L : %s", client, error );
+		return;
+	}
+	
+	SQL_FetchRow( hndl );
+	new locked = SQL_FetchInt( hndl, 0 );
+	
+	PrintToChat(client, "locked: %d", locked);
+	
+	if( locked + LOCK_DURATION_EXPIRE >= GetTime() ) {
+		g_client_data_loaded[client] = false;
+		PrintToChat( client, "Your inventory did not load due to being locked." );
+		CloseHandle(data);
+		return;
+	}
+	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
 		"SELECT item_id,quantity FROM sourcebans_store.user_item WHERE user_id=%d AND %s UNION SELECT %d AS item_id,credit AS quantity FROM sourcebans_store.user WHERE user_id=%d",
@@ -359,26 +449,16 @@ bool:LoadClientData( client, bool:chain=false ) {
 		SPITEM_CREDIT,
 		account );
 	
-	new Handle:pack = CreateDataPack();
-	WritePackCell( pack, GetClientUserId(client) );
-	WritePackCell( pack, client );
-	WritePackCell( pack, chain );
-		
-	DBRELAY_TQuery( OnClientInventoryLoaded, query, pack );
-	
-	new time = GetTime();
-	FormatEx( query, sizeof query, 
-		"INSERT INTO sourcebans_store.user (user_id,server,ingame) VALUES(%d,%d) ON DUPLICATE KEY UPDATE server=%s,ingame=%d",
-		account,time,c_ip,time );
-	DBRELAY_TQuery( IgnoredSQLResult, query, pack );
-	
-	return true;
+	DBRELAY_TQuery( OnClientInventoryLoaded, query, data );
 }
 
 //-------------------------------------------------------------------------------------------------
 public OnClientInventoryLoaded( Handle:owner, Handle:hndl, const String:error[], any:data ) {
+
 	ResetPack(data);
 	new client = GetClientOfUserId( ReadPackCell(data) );
+	//skip account field
+	SetPackPosition( data, 16 );
 	new client2 = ReadPackCell(data);
 	new bool:chain = !!ReadPackCell(data);
 	CloseHandle(data);
@@ -863,7 +943,11 @@ public ConVar_QueryClient( QueryCookie:cookie, client, ConVarQueryResult:result,
 	WritePackCell( pack, GetClientUserId(client) );
 	WritePackCell( pack, token );
 	
-	DBRELAY_TQuery( OnQuickAuthSave, query, pack );
+	if( DBRELAY_IsConnected() ) {
+		DBRELAY_TQuery( OnQuickAuthSave, query, pack );
+	} else {
+		PrintToChat( client, "\x01Visit our store at \x04store.reflex-gamers.com");
+	}
 	
 	//ReplyToCommand( client, "Visit our store at store.reflex-gamers.com" );
 }
