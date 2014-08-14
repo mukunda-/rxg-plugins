@@ -222,7 +222,7 @@ bool:GiveWeapon( client, weapon_index, TFClassType:class_restriction, const Stri
 		team_color = "84d8f4";
 		g_num_blu_weapons++;
 	} else {
-		team_color = "ffffff";
+		team_color = "874fad";
 	}
 	
 	decl String:player_name[32];

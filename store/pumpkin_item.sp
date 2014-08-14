@@ -66,7 +66,7 @@ public OnPluginStart() {
 	
 	sm_pumpkins_max_per_player = CreateConVar( "sm_pumpkins_max_per_player", "15", "Maximum number of Pumpkin Bombs allowed per player at once. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
 	sm_pumpkins_max_plant_distance = CreateConVar( "sm_pumpkins_max_plant_distance", "500", "The maximum distance you may plant Pumpkin Bombs away from yourself. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
-	sm_pumpkins_broadcast_cooldown = CreateConVar( "sm_pumpkins_broadcast_cooldown", "30", "How frequently to broadcast that a player is planing Pumpkin Bombs.", FCVAR_PLUGIN, true, 0.0 );
+	sm_pumpkins_broadcast_cooldown = CreateConVar( "sm_pumpkins_broadcast_cooldown", "30", "How frequently to broadcast that a player is planing Pumpkin Bombs (per player).", FCVAR_PLUGIN, true, 0.0 );
 	sm_pumpkins_arm_delay = CreateConVar( "sm_pumpkins_arm_delay", "0.9", "Time in seconds required for a Pumpkin Bomb to arm after being planted.", FCVAR_PLUGIN, true, 0.0, true, 5.0 );
 	sm_pumpkins_arm_solid = CreateConVar( "sm_pumpkins_arm_solid", "1", "Whether Pumpkin Bombs should become solid when armed.", FCVAR_PLUGIN );
 	
