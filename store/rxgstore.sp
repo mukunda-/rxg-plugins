@@ -19,12 +19,14 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "1.4.2",
+    version     = "2.0.0",
     url         = "www.mukunda.com"
 };
 
 //-------------------------------------------------------------------------------------------------
 #define ITEM_MAX 16
+
+new String:c_ip[32];
 
 new String:item_map[4096]; // map of real items to item slots
 new item_ids[ITEM_MAX]; //reverse map, 0=slot not used
@@ -45,6 +47,7 @@ new String:sql_itemid_filter[128];
 
 new g_client_items[MAXPLAYERS+1][ITEM_MAX]; // client item counts
 new bool:g_client_data_loaded[MAXPLAYERS+1]; // FALSE if inventory hasn't been loaded yet
+new bool:g_client_data_locked[MAXPLAYERS+1];
 
 new g_client_data_account[MAXPLAYERS+1]; // cache of the client accountid, used for commits (since client may disconnect)
 new g_client_items_change[MAXPLAYERS+1][ITEM_MAX];
@@ -128,12 +131,13 @@ public OnPluginStart() {
 		HookEvent( "round_start", OnRoundStart, EventHookMode_PostNoCopy );
 	}
 	
+	GetConVarString(FindConVar("ip"), c_ip, sizeof c_ip);
 	BuildSQLItemIDFilter();
 }
 
 //-------------------------------------------------------------------------------------------------
 BuildSQLItemIDFilter() {
-	FormatEx( sql_itemid_filter, sizeof sql_itemid_filter, "ITEMID IN(" );
+	FormatEx( sql_itemid_filter, sizeof sql_itemid_filter, "item_id IN(" );
 	new count = 0;
 	for( new i =0 ; i < 16; i++ ) {
 
@@ -184,7 +188,7 @@ CommitItemChange( client, item, amount ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"UPDATE sourcebans_store.INVENTORY SET AMOUNT=AMOUNT%s%d WHERE ACCOUNT=%d AND ITEMID=%d",
+		"UPDATE sourcebans_store.user_item SET quantity=quantity%s%d WHERE user_id=%d AND item_id=%d",
 		amount >= 0 ? "+":"",
 		amount,
 		g_client_data_account[client],
@@ -214,7 +218,7 @@ public OnCommitItem( Handle:owner, Handle:hndl, const String:error[], any:data )
 	
 	if( !hndl ) {
 		LogError( "[SERIOUS] SQL error during item usage commit! ::: %s", error ); 
-		LogError( "ACCOUNT=%d, ITEM=%d (%s), AMOUNT=%d", account, item_ids[item], item_names[item], amount );
+		LogError( "user_id=%d, item_id=%d (%s), quantity=%d", account, item_ids[item], item_names[item], amount );
 		return;
 	}
 	
@@ -235,7 +239,7 @@ bool:CommitCashChange( client, cash ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"INSERT INTO sourcebans_store.USER (ACCOUNT,CREDIT) VALUES (%d,%d) ON DUPLICATE KEY UPDATE CREDIT=CREDIT%s%d",
+		"INSERT INTO sourcebans_store.user (user_id,credit) VALUES (%d,%d) ON DUPLICATE KEY UPDATE credit=credit%s%d",
 		g_client_data_account[client],
 		cash,
 		cash > 0 ? "+":"-",
@@ -264,7 +268,7 @@ public OnCommitCash( Handle:owner, Handle:hndl, const String:error[], any:data )
 	
 	if( !hndl ) {
 		LogError( "[SERIOUS] SQL error during CREDIT commit! ::: %s", error ); 
-		LogError( "ACCOUNT=%d, AMOUNT=%d", account,  amount );
+		LogError( "user_id=%d, quantity=%d", account,  amount );
 		return;
 	}
 	
@@ -284,7 +288,7 @@ bool:TryTakeCash( client, cash, Handle:plugin, TakeCashCB:cb, any:data ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"UPDATE sourcebans_store.USER SET CREDIT=CREDIT-%d WHERE ACCOUNT=%d AND CREDIT>=%d",
+		"UPDATE sourcebans_store.user SET credit=credit-%d WHERE user_id=%d AND credit>=%d",
 		cash,
 		g_client_data_account[client],
 		cash );
@@ -324,7 +328,7 @@ public OnTakeCash( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 		Call_Finish();
 		
 		LogError( "SQL error during CREDIT taking! ::: %s", error ); 
-		LogError( "ACCOUNT=%d, AMOUNT=%d", account, amount );
+		LogError( "user_id=%d, quantity=%d", account, amount );
 		return;
 	}
 	
@@ -349,7 +353,7 @@ bool:LoadClientData( client, bool:chain=false ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"SELECT ITEMID,AMOUNT FROM sourcebans_store.INVENTORY WHERE ACCOUNT=%d AND %s UNION SELECT %d AS ITEMID,CREDIT AS AMOUNT FROM sourcebans_store.USER WHERE ACCOUNT=%d",
+		"SELECT item_id,quantity FROM sourcebans_store.user_item WHERE user_id=%d AND %s UNION SELECT %d AS item_id,credit AS quantity FROM sourcebans_store.user WHERE user_id=%d",
 		account,
 		sql_itemid_filter,
 		SPITEM_CREDIT,
@@ -364,8 +368,8 @@ bool:LoadClientData( client, bool:chain=false ) {
 	
 	new time = GetTime();
 	FormatEx( query, sizeof query, 
-		"INSERT INTO sourcebans_store.USER (ACCOUNT,INGAME) VALUES(%d,%d) ON DUPLICATE KEY UPDATE INGAME=%d",
-		account,time,time );
+		"INSERT INTO sourcebans_store.user (user_id,server,ingame) VALUES(%d,%d) ON DUPLICATE KEY UPDATE server=%s,ingame=%d",
+		account,time,c_ip,time );
 	DBRELAY_TQuery( IgnoredSQLResult, query, pack );
 	
 	return true;
@@ -431,7 +435,7 @@ LogOutPlayer( client ) {
 	
 		decl String:query[1024];
 		FormatEx( query, sizeof query, 
-			"UPDATE sourcebans_store.USER SET INGAME=0 WHERE ACCOUNT=%d",account );
+			"UPDATE sourcebans_store.user SET server=null WHERE user_id=%d",account );
 			
 		DBRELAY_TQuery( IgnoredSQLResult, query );
 	}
@@ -851,7 +855,7 @@ public ConVar_QueryClient( QueryCookie:cookie, client, ConVarQueryResult:result,
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"INSERT INTO sourcebans_store.QUICKAUTH (ACCOUNT, TOKEN) VALUES (%d, %d)",
+		"INSERT INTO sourcebans_store.quick_auth (user_id, token) VALUES (%d, %d)",
 		GetSteamAccountID(client),
 		token );
 	
