@@ -126,6 +126,7 @@ public OnPluginStart() {
 	RegConsoleCmd( "sm_shop", Command_store );
 	RegConsoleCmd( "sm_buy", Command_store );
 	RegServerCmd( "sm_lock_user", Command_lock_user );
+	RegServerCmd( "sm_refresh_user", Command_refresh_user );
 	
 	if( g_update_method == UPDATE_METHOD_TIMED ) {
 		CreateTimer( UPDATE_TIMED_INTERVAL, OnTimedUpdate, _, TIMER_REPEAT );
@@ -142,14 +143,35 @@ public Action:Command_lock_user( args ) {
 	
 	if( args > 0 ) {
 		
-		decl String:client_string[16];
-		GetCmdArg( 1, client_string, sizeof client_string );
-		new client = StringToInt(client_string);
+		decl String:account_string[16];
+		GetCmdArg( 1, account_string, sizeof account_string );
+		new account = StringToInt(account_string);
 		
 		for( new i = 1; i <= MaxClients; i++ ) {
-			if( g_client_data_account[i] == client ) {
+			if( g_client_data_account[i] == account ) {
 				g_client_data_loaded[i] = false;
-				PrintToChat( i, "Your inventory has been unloaded to send the gift. It will reload soon." );
+				//PrintToChat( i, "Your inventory has been unloaded to send the gift." );
+				return Plugin_Handled;
+			}
+		}
+	}
+	
+	return Plugin_Handled;
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:Command_refresh_user( args ) {
+	
+	if( args > 0 ) {
+		
+		decl String:account_string[16];
+		GetCmdArg( 1, account_string, sizeof account_string );
+		new account = StringToInt(account_string);
+		
+		for( new i = 1; i <= MaxClients; i++ ) {
+			if( g_client_data_account[i] == account ) {
+				LoadClientData(i);
+				//PrintToChat( i, "Your inventory has been reloaded." );
 				return Plugin_Handled;
 			}
 		}
@@ -431,8 +453,6 @@ public OnClientLockChecked( Handle:owner, Handle:hndl, const String:error[], any
 	
 	SQL_FetchRow( hndl );
 	new locked = SQL_FetchInt( hndl, 0 );
-	
-	PrintToChat(client, "locked: %d", locked);
 	
 	if( locked + LOCK_DURATION_EXPIRE >= GetTime() ) {
 		g_client_data_loaded[client] = false;
