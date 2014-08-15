@@ -125,8 +125,9 @@ public OnPluginStart() {
 	RegConsoleCmd( "sm_store", Command_store );
 	RegConsoleCmd( "sm_shop", Command_store );
 	RegConsoleCmd( "sm_buy", Command_store );
-	RegServerCmd( "sm_lock_user", Command_lock_user );
-	RegServerCmd( "sm_refresh_user", Command_refresh_user );
+	RegServerCmd( "sm_unload_user_inventory", Command_unload_user_inventory );
+	RegServerCmd( "sm_reload_user_inventory", Command_reload_user_inventory );
+	RegServerCmd( "sm_broadcast_user_purchase", Command_broadcast_user_purchase );
 	
 	if( g_update_method == UPDATE_METHOD_TIMED ) {
 		CreateTimer( UPDATE_TIMED_INTERVAL, OnTimedUpdate, _, TIMER_REPEAT );
@@ -134,12 +135,22 @@ public OnPluginStart() {
 		HookEvent( "round_start", OnRoundStart, EventHookMode_PostNoCopy );
 	}
 	
-	GetConVarString(FindConVar("ip"), c_ip, sizeof c_ip);
+	new longIP = GetConVarInt(FindConVar("hostip"));
+	new pieces[4];
+	
+	pieces[0] = (longIP & 0xFF000000) >> 24;
+	pieces[1] = (longIP & 0x00FF0000) >> 16;
+	pieces[2] = (longIP & 0x0000FF00) >> 8;
+	pieces[3] = longIP & 0x000000FF;
+
+	FormatEx( c_ip, sizeof c_ip, "%d.%d.%d.%d", pieces[0], pieces[1], pieces[2], pieces[3] );
+	
+	//GetConVarString(FindConVar("ip"), c_ip, sizeof c_ip);
 	BuildSQLItemIDFilter();
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Command_lock_user( args ) {
+public Action:Command_unload_user_inventory( args ) {
 	
 	if( args > 0 ) {
 		
@@ -160,7 +171,7 @@ public Action:Command_lock_user( args ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Command_refresh_user( args ) {
+public Action:Command_reload_user_inventory( args ) {
 	
 	if( args > 0 ) {
 		
@@ -172,6 +183,42 @@ public Action:Command_refresh_user( args ) {
 			if( g_client_data_account[i] == account ) {
 				LoadClientData(i);
 				//PrintToChat( i, "Your inventory has been reloaded." );
+				return Plugin_Handled;
+			}
+		}
+	}
+	
+	return Plugin_Handled;
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:Command_broadcast_user_purchase( args ) {
+	
+	if( args > 0 ) {
+		
+		decl String:account_string[16];
+		GetCmdArg( 1, account_string, sizeof account_string );
+		new account = StringToInt(account_string);
+		
+		for( new i = 1; i <= MaxClients; i++ ) {
+			if( g_client_data_account[i] == account ) {
+			
+				decl String:player_name[32];
+				GetClientName( i, player_name, sizeof player_name );
+				
+				decl String:team_color[7];
+				new client_team = GetClientTeam(i);
+				
+				if( client_team == 2 ){
+					team_color = GAME == GAME_TF2 ? "\x07ff3d3d" : "\x09";
+				} else if( client_team == 3 ){
+					team_color = GAME == GAME_TF2 ? "\x0784d8f4" : "\x0B";
+				} else {
+					team_color = GAME == GAME_TF2 ? "\x07808080" : "\x08";
+				}
+				
+				PrintToChatAll( "\x01 %s%s \x01just completed a purchase! Access the \x04!store\x01 to see what was bought.", team_color, player_name );
+				
 				return Plugin_Handled;
 			}
 		}
@@ -456,9 +503,41 @@ public OnClientLockChecked( Handle:owner, Handle:hndl, const String:error[], any
 	
 	if( locked + LOCK_DURATION_EXPIRE >= GetTime() ) {
 		g_client_data_loaded[client] = false;
-		PrintToChat( client, "Your inventory did not load due to being locked." );
+		//PrintToChat( client, "Your inventory did not load due to a temporary lock." );
 		CloseHandle(data);
 		return;
+	}
+	
+	decl String:query[1024];
+	FormatEx( query, sizeof query,
+		"SELECT count(*) as total FROM sourcebans_store.gift WHERE recipient_id=%d AND accepted=0",
+		account );
+	
+	DBRELAY_TQuery( OnClientGiftsLoaded, query, data );
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnClientGiftsLoaded( Handle:owner, Handle:hndl, const String:error[], any:data ) {
+	
+	ResetPack(data);
+	new client = GetClientOfUserId( ReadPackCell(data) );
+	new account = ReadPackCell(data);
+	
+	if( client == 0 ) {
+		CloseHandle(data);
+		return;
+	}
+	if( !hndl ) {
+		CloseHandle(data);
+		LogError( "Error checking pending gifts for %L : %s", client, error );
+		return;
+	}
+	
+	SQL_FetchRow( hndl );
+	new num_gifts = SQL_FetchInt( hndl, 0 );
+	
+	if( num_gifts > 0 ) {
+		PrintToChat( client, "\x01You have pending gifts. Access the \x04!store \x01to accept them." );
 	}
 	
 	decl String:query[1024];
