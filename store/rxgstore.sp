@@ -954,7 +954,7 @@ public ShowStorePage( client, id, token ) {
 	decl String:url[1024];
 	FormatEx( url, sizeof url,
 		//"http://store.reflex-gamers.com/quickauth%s.php?id=%d&token=%d",
-		"http://rxgstore2.dev/quickauth?id=%d&token=%d&server=%s",
+		"http://rxgstore2.dev/quickauth?id=%d&token=%d&source=%s",
 		id,
 		token,
 		GAME == GAME_CSGO ? "csgo" : "tf2" );
