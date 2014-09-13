@@ -296,7 +296,8 @@ public Action:OnChickenCollide(trigger, target) {
 		new Float:target_scale = g_chicken_scale[target];
 		new Float:chicken_scale = g_chicken_scale[chicken];
 
-		new bool:enemy_chickens = GetClientTeam(thrower) != GetClientTeam(other_thrower);
+		//if one of the clients is not valid, treat as ally chickens
+		new bool:enemy_chickens = IsValidClient(thrower) && IsValidClient(other_thrower) && GetClientTeam(thrower) != GetClientTeam(other_thrower);
 
 		if (!enemy_chickens && (target_scale >= c_max_scale || chicken_scale >= c_max_scale) ||
 			enemy_chickens && (target_scale <= c_min_scale || chicken_scale <= c_min_scale)) {
@@ -437,4 +438,9 @@ public Action:StopChicken(Handle:timer, any:chicken)
 public Native_ThrowChicken(Handle:plugin, numParams) {
 	new client = GetNativeCell(1);
 	ThrowChicken(client, c_base_scale, c_speed, c_gravity);
+}
+
+//-----------------------------------------------------------------------------
+stock bool:IsValidClient( client ) {
+	return ( client > 0 && client <= MaxClients && IsClientInGame(client) );
 }
