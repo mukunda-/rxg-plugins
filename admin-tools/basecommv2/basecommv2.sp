@@ -153,6 +153,29 @@ public OnPluginStart()
 	{
 		OnAdminMenuReady(topmenu);
 	}
+	
+	DisablePlugin("basecomm");
+}
+
+stock bool:DisablePlugin(const String:file[])
+{
+	decl String:sNewPath[PLATFORM_MAX_PATH + 1], String:sOldPath[PLATFORM_MAX_PATH + 1];
+	BuildPath(Path_SM, sNewPath, sizeof(sNewPath), "plugins/disabled/%s.smx", file);
+	BuildPath(Path_SM, sOldPath, sizeof(sOldPath), "plugins/%s.smx", file);
+	
+	// If plugins/<file>.smx does not exist, ignore
+	if(!FileExists(sOldPath))
+		return false;
+	
+	// If plugins/disabled/<file>.smx exists, delete it
+	if(FileExists(sNewPath))
+		DeleteFile(sNewPath);
+	
+	// Unload plugins/<file>.smx and move it to plugins/disabled/<file>.smx
+	ServerCommand("sm plugins unload %s", file);
+	RenameFile(sNewPath, sOldPath);
+	LogMessage("plugins/%s.smx was unloaded and moved to plugins/disabled/%s.smx", file, file);
+	return true;
 }
 
 public OnAdminMenuReady(Handle:topmenu)
