@@ -130,6 +130,7 @@ public OnPluginStart() {
 	RegServerCmd( "sm_unload_user_inventory", Command_unload_user_inventory );
 	RegServerCmd( "sm_reload_user_inventory", Command_reload_user_inventory );
 	RegServerCmd( "sm_broadcast_user_purchase", Command_broadcast_user_purchase );
+	RegServerCmd( "sm_broadcast_user_gift", Command_broadcast_user_gift );
 	
 	if( g_update_method == UPDATE_METHOD_TIMED ) {
 		CreateTimer( UPDATE_TIMED_INTERVAL, OnTimedUpdate, _, TIMER_REPEAT );
@@ -163,7 +164,7 @@ public Action:Command_unload_user_inventory( args ) {
 		for( new i = 1; i <= MaxClients; i++ ) {
 			if( g_client_data_account[i] == account ) {
 				g_client_data_loaded[i] = false;
-				//PrintToChat( i, "Your inventory has been unloaded to send the gift." );
+				//PrintToChat( i, "\x01 \x04[STORE]\x01 Your inventory has been unloaded." );
 				return Plugin_Handled;
 			}
 		}
@@ -184,7 +185,7 @@ public Action:Command_reload_user_inventory( args ) {
 		for( new i = 1; i <= MaxClients; i++ ) {
 			if( g_client_data_account[i] == account ) {
 				LoadClientData(i);
-				//PrintToChat( i, "Your inventory has been reloaded." );
+				PrintToChat( i, "\x01 \x04[STORE]\x01 Your inventory has been updated." );
 				return Plugin_Handled;
 			}
 		}
@@ -194,15 +195,16 @@ public Action:Command_reload_user_inventory( args ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Command_broadcast_user_purchase( args ) {
+BroadcastStoreActivity( args, const String:msg[] ) {
 	
 	if( args > 0 ) {
-		
+	
 		decl String:account_string[16];
 		GetCmdArg( 1, account_string, sizeof account_string );
 		new account = StringToInt(account_string);
 		
 		for( new i = 1; i <= MaxClients; i++ ) {
+		
 			if( g_client_data_account[i] == account ) {
 			
 				decl String:player_name[32];
@@ -219,12 +221,39 @@ public Action:Command_broadcast_user_purchase( args ) {
 					team_color = GAME == GAME_TF2 ? "\x07808080" : "\x08";
 				}
 				
-				PrintToChatAll( "\x01 %s%s \x01just completed a purchase! Access the \x04!store\x01 to see what was bought.", team_color, player_name );
+				new arg = 3;
 				
-				return Plugin_Handled;
+				while( args >= arg ) {
+					
+					decl String:amount_string[8];
+					decl String:name[64];
+					GetCmdArg( arg - 1, amount_string, sizeof amount_string );
+					GetCmdArg( arg, name, sizeof name );
+					new amount = StringToInt(amount_string);
+					
+					PrintToChatAll( msg, team_color, player_name, amount, name );
+					
+					arg += 2;
+				}
+				
+				return;
 			}
 		}
 	}
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:Command_broadcast_user_purchase( args ) {
+	
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just purchased \x03%d %s \x01from the \x04!store" );
+	
+	return Plugin_Handled;
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:Command_broadcast_user_gift( args ) {
+	
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just sent a gift containing \x03%d %s \x01via the \x04!store" );
 	
 	return Plugin_Handled;
 }
@@ -955,6 +984,7 @@ public ShowStorePage( client, id, token ) {
 	FormatEx( url, sizeof url,
 		//"http://store.reflex-gamers.com/quickauth%s.php?id=%d&token=%d",
 		"http://rxgstore2.dev/quickauth?id=%d&token=%d&source=%s",
+		//"http://sourcebans.site.nfoservers.com/store2/quickauth?id=%d&token=%d&source=%s",
 		id,
 		token,
 		GAME == GAME_CSGO ? "csgo" : "tf2" );
