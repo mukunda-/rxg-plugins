@@ -221,19 +221,16 @@ BroadcastStoreActivity( args, const String:msg[] ) {
 					team_color = GAME == GAME_TF2 ? "\x07808080" : "\x08";
 				}
 				
-				new arg = 3;
+				new arg = 2;
 				
 				while( args >= arg ) {
 					
-					decl String:amount_string[8];
-					decl String:name[64];
-					GetCmdArg( arg - 1, amount_string, sizeof amount_string );
-					GetCmdArg( arg, name, sizeof name );
-					new amount = StringToInt(amount_string);
+					decl String:item[64];
+					GetCmdArg( arg, item, sizeof item );
 					
-					PrintToChatAll( msg, team_color, player_name, amount, name );
+					PrintToChatAll( msg, team_color, player_name, item );
 					
-					arg += 2;
+					arg++;
 				}
 				
 				return;
@@ -245,7 +242,7 @@ BroadcastStoreActivity( args, const String:msg[] ) {
 //-------------------------------------------------------------------------------------------------
 public Action:Command_broadcast_user_purchase( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just purchased \x03%d %s \x01from the \x04!store" );
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just bought \x03%s \x01from the \x04!store" );
 	
 	return Plugin_Handled;
 }
@@ -253,7 +250,7 @@ public Action:Command_broadcast_user_purchase( args ) {
 //-------------------------------------------------------------------------------------------------
 public Action:Command_broadcast_user_gift( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just sent a gift containing \x03%d %s \x01via the \x04!store" );
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just sent a \x04!store \x01gift containing \x03%s" );
 	
 	return Plugin_Handled;
 }
@@ -989,16 +986,12 @@ public ShowStorePage( client, id, token ) {
 		token,
 		GAME == GAME_CSGO ? "csgo" : "tf2" );
 	
-	if( GAME == GAME_CSGO ) {
-		ShowMOTDPanel(client, "RXG Store", url, MOTDPANEL_TYPE_URL);
-	} else {
-		new Handle:Kv = CreateKeyValues( "motd" );
-		KvSetString( Kv, "title", "RXG Store" );
-		KvSetNum( Kv, "type", MOTDPANEL_TYPE_URL );
-		KvSetString( Kv, "msg", url );
-		ShowVGUIPanel( client, "info", Kv, true );
-		CloseHandle( Kv );
-	}
+	new Handle:Kv = CreateKeyValues( "motd" );
+	KvSetString( Kv, "title", "RXG Store" );
+	KvSetNum( Kv, "type", MOTDPANEL_TYPE_URL );
+	KvSetString( Kv, "msg", url );
+	ShowVGUIPanel( client, "info", Kv, true );
+	CloseHandle( Kv );
 }
 
 //-------------------------------------------------------------------------------------------------
