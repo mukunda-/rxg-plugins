@@ -127,10 +127,14 @@ public OnPluginStart() {
 	RegConsoleCmd( "sm_store", Command_store );
 	RegConsoleCmd( "sm_shop", Command_store );
 	RegConsoleCmd( "sm_buy", Command_store );
-	RegServerCmd( "sm_unload_user_inventory", Command_unload_user_inventory );
-	RegServerCmd( "sm_reload_user_inventory", Command_reload_user_inventory );
-	RegServerCmd( "sm_broadcast_user_purchase", Command_broadcast_user_purchase );
-	RegServerCmd( "sm_broadcast_user_gift", Command_broadcast_user_gift );
+	
+	RegServerCmd( "sm_store_unload_inventory", Command_unload_user_inventory );
+	RegServerCmd( "sm_store_reload_inventory", Command_reload_user_inventory );
+	RegServerCmd( "sm_store_broadcast_purchase", Command_broadcast_purchase );
+	RegServerCmd( "sm_store_broadcast_gift_send", Command_broadcast_gift_send );
+	RegServerCmd( "sm_store_broadcast_gift_receive", Command_broadcast_gift_receive );
+	RegServerCmd( "sm_store_broadcast_reward_receive", Command_broadcast_reward_receive );
+	RegServerCmd( "sm_store_broadcast_review", Command_broadcast_review );
 	
 	if( g_update_method == UPDATE_METHOD_TIMED ) {
 		CreateTimer( UPDATE_TIMED_INTERVAL, OnTimedUpdate, _, TIMER_REPEAT );
@@ -207,10 +211,11 @@ BroadcastStoreActivity( args, const String:msg[] ) {
 		
 			if( g_client_data_account[i] == account ) {
 			
-				decl String:player_name[32];
+				decl String:player_name[33];
 				GetClientName( i, player_name, sizeof player_name );
 				
 				decl String:team_color[7];
+				decl String:item_color[7];
 				new client_team = GetClientTeam(i);
 				
 				if( client_team == 2 ){
@@ -221,6 +226,8 @@ BroadcastStoreActivity( args, const String:msg[] ) {
 					team_color = GAME == GAME_TF2 ? "\x07808080" : "\x08";
 				}
 				
+				item_color = GAME == GAME_TF2 ? "\x07874fad" : "\x03";
+				
 				new arg = 2;
 				
 				while( args >= arg ) {
@@ -228,7 +235,7 @@ BroadcastStoreActivity( args, const String:msg[] ) {
 					decl String:item[64];
 					GetCmdArg( arg, item, sizeof item );
 					
-					PrintToChatAll( msg, team_color, player_name, item );
+					PrintToChatAll( msg, team_color, player_name, item_color, item );
 					
 					arg++;
 				}
@@ -240,20 +247,40 @@ BroadcastStoreActivity( args, const String:msg[] ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Command_broadcast_user_purchase( args ) {
+public Action:Command_broadcast_purchase( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just bought \x03%s \x01from the \x04!store" );
-	
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just bought %s%s \x01from the \x04!store" );
 	return Plugin_Handled;
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Command_broadcast_user_gift( args ) {
+public Action:Command_broadcast_gift_send( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just sent a \x04!store \x01gift containing \x03%s" );
-	
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just sent a \x04!store \x01gift containing %s%s" );
 	return Plugin_Handled;
 }
+
+//-------------------------------------------------------------------------------------------------
+public Action:Command_broadcast_gift_receive( args ) {
+	
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just received a \x04!store \x01gift containing %s%s" );
+	return Plugin_Handled;
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:Command_broadcast_reward_receive( args ) {
+	
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just received a \x04!store \x01reward containing %s%s" );
+	return Plugin_Handled;
+}
+
+//-------------------------------------------------------------------------------------------------
+public Action:Command_broadcast_review( args ) {
+	
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just wrote a \x04!store \x01review about %s%s" );
+	return Plugin_Handled;
+}
+
 
 //-------------------------------------------------------------------------------------------------
 BuildSQLItemIDFilter() {
