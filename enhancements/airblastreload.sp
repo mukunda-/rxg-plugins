@@ -41,7 +41,7 @@ public Action:Event_AirBlast( Handle:event, const String:name[], bool:dontBroadc
 	new currentAmmo = GetEntData( client, iAmmoTable + iOffset, 4 );
 	
 	new newAmmo = currentAmmo > AMMO_MAX ? AMMO_MAX : currentAmmo;
-	SetEntData( client, iAmmoTable + iOffset, newAmmo + AMMO_COST*REFUN_MUTIPLIER, 4, true );
+	SetEntData( client, iAmmoTable + iOffset, newAmmo + AMMO_COST*REFUND_MULTIPLIER, 4, true );
 	
 	return Plugin_Continue;
 }
