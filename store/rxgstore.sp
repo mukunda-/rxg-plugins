@@ -886,6 +886,11 @@ public OnQuickAuthFetch( Handle:owner, Handle:hndl, const String:error[], any:da
 public Action:Command_store( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	
+	if( !g_db_connected ) {
+		PrintToChat( client, "The database could not be reached. Please try again later." );
+		return Plugin_Handled;
+	}
+	
 	QueryClientConVar(client, "cl_disablehtmlmotd", ConVar_QueryClient);
 	
 	return Plugin_Handled;
