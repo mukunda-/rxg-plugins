@@ -270,8 +270,10 @@ LoadClientPrefs( client ) {
 			glow_on[client] = false;
 		} else {
 			glow_fp[client] = (data[0] == '1');
-			ParseColor( data[1], glow_color[client] );
 			glow_on[client] = (data[7] == '1');
+			data[7] = 0;
+			ParseColor( data[1], glow_color[client] );
+			
 		}
 	}
 }
