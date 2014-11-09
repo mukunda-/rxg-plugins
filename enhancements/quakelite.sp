@@ -166,7 +166,10 @@ AddKill( client, const String:weapon[], headshot, victim ) {
 			PlayAnnouncer( ASOUND_GODLIKE );
 		}
 	}
-	if( StrEqual( weapon, "knife" ) || StrEqual( weapon, "taser" ) ) {
+	if( StrContains( weapon, "knife" ) != -1 || 
+	    StrContains( weapon, "bayonet" ) != -1 ||
+	    StrEqual( weapon, "taser" ) ) {
+
 		PlayAnnouncer( ASOUND_HUMILIATION );
 	}
 	
