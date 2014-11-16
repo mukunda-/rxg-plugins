@@ -37,7 +37,7 @@ public Plugin:myinfo =
 	name = "RXG Donations",
 	author = "mukunda",
 	description = "RXG Donations Interface",
-	version = "2.0.0",
+	version = "2.1.0",
 	url = "www.mukunda.com"
 };
 
@@ -133,7 +133,7 @@ public OnPluginStart() {
 
 	BuildPath(Path_SM, logFile, sizeof(logFile), "logs/donations.log");
  
-	if(!SQL_CheckConfig("donations"))
+	if(!SQL_CheckConfig("reflex"))
 	{
 		LogToFile(logFile, "Database failure: Could not find Database conf \"donations\"");
 		SetFailState("Database failure: Could not find Database conf \"donations\"");
@@ -141,7 +141,7 @@ public OnPluginStart() {
 	}
 	
 	db_connecting = true;
-	SQL_TConnect( OnDonationsConnected, "donations" );
+	SQL_TConnect( OnDonationsConnected, "reflex" );
 	
 	RegConsoleCmd( "sm_verify", Command_verify );								// verify yourself
 	RegConsoleCmd( "sm_info", Command_info );									// print donation/user info
@@ -268,7 +268,7 @@ public OnClientPostAdminCheck(client) {
 //-------------------------------------------------------------------------------------------------
 public Action:RetryDonationsConnection( Handle:timer ) {
 	db_connecting = true;
-	SQL_TConnect( OnDonationsConnected, "donations" );
+	SQL_TConnect( OnDonationsConnected, "reflex" );
 	return Plugin_Handled;
 }
 
@@ -348,7 +348,7 @@ public LookupDonationInfoResult2( Handle:owner, Handle:hndl, const String:error[
 			FROM ( \
 				SELECT \
 					payment_date AS time, (mc_gross*exchange_rate)*535680.0 AS amt_time \
-					FROM dopro_donations \
+					FROM SOURCEBANS_FORUMS.dopro_donations \
 					WHERE (user_id='%d' OR option_name2 LIKE '%s') \
 \
 					AND (payment_status = 'Completed' OR payment_status = 'Refunded') \
@@ -416,7 +416,7 @@ LookupDonationInfo( client ) {
 	decl String:query[256];
 	GetClientAuthString( client, auth, sizeof(auth) );
 	auth[6] = '_';
-	Format( query, sizeof(query), "SELECT userid FROM userfield WHERE field7 LIKE '%s'", auth );
+	Format( query, sizeof(query), "SELECT userid FROM SOURCEBANS_FORUMS.userfield WHERE field7 LIKE '%s'", auth );
 	SQL_TQuery( db_donations, LookupDonationInfoResult, query, GetClientUserId(client) );
 }
  
@@ -697,7 +697,7 @@ public Action:PrintDonationInfo( Handle:timer ) {
 		// print donation totals
  
 		Format( query, sizeof(query), 
-			"SELECT SUM(mc_gross*exchange_rate) AS scaled FROM dopro_donations WHERE (payment_date >= '%d') AND (payment_date < '%d') AND event_id = '0' AND (payment_status = 'Completed' OR payment_status = 'Refunded') ",
+			"SELECT SUM(mc_gross*exchange_rate) AS scaled FROM SOURCEBANS_FORUMS.dopro_donations WHERE (payment_date >= '%d') AND (payment_date < '%d') AND event_id = '0' AND (payment_status = 'Completed' OR payment_status = 'Refunded') ",
 			month_start_time,
 			month_end_time );
 
@@ -705,7 +705,7 @@ public Action:PrintDonationInfo( Handle:timer ) {
 	} else if( ad_counter == 1 ) {
 		// current top donator
 		Format( query, sizeof(query), 
-			"SELECT custom,SUM(mc_gross*exchange_rate) AS scaled FROM dopro_donations WHERE (payment_date >= '%d') AND (payment_date < '%d') AND event_id = '0' AND (payment_status = 'Completed' OR payment_status = 'Refunded') AND option_seleczion1='Yes' GROUP BY custom ORDER BY scaled DESC LIMIT 1",
+			"SELECT custom,SUM(mc_gross*exchange_rate) AS scaled FROM SOURCEBANS_FORUMS.dopro_donations WHERE (payment_date >= '%d') AND (payment_date < '%d') AND event_id = '0' AND (payment_status = 'Completed' OR payment_status = 'Refunded') AND option_seleczion1='Yes' GROUP BY custom ORDER BY scaled DESC LIMIT 1",
 			month_start_time,
 			month_end_time );
 
@@ -713,14 +713,14 @@ public Action:PrintDonationInfo( Handle:timer ) {
 	} else if( ad_counter == 2 ) {
 		// last top donator
 		Format( query, sizeof(query), 
-			"SELECT custom,SUM(mc_gross*exchange_rate) AS scaled FROM dopro_donations WHERE (payment_date >= '%d') AND (payment_date < '%d') AND event_id = '0' AND (payment_status = 'Completed' OR payment_status = 'Refunded') AND option_seleczion1='Yes' GROUP BY custom ORDER BY scaled DESC LIMIT 1",
+			"SELECT custom,SUM(mc_gross*exchange_rate) AS scaled FROM SOURCEBANS_FORUMS.dopro_donations WHERE (payment_date >= '%d') AND (payment_date < '%d') AND event_id = '0' AND (payment_status = 'Completed' OR payment_status = 'Refunded') AND option_seleczion1='Yes' GROUP BY custom ORDER BY scaled DESC LIMIT 1",
 			last_month_start_time,
 			month_start_time );
 
 		SQL_TQuery( db_donations, PrintDonationInfo_QueryTopLast, query );
 	} else if( ad_counter == 3 ) {
 		Format( query, sizeof(query), 
-			"SELECT custom,SUM(mc_gross*exchange_rate) AS scaled FROM dopro_donations WHERE (payment_date >= '%d') AND (payment_date < '%d') AND event_id = '0' AND (payment_status = 'Completed' OR payment_status = 'Refunded') AND option_seleczion1='Yes' GROUP BY custom ORDER BY RAND() LIMIT 1",
+			"SELECT custom,SUM(mc_gross*exchange_rate) AS scaled FROM SOURCEBANS_FORUMS.dopro_donations WHERE (payment_date >= '%d') AND (payment_date < '%d') AND event_id = '0' AND (payment_status = 'Completed' OR payment_status = 'Refunded') AND option_seleczion1='Yes' GROUP BY custom ORDER BY RAND() LIMIT 1",
 			month_start_time,
 			month_end_time );
 		SQL_TQuery( db_donations, PrintDonationInfo_QueryRandom, query );
@@ -777,7 +777,7 @@ public LookupRXGMembership2( Handle:owner, Handle:hndl, const String:error[], an
 	new usergroupid = SQL_FetchInt( hndl, 0 );
 	PrintToConsole( client, " *** fetching usergroup..." );
 	decl String:query[256];
-	Format( query, sizeof(query), "SELECT title FROM usergroup WHERE usergroupid='%d'", usergroupid );
+	Format( query, sizeof(query), "SELECT title FROM SOURCEBANS_FORUMS.usergroup WHERE usergroupid='%d'", usergroupid );
 	SQL_TQuery( db_donations, LookupRXGMembership3, query, userid );
 }
 
@@ -804,7 +804,7 @@ public LookupRXGMembership1( Handle:owner, Handle:hndl, const String:error[], an
 	new forumid = SQL_FetchInt( hndl, 0 );
 	PrintToConsole( client, " *** found forum ID : %d", forumid );
 	decl String:query[256];
-	Format( query, sizeof(query), "SELECT usergroupid FROM user WHERE userid='%d'", forumid );
+	Format( query, sizeof(query), "SELECT usergroupid FROM SOURCEBANS_FORUMS.user WHERE userid='%d'", forumid );
 	SQL_TQuery( db_donations, LookupRXGMembership2, query, userid );
 	
 }
@@ -817,7 +817,7 @@ LookupRXGMembership( client, target ) {
 	
 	GetClientAuthString( target, auth, sizeof(auth) );
 	auth[6] = '_';
-	Format( query, sizeof(query), "SELECT userid FROM userfield WHERE field7 LIKE '%s'", auth );
+	Format( query, sizeof(query), "SELECT userid FROM SOURCEBANS_FORUMS.userfield WHERE field7 LIKE '%s'", auth );
 	
 	SQL_TQuery( db_donations, LookupRXGMembership1, query, client?GetClientUserId(client):0 );
 }
