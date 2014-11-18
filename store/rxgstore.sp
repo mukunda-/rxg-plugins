@@ -18,7 +18,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "1.3.0",
+    version     = "1.3.1",
     url         = "www.mukunda.com"
 };
 
@@ -190,7 +190,7 @@ CommitItemChange( client, item, amount ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"UPDATE SOURCEBANS_STORE.INVENTORY SET AMOUNT=AMOUNT%s%d WHERE ACCOUNT=%d AND ITEMID=%d",
+		"UPDATE sourcebans_store.INVENTORY SET AMOUNT=AMOUNT%s%d WHERE ACCOUNT=%d AND ITEMID=%d",
 		amount >= 0 ? "+":"",
 		amount,
 		g_client_data_account[client],
@@ -244,7 +244,7 @@ bool:CommitCashChange( client, cash ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"INSERT INTO SOURCEBANS_STORE.USER (ACCOUNT,CREDIT) VALUES (%d,%d) ON DUPLICATE KEY UPDATE CREDIT=CREDIT%s%d",
+		"INSERT INTO sourcebans_store.USER (ACCOUNT,CREDIT) VALUES (%d,%d) ON DUPLICATE KEY UPDATE CREDIT=CREDIT%s%d",
 		g_client_data_account[client],
 		cash,
 		cash > 0 ? "+":"-",
@@ -293,7 +293,7 @@ bool:TryTakeCash( client, cash, Handle:plugin, TakeCashCB:cb, any:data ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"UPDATE SOURCEBANS_STORE.USER SET CREDIT=CREDIT-%d WHERE ACCOUNT=%d AND CREDIT>=%d",
+		"UPDATE sourcebans_store.USER SET CREDIT=CREDIT-%d WHERE ACCOUNT=%d AND CREDIT>=%d",
 		cash,
 		g_client_data_account[client],
 		cash );
@@ -359,7 +359,7 @@ bool:LoadClientData( client, bool:chain=false ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"SELECT ITEMID,AMOUNT FROM SOURCEBANS_STORE.INVENTORY WHERE ACCOUNT=%d AND %s UNION SELECT %d AS ITEMID,CREDIT AS AMOUNT FROM SOURCEBANS_STORE.USER WHERE ACCOUNT=%d",
+		"SELECT ITEMID,AMOUNT FROM sourcebans_store.INVENTORY WHERE ACCOUNT=%d AND %s UNION SELECT %d AS ITEMID,CREDIT AS AMOUNT FROM sourcebans_store.USER WHERE ACCOUNT=%d",
 		account,
 		sql_itemid_filter,
 		SPITEM_CREDIT,
@@ -374,7 +374,7 @@ bool:LoadClientData( client, bool:chain=false ) {
 	
 	new time = GetTime();
 	FormatEx( query, sizeof query, 
-		"INSERT INTO SOURCEBANS_STORE.USER (ACCOUNT,INGAME) VALUES(%d,%d) ON DUPLICATE KEY UPDATE INGAME=%d",
+		"INSERT INTO sourcebans_store.USER (ACCOUNT,INGAME) VALUES(%d,%d) ON DUPLICATE KEY UPDATE INGAME=%d",
 		account,time,time );
 	SQL_TQuery( g_db, IgnoredSQLResult, query, pack );
 	
@@ -442,7 +442,7 @@ LogOutPlayer( client ) {
 	
 		decl String:query[1024];
 		FormatEx( query, sizeof query, 
-			"UPDATE SOURCEBANS_STORE.USER SET INGAME=0 WHERE ACCOUNT=%d",account );
+			"UPDATE sourcebans_store.USER SET INGAME=0 WHERE ACCOUNT=%d",account );
 			
 		SQL_TQuery( g_db, IgnoredSQLResult, query );
 	}
@@ -912,7 +912,7 @@ public ConVar_QueryClient( QueryCookie:cookie, client, ConVarQueryResult:result,
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"INSERT INTO SOURCEBANS_STORE.QUICKAUTH (ACCOUNT, TOKEN) VALUES (%d, %d)",
+		"INSERT INTO sourcebans_store.QUICKAUTH (ACCOUNT, TOKEN) VALUES (%d, %d)",
 		GetSteamAccountID(client),
 		token );
 	
