@@ -128,18 +128,17 @@ public OnMapStart() {
 	g_last_summon = -SUMMON_SOUND_COOLDOWN;
 }
 //-------------------------------------------------------------------------------------------------
-findSpawnpoints(){
+FindSpawnpoints() {
 	new ent = -1;
 	g_spawn_count = 0;
-	while ((ent = FindEntityByClassname(ent, "info_player_teamspawn")) != -1)
-	{
-		GetEntPropVector(ent, Prop_Send, "m_vecOrigin", g_player_spawns[g_spawn_count]);
+	while( (ent = FindEntityByClassname(ent, "info_player_teamspawn")) != -1){
+		GetEntPropVector( ent, Prop_Send, "m_vecOrigin", g_player_spawns[g_spawn_count]);
 		g_spawn_count++;
 	}
 }
 
 //-------------------------------------------------------------------------------------------------
-bool:NearSpawn(Float:end[3]){
+bool:NearSpawn( Float:end[3]){
 	new Float:target[3];
 	target[0] = end[0];
 	target[1] = end[1];
