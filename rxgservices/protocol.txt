@@ -15,14 +15,15 @@
 ===============================================================================
  * Command Listing
 -------------------------------------------------------------------------------
- >>> HELLO [name] [game]
+ >>> HELLO [password] [name] [game]
 
    Identify the server that has connected. This command must be issued
    before any requests are made.
 
-   [name] The name of the server connecting.
-   [game] The game the server is running. 
-          Possible values: "csgo", "tf", "mc"
+   [password] The services access password.
+   [name]     The name of the server connecting.
+   [game]     The game the server is running. 
+              Possible values: "csgo", "tf", "mc"
 
 ===============================================================================
  * Response Format
@@ -68,3 +69,13 @@ Response Type 3
   the colon.
 
   A double newline ends the list.
+
+-------------------------------------------------------------------------------
+Invalid Input Response
+
+  The ERR response signals that you specified an invalid operation.
+
+  Example:
+
+   <<< ERR: description\n
+  
