@@ -2,19 +2,69 @@
 ------------------------------------
  (C) 2014 Reflex Gamers
 
-------------------------------------
- Last Updated: 10:46 PM 11/21/2014
+------------------------------------ 
+ Last Updated: 11:24 PM 11/21/2014
+
+===============================================================================
+ * Command Format
+-------------------------------------------------------------------------------
+
+  Commands that are sent to the server are formatted as a command-line string
+  that is terminated by a newline character.
+
+===============================================================================
+ * Command Listing
+-------------------------------------------------------------------------------
+ >>> HELLO [name] [game]
+
+   Identify the server that has connected. This command must be issued
+   before any requests are made.
+
+   [name] The name of the server connecting.
+   [game] The game the server is running. 
+          Possible values: "csgo", "tf", "mc"
+
+===============================================================================
+ * Response Format
+-------------------------------------------------------------------------------
+Response Type 1
+ 
+  RT1 responses are a single newline-terminated string value prefixed 
+  by "RT1: "
+
+  Example:
+   
+   <<< RT1: RESPONSE MESSAGE\n
 
 -------------------------------------------------------------------------------
-Command Listing
+Response Type 2
+  
+  RT2 responses are a list of newline-terminated strings.
+
+  Example:
+  
+   <<< RT2:\n
+   <<< VALUE1\n
+   <<< VALUE2\n
+   <<< VALUE3\n\n
+
+  A double newline ends the list.
+
 -------------------------------------------------------------------------------
-HELLO [name] [game]
+Response Type 3
 
-  Identify the server that has connected. This command must be issued
-  after a game server connects to be able to issue requests.
+  RT3 responses are sent as a list of strings that contain key-value pairs.
 
-  [name] The name of the server connecting.
-  [game] The game the server is running. 
-         Possible values: "csgo", "tf", "mc"
+  Example:
 
--------------------------------------------------------------------------------
+   <<< RT3:\n
+   <<< KEY1: VALUE1\n
+   <<< KEY2: VALUE2\n
+   <<< KEY3: VALUE3\n
+   <<< KEY4: VALUE4\n
+   <<< KEY5: VALUE5\n\n
+
+  The KEY is terminated by a colon, and the VALUE follows one space after
+  the colon.
+
+  A double newline ends the list.
