@@ -115,7 +115,7 @@ public OnPluginStart() {
 //-------------------------------------------------------------------------------------------------
 public OnMapStart() {
 	PrecacheMonoculus();
-	findSpawnpoints();
+	findSpawnPoints();
 	
 	for( new i = 1; i <= MaxClients; i++ ) {
 		g_client_last_spectral_summon[i] = -c_spectral_summon_cooldown;
@@ -128,7 +128,7 @@ public OnMapStart() {
 	g_last_summon = -SUMMON_SOUND_COOLDOWN;
 }
 //-------------------------------------------------------------------------------------------------
-FindSpawnpoints() {
+findSpawnPoints() {
 	new ent = -1;
 	g_spawn_count = 0;
 	while( (ent = FindEntityByClassname(ent, "info_player_teamspawn")) != -1){
