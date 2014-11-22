@@ -11,7 +11,7 @@
  *             on the command given. This handle should not be closed. 
  *             May be INVALID_HANDLE if the request failed.
  */
-functag RGS_Response( Handle:data );
+functag public RGS_Response( Handle:data );
 
 /** ---------------------------------------------------------------------------
  * Make a request to the RXG services.
@@ -20,7 +20,7 @@ functag RGS_Response( Handle:data );
  * @param message Message to send.
  * @param ...     Formatted arguments.
  */
-native RGS_Request( RGS_Response handler, const String:message[], any:... );
+native RGS_Request( RGS_Response:handler, const String:message[], any:... );
 
 /** ---------------------------------------------------------------------------
  * Check if the RXG services are available.

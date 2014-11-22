@@ -12,12 +12,12 @@ public Native_Request( Handle:plugin, numParams ) {
 
 	if( !g_connected ) {
 		// not connected, give invalid response.
-		CallHandler( plugin, GetNativeCell(1), INVALID_HANDLE );
+		CallHandler( plugin, Function:GetNativeCell(1), INVALID_HANDLE );
 	}
 
 	// queue a response handler
 	new info[RQ_SIZE];
-	info[RQ_PLUGIN] = plugin;
+	info[RQ_PLUGIN] = _:plugin;
 	info[RQ_HANDLER] = GetNativeCell(1);
 	PushArrayArray( g_request_queue, info );
 	

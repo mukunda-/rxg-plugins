@@ -21,9 +21,10 @@ new g_bufferpos = 0;
 enum {
 	RS_READY,
 	RS_RT2,
+	RS_RT3
 };
-new g_response_state = RS_READY;
-new g_response = INVALID_HANDLE;
+new g_rstate          = RS_READY;
+new Handle:g_response = INVALID_HANDLE;
 
 //-----------------------------------------------------------------------------
 // the service connection
@@ -75,7 +76,7 @@ public Action:RetryConnect( Handle:timer ) {
  * @param handler Handler function.
  * @param data    Data to pass to function.
  */
-CallHandler( Plugin:plugin, Function:handler, Handle:data ) {
+CallHandler( Handle:plugin, Function:handler, Handle:data ) {
 	Call_StartFunction( plugin, handler );
 	Call_PushCell( data );
 	Call_Finish();
@@ -94,7 +95,7 @@ CreateResponsePack() {
  */
 CreateResponseKV() {
 	if( g_response != INVALID_HANDLE ) CloseHandle(g_response);
-	g_response = CreateKeyValues();
+	g_response = CreateKeyValues( "Response" );
 }
 
 /** ---------------------------------------------------------------------------
@@ -110,8 +111,7 @@ bool:PopHandler( Handle:data = INVALID_HANDLE, bool:close = true ) {
 		return false;
 	}
 	
-	CallHandler( g_request_queue, 
-	             GetArrayCell( g_request_queue, 0, 0 ), 
+	CallHandler( GetArrayCell( g_request_queue, 0, 0 ), 
 				 GetArrayCell( g_request_queue, 0, 1 ), 
 				 data );
 				 
@@ -150,7 +150,7 @@ public OnSocketConnected(Handle:socket, any:data ) {
 	g_connected = true;
 	g_connecting = false;
 	
-	g_state = RS_READY;
+	g_rstate = RS_READY;
 	g_bufferpos = 0;
 	
 	decl String:game[32];
@@ -166,36 +166,36 @@ public OnSocketConnected(Handle:socket, any:data ) {
  *          the stream should terminate.
  */
 bool:HandleResponseLine( String:data[] ) {
-	if( g_state == RS_READY ) {
-		if( strncmp( data, 5, "RT1: " ) == 0 ) {
+	if( g_rstate == RS_READY ) {
+		if( strncmp( data, "RT1: ", 5 ) == 0 ) {
 			// RT1 TYPE RESPONSE
 			
 			new Handle:pack = CreateDataPack();
 			WritePackString( pack, data[5] );
 			return PopHandler( pack );
 		} else if( strncmp( data, "RT2:", 4 ) == 0 ) {
-			g_state = RS_RT2;
+			g_rstate = RS_RT2;
 			CreateResponsePack();
 		} else if( strncmp( data, "RT3:", 4 ) == 0 ) {
-			g_state = RS_RT3;
+			g_rstate = RS_RT3;
 			CreateResponseKV();
 		}
-	} else if( g_state == RS_RT2 ) {
+	} else if( g_rstate == RS_RT2 ) {
 		if( data[0] == ':' ) {
 			// another line
 			WritePackString( g_response, data );
-		} else if( data[0] == 0 {
+		} else if( data[0] == 0 ) {
 			// terminator
-			g_state = RS_READY;
+			g_rstate = RS_READY;
 			return PopHandler( g_response );
 		} else {
 			// error.
 			return false;
 		}
-	} else if( g_state == RS_RT3 ) {
+	} else if( g_rstate == RS_RT3 ) {
 		if( data[0] == 0 ) {
 			// terminator
-			g_state = RS_READY;
+			g_rstate = RS_READY;
 			return PopHandler( g_response );
 		}
 		
@@ -217,7 +217,7 @@ bool:HandleResponseLine( String:data[] ) {
  *          should be terminated.
  */
 bool:ProcessRecv( String:data[], size ) {
-	if( size == 0 ) return;
+	if( size == 0 ) return true;
 	
 	new end = -1;
 	for( new i = 0; i < size; i++ ) {
@@ -229,7 +229,7 @@ bool:ProcessRecv( String:data[], size ) {
 	
 	if( end == -1 ) {
 		// delimiter not found ,buffer and wait for more data.
-		strcopy( g_buffer + g_bufferpos, 
+		strcopy( g_buffer[g_bufferpos], 
 				 sizeof(g_buffer) - g_bufferpos, data );
 		g_bufferpos += size;
 		return true;
@@ -237,17 +237,17 @@ bool:ProcessRecv( String:data[], size ) {
 		// delimiter found, copy the last part and process the line.
 		if( end != 0 ) {
 			data[end] = 0;
-			strcopy( g_buffer + g_bufferpos, 
+			strcopy( g_buffer[g_bufferpos], 
 					 sizeof( g_buffer ) - g_bufferpos, data );
 		}
 		
-		if( !ProcessResponse( g_buffer ) ) {
+		if( !HandleResponseLine( g_buffer ) ) {
 			return false;
 		}
 		
 		// rinse and repeat.
 		g_bufferpos = 0;
-		return ProcessRecv( data + (size+1), size - (end+1) );
+		return ProcessRecv( data[(size+1)], size - (end+1) );
 	}
 }
 
