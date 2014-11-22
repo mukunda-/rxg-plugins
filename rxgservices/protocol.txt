@@ -39,14 +39,14 @@ Response Type 1
 -------------------------------------------------------------------------------
 Response Type 2
   
-  RT2 responses are a list of newline-terminated strings.
+  RT2 responses are a list of strings prefixed with a colon.
 
   Example:
   
    <<< RT2:\n
-   <<< VALUE1\n
-   <<< VALUE2\n
-   <<< VALUE3\n\n
+   <<< :VALUE1\n
+   <<< :VALUE2\n
+   <<< :VALUE3\n\n
 
   A double newline ends the list.
 
