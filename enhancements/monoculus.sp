@@ -11,12 +11,13 @@ public Plugin:myinfo = {
 	name = "Spawn Monoculus",
 	author = "WhiteThunder",
 	description = "Spawnable Monoculus",
-	version = "1.4.0",
+	version = "1.5.0",
 	url = "www.reflex-gamers.com"
 };
 
 //-------------------------------------------------------------------------------------------------
 new Handle:sm_monoculus_max_summon_distance;
+new Handle:sm_monoculus_min_distance_player_spawn;
 new Handle:sm_monoculus_max_spectrals_per_team;
 new Handle:sm_monoculus_boss_base_health;
 new Handle:sm_monoculus_boss_health_per_player_above_threshold;
@@ -27,6 +28,7 @@ new Handle:sm_monoculus_boss_team_summon_cooldown;
 new Handle:sm_monoculus_boss_enemy_summon_cooldown;
 
 new Float:c_max_summon_distance;
+new Float:c_min_distance_player_spawn;
 new c_max_spectrals_per_team;
 new c_boss_base_health;
 new c_boss_health_per_player_above_threshold;
@@ -51,6 +53,9 @@ new g_blu_spectral_count;
 
 new g_client_userid[MAXPLAYERS+1];
 
+new g_spawn_count;
+new Float:g_player_spawns[100][3];
+
 //-------------------------------------------------------------------------------------------------
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) {
 	CreateNative( "MONO_SpawnMonoculus", Native_SpawnMonoculus );
@@ -60,6 +65,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) 
 //-------------------------------------------------------------------------------------------------
 RecacheConvars() {
 	c_max_summon_distance = GetConVarFloat( sm_monoculus_max_summon_distance );
+	c_min_distance_player_spawn = GetConVarFloat( sm_monoculus_min_distance_player_spawn );
 	c_max_spectrals_per_team = GetConVarInt( sm_monoculus_max_spectrals_per_team );
 	c_boss_base_health = GetConVarInt( sm_monoculus_boss_base_health );
 	c_boss_health_per_player_above_threshold = GetConVarInt( sm_monoculus_boss_health_per_player_above_threshold );
@@ -79,6 +85,7 @@ public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[
 public OnPluginStart() {
 
 	sm_monoculus_max_summon_distance = CreateConVar( "sm_monoculus_max_summon_distance", "750", "The maximum distance you may summon a Monoculus away from yourself. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
+	sm_monoculus_min_distance_player_spawn = CreateConVar( "sm_monoculus_min_distance_player_spawn", "500", "The minimum distance from spawn points Monoculi can be spawned", FCVAR_PLUGIN, true, 0.0 );
 	sm_monoculus_max_spectrals_per_team = CreateConVar( "sm_monoculus_max_spectrals_per_team", "2", "The maximum number of Spectral Monoculi allowed per team. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
 	sm_monoculus_boss_base_health = CreateConVar( "sm_monoculus_boss_base_health", "4000", "The base health the Boss MONOCULUS should have before considering player count.", FCVAR_PLUGIN, true, 1.0, true, 50000.0 );
 	sm_monoculus_boss_health_per_player_above_threshold = CreateConVar( "sm_monoculus_boss_health_per_player_above_threshold", "200", "The additional health the Boss MONOCULUS should get per player above the threshold set by sm_monoculus_boss_health_player_threshold.", FCVAR_PLUGIN, true, 0.0, true, 5000.0 );
@@ -87,8 +94,9 @@ public OnPluginStart() {
 	sm_monoculus_spectral_summon_cooldown = CreateConVar( "sm_monoculus_spectral_summon_cooldown", "60", "The number of seconds you must wait between summoning Spectral Monoculi.", FCVAR_PLUGIN, true, 0.0 );
 	sm_monoculus_boss_team_summon_cooldown = CreateConVar( "sm_monoculus_boss_team_summon_cooldown", "300", "The number of seconds your team must wait after summoning the Boss MONOCULUS before summoning him again.", FCVAR_PLUGIN, true, 0.0 );
 	sm_monoculus_boss_enemy_summon_cooldown = CreateConVar( "sm_monoculus_boss_enemy_summon_cooldown", "125", "The number of seconds the enemy team must wait to summon the Boss MONOCULUS after your team has summoned him. For best results, set to the value of sm_monoculus_boss_max_duration to prevent more than one at a time.", FCVAR_PLUGIN, true, 0.0 );
-	
+
 	HookConVarChange( sm_monoculus_max_summon_distance, OnConVarChanged );
+	HookConVarChange( sm_monoculus_min_distance_player_spawn, OnConVarChanged );
 	HookConVarChange( sm_monoculus_max_spectrals_per_team, OnConVarChanged );
 	HookConVarChange( sm_monoculus_boss_base_health, OnConVarChanged );
 	HookConVarChange( sm_monoculus_boss_health_per_player_above_threshold, OnConVarChanged );
@@ -97,14 +105,17 @@ public OnPluginStart() {
 	HookConVarChange( sm_monoculus_spectral_summon_cooldown, OnConVarChanged );
 	HookConVarChange( sm_monoculus_boss_team_summon_cooldown, OnConVarChanged );
 	HookConVarChange( sm_monoculus_boss_enemy_summon_cooldown, OnConVarChanged );
+	
 	RecacheConvars();
 	
 	RegAdminCmd( "sm_spawnmonoculus", Command_SpawnMonoculus, ADMFLAG_RCON );
+	
 }
 
 //-------------------------------------------------------------------------------------------------
 public OnMapStart() {
 	PrecacheMonoculus();
+	findSpawnpoints();
 	
 	for( new i = 1; i <= MaxClients; i++ ) {
 		g_client_last_spectral_summon[i] = -c_spectral_summon_cooldown;
@@ -116,8 +127,38 @@ public OnMapStart() {
 	g_blu_boss_last_summon = -c_boss_team_summon_cooldown;
 	g_last_summon = -SUMMON_SOUND_COOLDOWN;
 }
+//-------------------------------------------------------------------------------------------------
+findSpawnpoints(){
+	new ent = -1;
+	g_spawn_count = 0;
+	while ((ent = FindEntityByClassname(ent, "info_player_teamspawn")) != -1)
+	{
+		GetEntPropVector(ent, Prop_Send, "m_vecOrigin", g_player_spawns[g_spawn_count]);
+		g_spawn_count++;
+	}
+}
 
 //-------------------------------------------------------------------------------------------------
+bool:NearSpawn(Float:end[3]){
+	new Float:target[3];
+	target[0] = end[0];
+	target[1] = end[1];
+	for( new i = 0; i < g_spawn_count; i++ ) {
+		target[2] = end[2] + (end[2] - g_player_spawns[i][2])*2;
+		new Float:distance = GetVectorDistance(g_player_spawns[i],target,true);
+		if(distance < c_min_distance_player_spawn*c_min_distance_player_spawn){
+			return true;
+		}
+		// if(FloatAbs(g_player_spawns[i][0] - target[0]) < c_min_distance_player_spawn){
+			// if(FloatAbs(g_player_spawns[i][1] - target[1]) < c_min_distance_player_spawn){
+				// if(FloatAbs(g_player_spawns[i][2] - target[2]) < 75){
+					// return true;
+				// }
+			// }
+		// }
+	}
+	return false;
+}
 bool:SpawnMonoculus( client, TFTeam:team ) {
 
 	new Float:time = GetGameTime();
@@ -213,6 +254,12 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 		
 		if( FloatAbs( norm_angles[0] - (270.0) ) > 45.0 ) {
 			PrintToChat( client, "\x07FFD800Cannot summon there." );
+			RXGSTORE_ShowUseItemMenu(client);
+			return false;
+		}
+		
+		if( NearSpawn(end) ){
+			PrintToChat( client, "\x07FFD800Cannot summon near player spawns." );
 			RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
