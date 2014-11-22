@@ -20,10 +20,10 @@ new g_bufferpos = 0;
 //-----------------------------------------------------------------------------
 enum {
 	RS_READY,
-	RS_RT1,
 	RS_RT2,
 };
 new g_response_state = RS_READY;
+new g_response = INVALID_HANDLE;
 
 //-----------------------------------------------------------------------------
 // the service connection
@@ -82,6 +82,45 @@ CallHandler( Plugin:plugin, Function:handler, Handle:data ) {
 }
 
 /** ---------------------------------------------------------------------------
+ * Create a response datapack.
+ */
+CreateResponsePack() {
+	if( g_response != INVALID_HANDLE ) CloseHandle(g_response);
+	g_response = CreateDataPack();
+}
+
+/** ---------------------------------------------------------------------------
+ * Create a response key-values.
+ */
+CreateResponseKV() {
+	if( g_response != INVALID_HANDLE ) CloseHandle(g_response);
+	g_response = CreateKeyValues();
+}
+
+/** ---------------------------------------------------------------------------
+ * Pop a response handler and call it.
+ *
+ * @param data    Data to pass to function.
+ * @param close   Close the data handle.
+ * @returns false on failure.
+ */
+bool:PopHandler( Handle:data = INVALID_HANDLE, bool:close = true ) {
+	if( GetArraySize( g_request_queue ) == 0 ) {
+		if( close ) CloseHandle(data);
+		return false;
+	}
+	
+	CallHandler( g_request_queue, 
+	             GetArrayCell( g_request_queue, 0, 0 ), 
+				 GetArrayCell( g_request_queue, 0, 1 ), 
+				 data );
+				 
+	RemoveFromArray( g_request_queue, 0 );
+	if( close ) CloseHandle(data);
+	return true;
+}
+
+/** ---------------------------------------------------------------------------
  * Send a message to the services.
  *
  * @param format Format of message.
@@ -111,6 +150,9 @@ public OnSocketConnected(Handle:socket, any:data ) {
 	g_connected = true;
 	g_connecting = false;
 	
+	g_state = RS_READY;
+	g_bufferpos = 0;
+	
 	decl String:game[32];
 	GetGameFolderName( game, sizeof game );
 	SendMessage( "HELLO rxg %s", game );
@@ -128,10 +170,42 @@ bool:HandleResponseLine( String:data[] ) {
 		if( strncmp( data, 5, "RT1: " ) == 0 ) {
 			// RT1 TYPE RESPONSE
 			
-			
+			new Handle:pack = CreateDataPack();
+			WritePackString( pack, data[5] );
+			return PopHandler( pack );
+		} else if( strncmp( data, "RT2:", 4 ) == 0 ) {
+			g_state = RS_RT2;
+			CreateResponsePack();
+		} else if( strncmp( data, "RT3:", 4 ) == 0 ) {
+			g_state = RS_RT3;
+			CreateResponseKV();
 		}
-	} else if( g_state == RS_RT1 ) {
+	} else if( g_state == RS_RT2 ) {
+		if( data[0] == ':' ) {
+			// another line
+			WritePackString( g_response, data );
+		} else if( data[0] == 0 {
+			// terminator
+			g_state = RS_READY;
+			return PopHandler( g_response );
+		} else {
+			// error.
+			return false;
+		}
+	} else if( g_state == RS_RT3 ) {
+		if( data[0] == 0 ) {
+			// terminator
+			g_state = RS_READY;
+			return PopHandler( g_response );
+		}
+		
+		new pos = FindCharInString( data, ':' );
+		if( data[pos] == -1 ) return false;
+		if( data[pos+1] != ' ' ) return false;
+		data[pos] = 0;
+		KvSetString( g_response, data, data[pos+2] );
 	}
+	return true;
 }
 
 /** ---------------------------------------------------------------------------
@@ -154,11 +228,13 @@ bool:ProcessRecv( String:data[], size ) {
 	}
 	
 	if( end == -1 ) {
+		// delimiter not found ,buffer and wait for more data.
 		strcopy( g_buffer + g_bufferpos, 
 				 sizeof(g_buffer) - g_bufferpos, data );
 		g_bufferpos += size;
 		return true;
 	} else {
+		// delimiter found, copy the last part and process the line.
 		if( end != 0 ) {
 			data[end] = 0;
 			strcopy( g_buffer + g_bufferpos, 
@@ -168,9 +244,10 @@ bool:ProcessRecv( String:data[], size ) {
 		if( !ProcessResponse( g_buffer ) ) {
 			return false;
 		}
+		
+		// rinse and repeat.
 		g_bufferpos = 0;
 		return ProcessRecv( data + (size+1), size - (end+1) );
-		
 	}
 }
 
@@ -180,7 +257,8 @@ public OnSocketReceive( Handle:socket, String:receiveData[],
 	
 	if( !ProcessRecv( receiveData, dataSize ) ) {
 		LogError( "Encountered a stream error." );
-		CloseHandle( socket );
+		CloseHandle( socket ); // todo, wrap closehandle in a funciton that cleans up 
+		                      // intermediate data.
 		CreateTimer( 30.0, RetryConnect );
 	}
 }
