@@ -51,7 +51,10 @@ public Action:RetryConnect( Handle:timer ) {
 public OnSocketConnected(Handle:socket, any:data ) {
 	g_connected = true;
 	g_connecting = false;
-	SocketSend( g_socket, "SERVER 
+	
+	decl String:game[32];
+	GetGameFolderName( game, sizeof name );
+	SocketSend( g_socket, "HELLO rxg %s", name );
 }
 
 //-----------------------------------------------------------------------------

@@ -1,4 +1,4 @@
- RXG SERVICES PROTOCOL       DRAFT1
+ RXG SERVICES PROTOCOL       DRAFT2
 ------------------------------------
  (C) 2014 Reflex Gamers
 
@@ -8,13 +8,13 @@
 -------------------------------------------------------------------------------
 Command Listing
 -------------------------------------------------------------------------------
-SERVER [name] [game]
+HELLO [name] [game]
 
   Identify the server that has connected. This command must be issued
   after a game server connects to be able to issue requests.
 
   [name] The name of the server connecting.
   [game] The game the server is running. 
-         Possible values: "csgo", "tf2", "mc"
+         Possible values: "csgo", "tf", "mc"
 
 -------------------------------------------------------------------------------
