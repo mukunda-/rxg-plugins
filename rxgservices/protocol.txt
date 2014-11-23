@@ -1,29 +1,48 @@
- RXG SERVICES PROTOCOL       DRAFT2
+ RXG SERVICES PROTOCOL       DRAFT3
 ------------------------------------
  (C) 2014 Reflex Gamers
 
 ------------------------------------ 
- Last Updated: 11:24 PM 11/21/2014
+ Last Updated: 6:21 PM 11/22/2014
 
 ===============================================================================
- * Command Format
+ * Request Format
 -------------------------------------------------------------------------------
 
-  Commands that are sent to the server are formatted as a command-line string
-  that is terminated by a newline character.
+  Requests are formatted as a command-line string that is terminated by 
+  a newline character.
+
+  Request names are not case-sensitive.
+
+  Every request made is paired with a Response from the services.
 
 ===============================================================================
- * Command Listing
+ * Request Listing
 -------------------------------------------------------------------------------
- >>> HELLO [password] [name] [game]
+ >>> AUTH [password] [name] [game]
 
-   Identify the server that has connected. This command must be issued
-   before any requests are made.
+ | Identify the server that has connected. This request must be issued
+ | before any requests that require authentication can be performed.
+ |
+ | [password] The services access password.
+ | [name]     The name of the server connecting.
+ | [game]     The game the server is running. 
+ |            Possible values: "csgo", "tf", "mc"
 
-   [password] The services access password.
-   [name]     The name of the server connecting.
-   [game]     The game the server is running. 
-              Possible values: "csgo", "tf", "mc"
+ Responses:
+
+ <<< [RT1] OKAY
+   
+ <<< [ERR] DENIED Wrong password.
+ 
+
+-------------------------------------------------------------------------------
+ >>> TEST <param>
+
+ | Test request.
+ |
+ | <param> "rt2" to receive a test RT2 response, "rt3" to receive a RT3
+ |         response, and omit to receive an RT1 response.
 
 ===============================================================================
  * Response Format
@@ -31,11 +50,11 @@
 Response Type 1
  
   RT1 responses are a single newline-terminated string value prefixed 
-  by "RT1: "
+  by "[RT1] ".
 
   Example:
    
-   <<< RT1: RESPONSE MESSAGE\n
+   <<< [RT1] RESPONSE MESSAGE\n
 
 -------------------------------------------------------------------------------
 Response Type 2
@@ -44,7 +63,7 @@ Response Type 2
 
   Example:
   
-   <<< RT2:\n
+   <<< [RT2]\n
    <<< :VALUE1\n
    <<< :VALUE2\n
    <<< :VALUE3\n\n
@@ -58,7 +77,7 @@ Response Type 3
 
   Example:
 
-   <<< RT3:\n
+   <<< [RT3]\n
    <<< KEY1: VALUE1\n
    <<< KEY2: VALUE2\n
    <<< KEY3: VALUE3\n
@@ -71,11 +90,18 @@ Response Type 3
   A double newline ends the list.
 
 -------------------------------------------------------------------------------
-Invalid Input Response
+Error Response
 
-  The ERR response signals that you specified an invalid operation.
+  The ERR response signals an error status.
 
   Example:
 
-   <<< ERR: description\n
+   <<< [ERR] <status> <description>\n
+  
+===============================================================================
+ * Error Statuses
+-------------------------------------------------------------------------------	
+
+  BADINPUT	Invalid input was given.
+  DENIED	Invalid credentials.
   

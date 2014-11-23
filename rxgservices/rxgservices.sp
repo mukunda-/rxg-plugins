@@ -167,16 +167,16 @@ public OnSocketConnected(Handle:socket, any:data ) {
  */
 bool:HandleResponseLine( String:data[] ) {
 	if( g_rstate == RS_READY ) {
-		if( strncmp( data, "RT1: ", 5 ) == 0 ) {
+		if( strncmp( data, "[RT1] ", 6 ) == 0 ) {
 			// RT1 TYPE RESPONSE
 			
 			new Handle:pack = CreateDataPack();
 			WritePackString( pack, data[5] );
 			return PopHandler( pack );
-		} else if( strncmp( data, "RT2:", 4 ) == 0 ) {
+		} else if( strncmp( data, "[RT2]", 5 ) == 0 ) {
 			g_rstate = RS_RT2;
 			CreateResponsePack();
-		} else if( strncmp( data, "RT3:", 4 ) == 0 ) {
+		} else if( strncmp( data, "[RT3]", 5 ) == 0 ) {
 			g_rstate = RS_RT3;
 			CreateResponseKV();
 		}
