@@ -127,6 +127,10 @@ public OnPluginStart() {
 		Game = GAME_CSS;
 	}
 	
+	if( DBRELAY_IsConnected() ) {
+		RefreshAllClients();
+	}
+	
 	sm_donations_goal = CreateConVar( "sm_donations_goal", "200", "Monthly donation goal", FCVAR_PLUGIN );
 
 	BuildPath(Path_SM, logFile, sizeof(logFile), "logs/donations.log");
