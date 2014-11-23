@@ -3,6 +3,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <rxgstore>
+#include <dbrelay>
 
 #pragma semicolon 1
 
@@ -59,7 +60,7 @@ enum {
 };
 
 // conditions before an item can be used:
-//  g_db_connected is TRUE
+//  DBRELAY_IsConnected() is TRUE
 //  client_data_loaded is TRUE 
 //  client_items[item]+client_items_change[item] > 0
 
@@ -74,11 +75,7 @@ new Float:g_last_update;
 
 #define UPDATE_TIMED_INTERVAL 50.0
 //-------------------------------------------------------------------------------------------------
-new Handle:g_db;
-new bool:g_db_connecting;
-new bool:g_db_connected;
-new g_db_reconnect_tries;
-#define DB_RETRY_DELAY  120.0
+new bool:g_initialized;
 
 #pragma unused GAME
 new GAME;
@@ -119,8 +116,6 @@ public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max 
 
 //-------------------------------------------------------------------------------------------------
 public OnPluginStart() {
-	
-	DB_Open();
 	
 	RegConsoleCmd( "sm_cash", Command_cash );
 	RegConsoleCmd( "useitem", Command_use_item );
@@ -170,7 +165,7 @@ public Action:OnTimedUpdate( Handle:timer ) {
 
 //-------------------------------------------------------------------------------------------------
 Update() {
-	if ( !g_db_connected ) return;
+	if ( !DBRELAY_IsConnected() ) return;
 	if( GetGameTime() - g_last_update < MIN_UPDATE_PERIOD ) {
 		return;
 	}
@@ -195,7 +190,7 @@ CommitItemChange( client, item, amount ) {
 		amount,
 		g_client_data_account[client],
 		item_ids[item] );
-		
+	
 	new Handle:pack = CreateDataPack();
 	WritePackCell( pack, GetClientUserId(client) );
 	WritePackCell( pack, item );
@@ -205,9 +200,9 @@ CommitItemChange( client, item, amount ) {
 	
 	g_client_items_change[client][item] += amount;
 	
-	SQL_TQuery( g_db, OnCommitItem, query, pack ); 
+	DBRELAY_TQuery( OnCommitItem, query, pack ); 
 }
-  
+
 //-------------------------------------------------------------------------------------------------
 public OnCommitItem( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	ResetPack(data);
@@ -219,11 +214,8 @@ public OnCommitItem( Handle:owner, Handle:hndl, const String:error[], any:data )
 	CloseHandle(data);
 	
 	if( !hndl ) {
-		
 		LogError( "[SERIOUS] SQL error during item usage commit! ::: %s", error ); 
 		LogError( "ACCOUNT=%d, ITEM=%d (%s), AMOUNT=%d", account, item_ids[item], item_names[item], amount );
-		
-		DB_Fault();
 		return;
 	}
 	
@@ -238,7 +230,7 @@ public OnCommitItem( Handle:owner, Handle:hndl, const String:error[], any:data )
 //-------------------------------------------------------------------------------------------------
 bool:CommitCashChange( client, cash ) {
 
-	if( !g_db_connected ) return false;
+	if( !DBRELAY_IsConnected() ) return false;
 	if( !g_client_data_loaded[client] ) return false;
 	if( cash == 0 ) return true;
 	
@@ -257,26 +249,26 @@ bool:CommitCashChange( client, cash ) {
 	
 	g_client_cash_change[client] += cash;
 	
-	SQL_TQuery( g_db, OnCommitCash, query, pack );
+	DBRELAY_TQuery( OnCommitCash, query, pack );
 	
 	return true;
 }
 
 //-------------------------------------------------------------------------------------------------
 public OnCommitCash( Handle:owner, Handle:hndl, const String:error[], any:data ) {
+
 	ResetPack(data);
 	new client = GetClientOfUserId(ReadPackCell(data));
 	new amount = ReadPackCell(data);
 	new account = ReadPackCell(data);
 	CloseHandle(data);
+	
 	if( !hndl ) {
-		
 		LogError( "[SERIOUS] SQL error during CREDIT commit! ::: %s", error ); 
 		LogError( "ACCOUNT=%d, AMOUNT=%d", account,  amount );
-		
-		DB_Fault();
 		return;
 	}
+	
 	if( !client ) return;
 	
 	g_client_cash_change[client] -= amount;
@@ -285,7 +277,7 @@ public OnCommitCash( Handle:owner, Handle:hndl, const String:error[], any:data )
 
 //-------------------------------------------------------------------------------------------------
 bool:TryTakeCash( client, cash, Handle:plugin, TakeCashCB:cb, any:data ) {
-	if( !g_db_connected ||
+	if( !DBRELAY_IsConnected() ||
 		!IsClientInGame(client) || 
 		!IsClientAuthorized(client) ||
 		!g_client_data_loaded[client] || 
@@ -306,7 +298,7 @@ bool:TryTakeCash( client, cash, Handle:plugin, TakeCashCB:cb, any:data ) {
 	WritePackCell( pack, _:cb );
 	WritePackCell( pack, data );
 	
-	SQL_TQuery( g_db, OnTakeCash, query, pack );
+	DBRELAY_TQuery( OnTakeCash, query, pack );
 	return true;
 }
 
@@ -328,13 +320,12 @@ public OnTakeCash( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	Call_PushCell( cbdata );
 	
 	if( !hndl ) {
+	
 		Call_PushCell( true );
 		Call_Finish();
 		
 		LogError( "SQL error during CREDIT taking! ::: %s", error ); 
 		LogError( "ACCOUNT=%d, AMOUNT=%d", account, amount );
-		
-		DB_Fault();
 		return;
 	}
 	
@@ -370,13 +361,13 @@ bool:LoadClientData( client, bool:chain=false ) {
 	WritePackCell( pack, client );
 	WritePackCell( pack, chain );
 		
-	SQL_TQuery( g_db, OnClientInventoryLoaded, query, pack );
+	DBRELAY_TQuery( OnClientInventoryLoaded, query, pack );
 	
 	new time = GetTime();
 	FormatEx( query, sizeof query, 
 		"INSERT INTO sourcebans_store.USER (ACCOUNT,INGAME) VALUES(%d,%d) ON DUPLICATE KEY UPDATE INGAME=%d",
 		account,time,time );
-	SQL_TQuery( g_db, IgnoredSQLResult, query, pack );
+	DBRELAY_TQuery( IgnoredSQLResult, query, pack );
 	
 	return true;
 }
@@ -393,7 +384,6 @@ public OnClientInventoryLoaded( Handle:owner, Handle:hndl, const String:error[],
 		 
 		if( !hndl ) {
 			LogError( "Error loading inventory for %L : %s", client, error );
-			DB_Fault();
 			return;
 		}
 		
@@ -436,7 +426,7 @@ public OnClientInventoryLoaded( Handle:owner, Handle:hndl, const String:error[],
 //-------------------------------------------------------------------------------------------------
 LogOutPlayer( client ) {
 
-	if( g_db_connected ) {
+	if( DBRELAY_IsConnected() ) {
 		new account = GetSteamAccountID( client );
 		if( account == 0 ) return;
 	
@@ -444,7 +434,7 @@ LogOutPlayer( client ) {
 		FormatEx( query, sizeof query, 
 			"UPDATE sourcebans_store.USER SET INGAME=0 WHERE ACCOUNT=%d",account );
 			
-		SQL_TQuery( g_db, IgnoredSQLResult, query );
+		DBRELAY_TQuery( IgnoredSQLResult, query );
 	}
 }
 
@@ -452,7 +442,6 @@ LogOutPlayer( client ) {
 public IgnoredSQLResult( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	if( !hndl ) {
 		LogError( "SQL Error --- %s", error );
-		DB_Fault();
 		return;
 	}
 }
@@ -474,63 +463,25 @@ public OnClientDisconnect( client ) {
 }
    
 //-------------------------------------------------------------------------------------------------
-public DB_OnConnect(Handle:owner, Handle:hndl, const String:error[], any:data) {
+public OnDBRelayConnected() {
 	
-	if( hndl == INVALID_HANDLE ) {
-		LogError( "sql connection error: %s", error );
-		if( g_db_reconnect_tries == 0 ) {
-			SetFailState( "Unable to connect to database" );
-			
-		} else {
-			g_db_reconnect_tries--;
-			CreateTimer( DB_RETRY_DELAY, DB_ReconnectTimer );
-			return;
-		}
+	if( g_initialized ) {
+		return;
 	}
-	g_db_connecting = false;
-	g_db_connected = true;
-	g_db = hndl;
 	
 	for( new i = 1; i <= MaxClients; i++ ) {
 		g_client_data_loaded[i] = false;
 	}
 	
 	BuildSQLItemIDFilter();
-	 
-	PrintToServer( "[RXGSTORE] database connection established." );
-} 
-
-//-------------------------------------------------------------------------------------------------
-public Action:DB_ReconnectTimer( Handle:timer ) {
-	DB_Open( false );
-	return Plugin_Handled;
-}
-
-//-------------------------------------------------------------------------------------------------
-bool:DB_Open( bool:first=true ) {
 	
-	// returns true if connected
-	if( g_db_connecting ) return false;
-	if( g_db_connected ) return true;
-	SQL_TConnect( DB_OnConnect, "reflex" );
-	g_db_connecting = true;
-	if( first ) g_db_reconnect_tries = 5;
-	return false;
-}
-
-//-------------------------------------------------------------------------------------------------
-public DB_Fault() {
-	if( !g_db_connected ) return;
-	CloseHandle( g_db );
-	g_db = INVALID_HANDLE;
-	g_db_connected = false;
-	DB_Open();
+	g_initialized = true;
 }
 
 //-------------------------------------------------------------------------------------------------
 public Action:Command_items( client, args ) {
 	if( client == 0 ) return Plugin_Handled;
-	if( !g_db_connected || !g_client_data_loaded[client] ) {
+	if( !DBRELAY_IsConnected() || !g_client_data_loaded[client] ) {
 		PrintToChat( client, "Your inventory is still loading." );
 		return Plugin_Handled;
 	}
@@ -563,7 +514,7 @@ public UseItemMenu( Handle:menu, MenuAction:action, client, param2) {
 		
 		GetMenuItem( menu, param2, info, sizeof(info) );
 		new item = StringToInt(info);
-		if( g_db_connected && g_client_data_loaded[client] && (g_client_items[client][item]+g_client_items_change[client][item])>0 ) {
+		if( DBRELAY_IsConnected() && g_client_data_loaded[client] && (g_client_items[client][item]+g_client_items_change[client][item])>0 ) {
 			
 			Call_StartFunction( item_plugins[item], item_functions[item][ITEMFUNC_ONUSE] );
 			Call_PushCell( client );
@@ -610,7 +561,7 @@ public ShowUseItemMenu( client ) {
 //-------------------------------------------------------------------------------------------------
 public Action:Command_use_item( client, args ) {
 	if( client == 0 ) return Plugin_Handled;
-	if( !g_db_connected || !g_client_data_loaded[client] ) {
+	if( !DBRELAY_IsConnected() || !g_client_data_loaded[client] ) {
 		PrintToChat( client, "Your inventory is still loading." );
 		return Plugin_Handled;
 	}
@@ -701,7 +652,7 @@ public Native_RegisterItem( Handle:plugin, numParams ) {
 				return true;
 			}
 		}
-		if( g_db_connected ) {
+		if( DBRELAY_IsConnected() ) {
 			BuildSQLItemIDFilter();
 		}
 		return false;
@@ -733,7 +684,7 @@ public Native_ItemCount( Handle:plugin, numParams ) {
 	new itemid = GetNativeCell(2);
 	new slot = item_map[itemid]-1;
 	if( slot == -1 ||
-		!g_db_connected ||
+		!DBRELAY_IsConnected() ||
 		!g_client_data_loaded[client] )
 		return 0;
 	
@@ -743,7 +694,7 @@ public Native_ItemCount( Handle:plugin, numParams ) {
 //-------------------------------------------------------------------------------------------------
 public Native_GetCash( Handle:plugin, numParams ) {
 	new client = GetNativeCell(1);
-	if( !g_db_connected || !g_client_data_loaded[client] ) return 0;
+	if( !DBRELAY_IsConnected() || !g_client_data_loaded[client] ) return 0;
 	return g_client_cash[client]+g_client_cash_change[client];
 }
 
@@ -764,7 +715,7 @@ public Native_CanUseItem( Handle:plugin, numParams ) {
 	new itemid = GetNativeCell(2);
 	new slot = item_map[itemid]-1;
 	if( slot == -1 ) return false;
-	if( !g_db_connected || !g_client_data_loaded[client] ) return false;
+	if( !DBRELAY_IsConnected() || !g_client_data_loaded[client] ) return false;
 	return (g_client_items[client][slot]+g_client_items_change[client][slot]) > 0;
 }
 
@@ -775,7 +726,7 @@ public Native_UseItem( Handle:plugin, numParams ) {
 	new slot = item_map[itemid]-1;
 	if( slot == -1 ) return false;
 	if( !IsClientInGame(client) ) return false;
-	if( !g_db_connected || !g_client_data_loaded[client] ) return false;
+	if( !DBRELAY_IsConnected() || !g_client_data_loaded[client] ) return false;
 	
 	if( (g_client_items[client][slot]+g_client_items_change[client][slot]) <= 0 ) return false;
 	
@@ -794,19 +745,19 @@ public Native_IsClientLoaded( Handle:plugin, numParams ) {
 	new client = GetNativeCell(1);
 	if( !IsClientInGame(client) ) return false;
 	
-	return g_db_connected && g_client_data_loaded[client];
+	return DBRELAY_IsConnected() && g_client_data_loaded[client];
 }
 
 //-------------------------------------------------------------------------------------------------
 public Native_IsConnected( Handle:plugin, numParams ) {
-	return g_db_connected;
+	return DBRELAY_IsConnected();
 }
 
 //-------------------------------------------------------------------------------------------------
 public Action:Command_cash( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	
-	if( !g_db_connected || !g_client_data_loaded[client] ) {
+	if( !DBRELAY_IsConnected() || !g_client_data_loaded[client] ) {
 		PrintToChat( client, "Your items are still being loaded." );
 		return Plugin_Handled;
 	}
@@ -847,11 +798,10 @@ public ShowStorePage( client, id, token ) {
 //-------------------------------------------------------------------------------------------------
 public OnQuickAuthSave( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	
-	SQL_TQuery( g_db, OnQuickAuthFetch, "SELECT LAST_INSERT_ID()", data );
+	DBRELAY_TQuery( OnQuickAuthFetch, "SELECT LAST_INSERT_ID()", data );
 	
 	if( !hndl ) {
 		LogError( "SQL error saving QuickAuth token ::: %s", error );
-		DB_Fault();
 		return;
 	}
 }
@@ -861,7 +811,6 @@ public OnQuickAuthFetch( Handle:owner, Handle:hndl, const String:error[], any:da
 	
 	if( !hndl ) {
 		LogError( "SQL error fetching QuickAuth ID ::: %s", error );
-		DB_Fault();
 		return;
 	}
 	
@@ -886,7 +835,7 @@ public OnQuickAuthFetch( Handle:owner, Handle:hndl, const String:error[], any:da
 public Action:Command_store( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	
-	if( !g_db_connected ) {
+	if( !DBRELAY_IsConnected() ) {
 		PrintToChat( client, "The database could not be reached. Please try again later." );
 		return Plugin_Handled;
 	}
@@ -920,7 +869,7 @@ public ConVar_QueryClient( QueryCookie:cookie, client, ConVarQueryResult:result,
 	WritePackCell( pack, GetClientUserId(client) );
 	WritePackCell( pack, token );
 	
-	SQL_TQuery( g_db, OnQuickAuthSave, query, pack );
+	DBRELAY_TQuery( OnQuickAuthSave, query, pack );
 	
 	//ReplyToCommand( client, "Visit our store at store.reflex-gamers.com" );
 }
