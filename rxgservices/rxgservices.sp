@@ -23,6 +23,7 @@ enum {
 	RS_RT2,
 	RS_RT3
 };
+
 new g_rstate          = RS_READY;
 new Handle:g_response = INVALID_HANDLE;
 
@@ -32,12 +33,19 @@ new Handle:g_socket = INVALID_HANDLE;
 new bool:g_connecting = false;
 new bool:g_connected = false;
 
+new Handle:rgs_password;
+new Handle:rgs_address;
+new Handle:rgs_port;
+
+new Handle:g_ConnectedForward;
+
 //-----------------------------------------------------------------------------
 new Handle:g_request_queue;
 
 enum {
 	RQ_PLUGIN,
 	RQ_HANDLER,
+	RQ_SIMPLE,
 	RQ_SIZE
 };
 
@@ -45,20 +53,39 @@ enum {
 	
 //-----------------------------------------------------------------------------
 public OnPluginStart() {  
-	g_request_queue = CreateArray( RQ_SIZE );
-	Connect(); 
+	g_request_queue = CreateArray( RQ_SIZE ); 
+	rgs_password = CreateConVar( "rgs_password", "", 
+								 "RXG Services Password", FCVAR_PLUGIN );
+	rgs_address = CreateConVar( "rgs_address", "", 
+								 "RXG Services Address", FCVAR_PLUGIN );
+	rgs_port = CreateConVar( "rgs_port", "12107", 
+								 "RXG Services Port", FCVAR_PLUGIN );
+	
+	g_ConnectedForward = CreateGlobalForward( "RGS_OnConnected", ET_Ignore );
 } 
+
+public OnConfigsExecuted() {
+	Connect();
+}
 
 /** ---------------------------------------------------------------------------
  * Try to connect to the services.
  */
 Connect() {
 	if( g_connecting || g_connected ) return;
-	g_connecting = true;
+	 
+	decl String:address[256];
+	new port;
+	GetConVarString( rgs_address, address, sizeof address );
+	port = GetConVarInt( rgs_port );
+	if( address[0] == 0 || port == 0 ) return;
+	
+	g_connecting = true; 
 	g_socket = SocketCreate(SOCKET_TCP, OnSocketError);
+	 
 	SocketConnect(
 		g_socket, OnSocketConnected, OnSocketReceive, 
-		OnSocketDisconnected, "services.reflex-gamers.com", 12107 );
+		OnSocketDisconnected, address, port );
 }
 
 /** ---------------------------------------------------------------------------
@@ -76,9 +103,29 @@ public Action:RetryConnect( Handle:timer ) {
  * @param handler Handler function.
  * @param data    Data to pass to function.
  */
-CallHandler( Handle:plugin, Function:handler, Handle:data ) {
+CallHandler( Handle:plugin, Function:handler, bool:error, 
+			 Handle:data, rtype ) {
+			 
+	if( handler == INVALID_FUNCTION ) return;
 	Call_StartFunction( plugin, handler );
+	Call_PushCell( error );
 	Call_PushCell( data );
+	Call_PushCell( rtype );
+	Call_Finish();
+}
+	
+/** ---------------------------------------------------------------------------
+ * Call a simple response handler.
+ *
+ * @param plugin  Plugin owning the handler.
+ * @param handler Handler function.
+ * @param data    Data to pass to function.
+ */
+CallHandlerS( Handle:plugin, Function:handler, bool:error, String:data[] ) {
+	if( handler == INVALID_FUNCTION ) return;
+	Call_StartFunction( plugin, handler );
+	Call_PushCell( error );
+	Call_PushString( data );
 	Call_Finish();
 }
 
@@ -86,7 +133,7 @@ CallHandler( Handle:plugin, Function:handler, Handle:data ) {
  * Create a response datapack.
  */
 CreateResponsePack() {
-	if( g_response != INVALID_HANDLE ) CloseHandle(g_response);
+	CloseResponse();
 	g_response = CreateDataPack();
 }
 
@@ -94,30 +141,80 @@ CreateResponsePack() {
  * Create a response key-values.
  */
 CreateResponseKV() {
-	if( g_response != INVALID_HANDLE ) CloseHandle(g_response);
+	CloseResponse();
 	g_response = CreateKeyValues( "Response" );
+}
+
+/** ---------------------------------------------------------------------------
+ * Reset the response handle.
+ */
+CloseResponse() {
+	if( g_response == INVALID_HANDLE ) return;
+	CloseHandle( g_response );
+	g_response = INVALID_HANDLE;
 }
 
 /** ---------------------------------------------------------------------------
  * Pop a response handler and call it.
  *
- * @param data    Data to pass to function.
- * @param close   Close the data handle.
+ * @param rtype   Response type.
  * @returns false on failure.
  */
-bool:PopHandler( Handle:data = INVALID_HANDLE, bool:close = true ) {
+bool:PopHandler( rtype ) {
+	
 	if( GetArraySize( g_request_queue ) == 0 ) {
-		if( close ) CloseHandle(data);
+		CloseResponse();
 		return false;
 	}
 	
-	CallHandler( GetArrayCell( g_request_queue, 0, 0 ), 
-				 GetArrayCell( g_request_queue, 0, 1 ), 
-				 data );
-				 
+	decl handler[RQ_SIZE];
+	GetArrayArray( g_request_queue, 0, handler );
+	new Handle:h_plugin = Handle:handler[RQ_PLUGIN];
+	new Function:h_function = Function:handler[RQ_HANDLER];
+	
 	RemoveFromArray( g_request_queue, 0 );
-	if( close ) CloseHandle(data);
+	
+	if( rtype == 0 || rtype == 1 || rtype == 2 ) {
+		ResetPack( g_response );
+	} else if( rtype == 3 ) {
+		KvRewind( g_response );
+	}
+	
+	if( h_function != INVALID_FUNCTION ) {
+		
+		if( handler[RQ_SIMPLE] ) {
+		
+			// 0 or 1, ERR or RT1, both are simple messages.
+			if( rtype == 0 || rtype == 1 ) {
+				decl String:text[4096]; 
+				ReadPackString( g_response, text, sizeof text );
+				CallHandlerS( h_plugin, h_function, 
+							  rtype == 0, text );
+			} else {  
+				CallHandlerS( h_plugin, h_function, 
+							  rtype == 0, "" ); 
+			}
+		} else {
+		
+			CallHandler( h_plugin, h_function, 
+						 rtype == 0, g_response, rtype );
+		}
+	} 
+				 
+	CloseResponse();
 	return true;
+}
+
+/** ---------------------------------------------------------------------------
+ * Pop all response handlers and send errors.
+ *
+ */
+ResetResponseQueue() {
+	while( GetArraySize(g_request_queue) > 0 ) {
+		CreateResponsePack();
+		WritePackString( g_response, "RESET An error occurred." );
+		PopHandler(0);
+	}
 }
 
 /** ---------------------------------------------------------------------------
@@ -126,13 +223,14 @@ bool:PopHandler( Handle:data = INVALID_HANDLE, bool:close = true ) {
  * @param format Format of message.
  * @param ...    Formatted arguments.
  */
+ /*
 SendMessage( const String:format[], any:... ) {
 	decl String:request[512];
 	new length = VFormat( request, sizeof request, format, 2 );
 	request[length] = '\n';
 	request[length+1] = 0;
 	SocketSend( g_socket, request );
-}
+}*/
 
 /** ---------------------------------------------------------------------------
  * Send a complete message to the services.
@@ -152,11 +250,19 @@ public OnSocketConnected(Handle:socket, any:data ) {
 	
 	g_rstate = RS_READY;
 	g_bufferpos = 0;
+
+	decl String:pass[64];
+	GetConVarString( rgs_password, pass, sizeof pass );
+	if( pass[0] != 0 ) {
+		decl String:game[32];
+		GetGameFolderName( game, sizeof game );
+		RGS_Request( INVALID_FUNCTION, "AUTH \"%s\" rxg %s", pass, game );
+	}
 	
-	decl String:game[32];
-	GetGameFolderName( game, sizeof game );
-	SendMessage( "HELLO rxg %s", game );
+	Call_StartForward(g_ConnectedForward);
+	Call_Finish();
 }
+
 
 /** ---------------------------------------------------------------------------
  * Process a line from a response.
@@ -167,18 +273,34 @@ public OnSocketConnected(Handle:socket, any:data ) {
  */
 bool:HandleResponseLine( String:data[] ) {
 	if( g_rstate == RS_READY ) {
-		if( strncmp( data, "[RT1] ", 6 ) == 0 ) {
-			// RT1 TYPE RESPONSE
+		if( strncmp( data, "[RT1]", 5 ) == 0 ) {
+		
+			// in case the message is exactly "[RT1]" without a trailing space
+			// extend the null terminator so we dont mess up below.
+			if( data[5] == 0 ) data[6] = 0;
 			
-			new Handle:pack = CreateDataPack();
-			WritePackString( pack, data[5] );
-			return PopHandler( pack );
+			// RT1 RESPONSE
+			CreateResponsePack();
+			WritePackString( g_response, data[6] );
+			return PopHandler( 1 );
 		} else if( strncmp( data, "[RT2]", 5 ) == 0 ) {
+			// RT2 RESPONSE
 			g_rstate = RS_RT2;
 			CreateResponsePack();
 		} else if( strncmp( data, "[RT3]", 5 ) == 0 ) {
+			// RT3 RESPONSE
 			g_rstate = RS_RT3;
 			CreateResponseKV();
+		} else if( strncmp( data, "[ERR]", 5 ) == 0 ) {
+		
+			// (see rt1)
+			if( data[5] == 0 ) data[6] = 0;
+			
+			// ERR RESPONSE
+			LogError( "Services error: %s", data );
+			CreateResponsePack();
+			WritePackString( g_response, data[6] );
+			return PopHandler( 0 );
 		}
 	} else if( g_rstate == RS_RT2 ) {
 		if( data[0] == ':' ) {
@@ -187,16 +309,16 @@ bool:HandleResponseLine( String:data[] ) {
 		} else if( data[0] == 0 ) {
 			// terminator
 			g_rstate = RS_READY;
-			return PopHandler( g_response );
+			return PopHandler( 2 );
 		} else {
-			// error.
+			// error. unexpected
 			return false;
 		}
 	} else if( g_rstate == RS_RT3 ) {
 		if( data[0] == 0 ) {
 			// terminator
 			g_rstate = RS_READY;
-			return PopHandler( g_response );
+			return PopHandler( 3 );
 		}
 		
 		new pos = FindCharInString( data, ':' );
@@ -257,29 +379,39 @@ public OnSocketReceive( Handle:socket, String:receiveData[],
 	
 	if( !ProcessRecv( receiveData, dataSize ) ) {
 		LogError( "Encountered a stream error." );
-		CloseHandle( socket ); // todo, wrap closehandle in a funciton that cleans up 
-		                      // intermediate data.
-		CreateTimer( 30.0, RetryConnect );
+		Reconnect( 30.0 );
 	}
+}
+
+Close() {
+	// empty stack.
+	g_connecting = false;
+	g_connected = false;
+	CloseHandle( g_socket );
+	
+	ResetResponseQueue();
+}
+
+/** ---------------------------------------------------------------------------
+ * Close the socket and reconnect.
+ *
+ * @param delay Delay to wait before reconnecting.
+ */
+Reconnect( Float:delay = 0.0 ) {
+	Close();
+	CreateTimer( delay, RetryConnect );
 }
 
 //-----------------------------------------------------------------------------
 public OnSocketDisconnected( Handle:socket, any:data ) {
-	
-	g_connecting = false;
-	g_connected = false;
 	LogError( "Disconnected from services." );
-	CloseHandle( socket );
-	CreateTimer( 15.0, RetryConnect );
+	Reconnect( 15.0 );
 }
 
 //-----------------------------------------------------------------------------
 public OnSocketError( Handle:socket, const errorType, 
 					  const errorNum, any:data ) {
 					  
-	g_connecting = false;
-	g_connected = false;
 	LogError( "Socket error %d (errno %d)", errorType, errorNum );
-	CloseHandle(socket);
-	CreateTimer( 60.0, RetryConnect );
+	Reconnect( 60.0 );
 }

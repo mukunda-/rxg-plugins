@@ -104,4 +104,5 @@ Error Response
 
   BADINPUT	Invalid input was given.
   DENIED	Invalid credentials.
+  RESET		The driver had to reset.
   
