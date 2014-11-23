@@ -19,7 +19,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "1.3.1",
+    version     = "1.4.0",
     url         = "www.mukunda.com"
 };
 
