@@ -19,7 +19,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "1.4.0",
+    version     = "1.4.1",
     url         = "www.mukunda.com"
 };
 
@@ -75,8 +75,6 @@ new Float:g_last_update;
 
 #define UPDATE_TIMED_INTERVAL 50.0
 //-------------------------------------------------------------------------------------------------
-new bool:g_initialized;
-
 #pragma unused GAME
 new GAME;
 
@@ -137,7 +135,6 @@ BuildSQLItemIDFilter() {
 	new count = 0;
 	for( new i =0 ; i < 16; i++ ) {
 
-
 		if( item_ids[i] != 0 ) {
 			Format( sql_itemid_filter, sizeof sql_itemid_filter, "%s%d,", sql_itemid_filter, item_ids[i] );
 			count++;
@@ -149,7 +146,7 @@ BuildSQLItemIDFilter() {
 		StrCat( sql_itemid_filter, sizeof sql_itemid_filter, "0," ); 
 	}
 	sql_itemid_filter[strlen(sql_itemid_filter)-1] = 0; // remove last comma
-	StrCat( sql_itemid_filter, sizeof sql_itemid_filter, ")" ); 
+	StrCat( sql_itemid_filter, sizeof sql_itemid_filter, ")" );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -355,7 +352,7 @@ bool:LoadClientData( client, bool:chain=false ) {
 		sql_itemid_filter,
 		SPITEM_CREDIT,
 		account );
-		
+	
 	new Handle:pack = CreateDataPack();
 	WritePackCell( pack, GetClientUserId(client) );
 	WritePackCell( pack, client );
@@ -461,21 +458,13 @@ public OnClientConnected(client) {
 public OnClientDisconnect( client ) {
 	LogOutPlayer( client );
 }
-   
+
 //-------------------------------------------------------------------------------------------------
 public OnDBRelayConnected() {
-	
-	if( g_initialized ) {
-		return;
-	}
 	
 	for( new i = 1; i <= MaxClients; i++ ) {
 		g_client_data_loaded[i] = false;
 	}
-	
-	BuildSQLItemIDFilter();
-	
-	g_initialized = true;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -649,11 +638,10 @@ public Native_RegisterItem( Handle:plugin, numParams ) {
 					g_client_items_change[client][slot] = 0;
 				}
 				
+				BuildSQLItemIDFilter();
+				
 				return true;
 			}
-		}
-		if( DBRELAY_IsConnected() ) {
-			BuildSQLItemIDFilter();
 		}
 		return false;
 	} else {
