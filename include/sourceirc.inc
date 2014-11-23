@@ -52,6 +52,7 @@ public __pl_sourceirc_SetNTVOptional()
 	MarkNativeAsOptional("IRC_GetUserFlagBits");
 	MarkNativeAsOptional("IRC_GetAdminFlag");
 	MarkNativeAsOptional("IRC_GetTeamColor");
+	MarkNativeAsOptional("IRC_MsgFlaggedChannels");
 }
 
 /**
