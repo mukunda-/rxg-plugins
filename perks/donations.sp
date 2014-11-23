@@ -3,7 +3,8 @@
 
 #include <sourcemod>
 #include <sdktools>
-#include <clientprefs> 
+#include <clientprefs>
+#include <dbrelay>
 
 #include <donations>
 
@@ -37,18 +38,15 @@ public Plugin:myinfo =
 	name = "RXG Donations",
 	author = "mukunda",
 	description = "RXG Donations Interface",
-	version = "2.1.1",
+	version = "2.2.0",
 	url = "www.mukunda.com"
 };
-
-new connect_retries = 10;
 
 #define MAX_VERIFIES_PER_SESSION 5
 
 new String:logFile[256];
 
-new Handle:db_donations = INVALID_HANDLE;
-new bool:db_connecting; 
+new bool:g_initialized;
 
 new Handle:sm_donations_goal;
 
@@ -133,16 +131,6 @@ public OnPluginStart() {
 
 	BuildPath(Path_SM, logFile, sizeof(logFile), "logs/donations.log");
  
-	if(!SQL_CheckConfig("reflex"))
-	{
-		LogToFile(logFile, "Database failure: Could not find Database conf \"donations\"");
-		SetFailState("Database failure: Could not find Database conf \"donations\"");
-		return;
-	}
-	
-	db_connecting = true;
-	SQL_TConnect( OnDonationsConnected, "reflex" );
-	
 	RegConsoleCmd( "sm_verify", Command_verify );								// verify yourself
 	RegConsoleCmd( "sm_info", Command_info );									// print donation/user info
 	RegConsoleCmd( "sm_vip", Command_vip );								// print donation/user info
@@ -266,25 +254,17 @@ public OnClientPostAdminCheck(client) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:RetryDonationsConnection( Handle:timer ) {
-	db_connecting = true;
-	SQL_TConnect( OnDonationsConnected, "reflex" );
-	return Plugin_Handled;
-}
-
-//-------------------------------------------------------------------------------------------------
-public OnDonationsConnected(Handle:owner, Handle:hndl, const String:error[], any:data) {
-	db_connecting = false;
-	db_donations = hndl;
-	if( db_donations == INVALID_HANDLE ) {
-		LogToFile(logFile, "(OnDonationsConnected) Database failure: %s.", error);
-		CreateTimer( 180.0, RetryDonationsConnection );
+public OnDBRelayConnected() {
+	
+	if( g_initialized ) {
 		return;
 	}
-
+	
 	RefreshAllClients();
+	
+	g_initialized = true;
 }
- 
+
 //-------------------------------------------------------------------------------------------------
 public LookupDonationInfoResult3( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	new client = GetClientOfUserId( data );
@@ -357,24 +337,16 @@ public LookupDonationInfoResult2( Handle:owner, Handle:hndl, const String:error[
 			
 		forumid,auth);
 	
-	SQL_TQuery( db_donations, LookupDonationInfoResult3, query, userid );
+	DBRELAY_TQuery( LookupDonationInfoResult3, query, userid );
 }
 
 public LookupDonationInfoResult( Handle:owner, Handle:hndl, const String:error[], any:userid ) {
 	new client = GetClientOfUserId( userid );
 	if( !client ) return; // client disconnected
 	if( !hndl ) {
-		LogToFile( logFile, "(LookupDonationInfoResult) Database Error: %s.", error );
-		if( StrContains( error, "can't connect", false ) ) {
-			connect_retries--;
-			if( connect_retries <= 0 ) {
-				SetFailState( "Can't connect to database, please reload plugin when problem is corrected." );
-			}
-		}
 		client_donation_cached[client] = true;
 		return;
 	}
-	connect_retries = 10;
 	
 	new rows = SQL_GetRowCount(hndl);
 	if( rows <= 1 ) {
@@ -390,7 +362,7 @@ public LookupDonationInfoResult( Handle:owner, Handle:hndl, const String:error[]
 		WritePackCell( data, userid );
 		WritePackCell( data, forum_id );  
 
-		SQL_TQuery( db_donations, LookupDonationInfoResult2, "SET @a := 0", data );
+		DBRELAY_TQuery( LookupDonationInfoResult2, "SET @a := 0", data );
 	} else if( rows > 1 ) {
 		
 		
@@ -408,7 +380,7 @@ public LookupDonationInfoResult( Handle:owner, Handle:hndl, const String:error[]
 
 //-------------------------------------------------------------------------------------------------
 LookupDonationInfo( client ) {
-	if( db_donations == INVALID_HANDLE  || db_connecting  ) return;
+	if( !DBRELAY_IsConnected() ) return;
 	client_donation_cached[client] = false;
 	client_donator_level[client] = 0; 
 
@@ -417,7 +389,7 @@ LookupDonationInfo( client ) {
 	GetClientAuthString( client, auth, sizeof(auth) );
 	auth[6] = '_';
 	Format( query, sizeof(query), "SELECT userid FROM sourcebans_forums.userfield WHERE field7 LIKE '%s'", auth );
-	SQL_TQuery( db_donations, LookupDonationInfoResult, query, GetClientUserId(client) );
+	DBRELAY_TQuery( LookupDonationInfoResult, query, GetClientUserId(client) );
 }
  
 
@@ -428,7 +400,7 @@ public Action:Command_verify( client, args ) {
 		return Plugin_Handled;
 	}
 	
-	if( db_donations == INVALID_HANDLE  || db_connecting  ) {
+	if( !DBRELAY_IsConnected() ) {
 		ReplyToCommand( client, "Couldn't connect to donation database!" );
 		return Plugin_Handled;
 	}
@@ -692,7 +664,7 @@ public PrintDonationInfo_QueryRandom( Handle:owner, Handle:hndl, const String:er
 //-------------------------------------------------------------------------------------------------
 public Action:PrintDonationInfo( Handle:timer ) {
 	decl String:query[512];
-	if( db_connecting || db_donations == INVALID_HANDLE ) return Plugin_Continue;
+	if( !DBRELAY_IsConnected() ) return Plugin_Continue;
 	if( ad_counter == 0 ) {
 		// print donation totals
  
@@ -701,7 +673,7 @@ public Action:PrintDonationInfo( Handle:timer ) {
 			month_start_time,
 			month_end_time );
 
-		SQL_TQuery( db_donations, PrintDonationInfo_QueryTotal, query );
+		DBRELAY_TQuery( PrintDonationInfo_QueryTotal, query );
 	} else if( ad_counter == 1 ) {
 		// current top donator
 		Format( query, sizeof(query), 
@@ -709,7 +681,7 @@ public Action:PrintDonationInfo( Handle:timer ) {
 			month_start_time,
 			month_end_time );
 
-		SQL_TQuery( db_donations, PrintDonationInfo_QueryTop, query );
+		DBRELAY_TQuery( PrintDonationInfo_QueryTop, query );
 	} else if( ad_counter == 2 ) {
 		// last top donator
 		Format( query, sizeof(query), 
@@ -717,13 +689,13 @@ public Action:PrintDonationInfo( Handle:timer ) {
 			last_month_start_time,
 			month_start_time );
 
-		SQL_TQuery( db_donations, PrintDonationInfo_QueryTopLast, query );
+		DBRELAY_TQuery( PrintDonationInfo_QueryTopLast, query );
 	} else if( ad_counter == 3 ) {
 		Format( query, sizeof(query), 
 			"SELECT custom,SUM(mc_gross*exchange_rate) AS scaled FROM sourcebans_forums.dopro_donations WHERE (payment_date >= '%d') AND (payment_date < '%d') AND event_id = '0' AND (payment_status = 'Completed' OR payment_status = 'Refunded') AND option_seleczion1='Yes' GROUP BY custom ORDER BY RAND() LIMIT 1",
 			month_start_time,
 			month_end_time );
-		SQL_TQuery( db_donations, PrintDonationInfo_QueryRandom, query );
+		DBRELAY_TQuery( PrintDonationInfo_QueryRandom, query );
 	}
 	ad_counter++;
 	if( ad_counter == 4 ) ad_counter = 0;
@@ -778,7 +750,7 @@ public LookupRXGMembership2( Handle:owner, Handle:hndl, const String:error[], an
 	PrintToConsole( client, " *** fetching usergroup..." );
 	decl String:query[256];
 	Format( query, sizeof(query), "SELECT title FROM sourcebans_forums.usergroup WHERE usergroupid='%d'", usergroupid );
-	SQL_TQuery( db_donations, LookupRXGMembership3, query, userid );
+	DBRELAY_TQuery( LookupRXGMembership3, query, userid );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -805,7 +777,7 @@ public LookupRXGMembership1( Handle:owner, Handle:hndl, const String:error[], an
 	PrintToConsole( client, " *** found forum ID : %d", forumid );
 	decl String:query[256];
 	Format( query, sizeof(query), "SELECT usergroupid FROM sourcebans_forums.user WHERE userid='%d'", forumid );
-	SQL_TQuery( db_donations, LookupRXGMembership2, query, userid );
+	DBRELAY_TQuery( LookupRXGMembership2, query, userid );
 	
 }
 
@@ -819,7 +791,7 @@ LookupRXGMembership( client, target ) {
 	auth[6] = '_';
 	Format( query, sizeof(query), "SELECT userid FROM sourcebans_forums.userfield WHERE field7 LIKE '%s'", auth );
 	
-	SQL_TQuery( db_donations, LookupRXGMembership1, query, client?GetClientUserId(client):0 );
+	DBRELAY_TQuery( LookupRXGMembership1, query, client?GetClientUserId(client):0 );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -829,7 +801,7 @@ public Action:Command_checkmember( client, args ) {
 		return Plugin_Handled;
 	}
 
-	if( db_connecting || db_donations == INVALID_HANDLE ) {
+	if( !DBRELAY_IsConnected() ) {
 		ReplyToCommand( client, "couldn't access database, try again later" );
 		return Plugin_Handled;
 	}

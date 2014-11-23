@@ -13,7 +13,7 @@ public Plugin:myinfo = {
 	name = "Database Relay",
 	author = "WhiteThunder",
 	description = "Relays database connections and queries through one plugin",
-	version = "1.0.0",
+	version = "1.1.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -24,7 +24,7 @@ new Handle:sm_dbrelay_auto_reconnect;
 new Handle:sm_dbrelay_retry_delay;
 new Handle:sm_dbrelay_max_retries;
 new bool:c_auto_reconnect;
-new c_retry_delay;
+new Float:c_retry_delay;
 new c_max_retries;
 
 new g_last_connect;
@@ -62,8 +62,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) 
 //-------------------------------------------------------------------------------------------------
 RecacheConvars() {
 	c_auto_reconnect = GetConVarBool( sm_dbrelay_auto_reconnect );
-	c_retry_delay = GetConVarBool( sm_dbrelay_retry_delay );
-	c_max_retries = GetConVarBool( sm_dbrelay_max_retries );
+	c_retry_delay = GetConVarFloat( sm_dbrelay_retry_delay );
+	c_max_retries = GetConVarInt( sm_dbrelay_max_retries );
 }
 
 //-------------------------------------------------------------------------------------------------
