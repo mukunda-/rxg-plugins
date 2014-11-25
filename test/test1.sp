@@ -25,6 +25,6 @@ public Action:Test( client, argc ) {
 }
 
 public response( bool:error, String:data[] ) {
-
+	
 	PrintToServer( "TEST RESPONSE %s", data );
 }
