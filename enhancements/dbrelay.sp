@@ -13,7 +13,7 @@ public Plugin:myinfo = {
 	name = "Database Relay",
 	author = "WhiteThunder",
 	description = "Relays database connections and queries through one plugin",
-	version = "1.1.0",
+	version = "1.1.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -95,36 +95,27 @@ public OnPluginStart() {
 //-------------------------------------------------------------------------------------------------
 public Action:Command_connect( args ) {
 	
-	decl String:reply[64];
-	
 	if( g_connected ) {
-		reply = "Already connected.";
+		PrintToServer( "Already connected." );
 	} else if( g_connecting ) {
-		reply = "Already attempting to connect... Use dbrelay_status to check.";
+		PrintToServer( "Already attempting to connect... Use dbrelay_status to check." );
 	} else {
-		reply = "Attempting to open connection... Use dbrelay_status to check.";
+		PrintToServer( "Attempting to open connection... Use dbrelay_status to check." );
 		DB_Open();
 	}
-	
-	PrintToServer( reply );
 }
 
 //-------------------------------------------------------------------------------------------------
 public Action:Command_disonnect( args ) {
 	
-	decl String:reply[64];
-	
 	if( g_connected ) {
-		reply = "[DBRELAY] Closing database connection.";
+		PrintToServer( "[DBRELAY] Closing database connection." );
 		DB_Close();
 	} else if( g_connecting ) {
-		reply = "[DBRELAY] ERROR: Currently attempting to connect.";
+		PrintToServer( "[DBRELAY] ERROR: Currently attempting to connect." );
 	} else {
-		reply = "[DBRELAY] No connection found.";
-		DB_Open();
+		PrintToServer( "[DBRELAY] No connection found." );
 	}
-	
-	PrintToServer( reply );
 }
 
 //-------------------------------------------------------------------------------------------------
