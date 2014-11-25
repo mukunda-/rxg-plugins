@@ -13,7 +13,7 @@ public Plugin:myinfo = {
 	name = "Database Relay",
 	author = "WhiteThunder",
 	description = "Relays database connections and queries through one plugin",
-	version = "1.1.1",
+	version = "1.1.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -230,6 +230,7 @@ public DB_Close() {
 	CloseHandle( g_db );
 	g_db = INVALID_HANDLE;
 	g_connected = false;
+	g_connecting = false;
 }
 
 //-------------------------------------------------------------------------------------------------
