@@ -13,7 +13,7 @@ public Plugin:myinfo = {
 	name = "Database Relay",
 	author = "WhiteThunder",
 	description = "Relays database connections and queries through one plugin",
-	version = "1.1.2",
+	version = "1.1.3",
 	url = "www.reflex-gamers.com"
 };
 
@@ -197,6 +197,8 @@ public DB_OnConnect( Handle:owner, Handle:hndl, const String:error[], any:data )
 		if( c_max_retries != 0 && g_reconnect_tries <= 0 ) {
 			IRCMessage( "\x030,4[DBRELAY] Unable to connect to database. No longer retrying." );
 			PrintToServer( "[DBRELAY] Unable to connect to database. No longer retrying." );
+			g_connecting = false;
+			return;
 		} else if( c_auto_reconnect ) {
 			g_reconnect_tries--;
 			CreateTimer( c_retry_delay, DB_ReconnectTimer );
@@ -204,7 +206,6 @@ public DB_OnConnect( Handle:owner, Handle:hndl, const String:error[], any:data )
 		}
 	}
 	
-	g_connecting = false;
 	g_connected = true;
 	g_last_connect = GetTime();
 	g_db = hndl;
@@ -218,6 +219,7 @@ public DB_OnConnect( Handle:owner, Handle:hndl, const String:error[], any:data )
 
 //-------------------------------------------------------------------------------------------------
 public Action:DB_ReconnectTimer( Handle:timer ) {
+	g_connecting = false;
 	DB_Open( false );
 	return Plugin_Handled;
 }
