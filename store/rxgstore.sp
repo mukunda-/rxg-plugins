@@ -19,7 +19,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "1.4.1",
+    version     = "1.4.2",
     url         = "www.mukunda.com"
 };
 
@@ -127,6 +127,8 @@ public OnPluginStart() {
 	} else if( g_update_method == UPDATE_METHOD_ROUND ) {
 		HookEvent( "round_start", OnRoundStart, EventHookMode_PostNoCopy );
 	}
+	
+	BuildSQLItemIDFilter();
 }
 
 //-------------------------------------------------------------------------------------------------
