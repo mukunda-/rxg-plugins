@@ -1,9 +1,9 @@
- RXG SERVICES PROTOCOL       DRAFT3
+ RXG SERVICES PROTOCOL       DRAFT4
 ------------------------------------
  (C) 2014 Reflex Gamers
 
 ------------------------------------ 
- Last Updated: 6:21 PM 11/22/2014
+ Last Updated: 9:16 PM 11/25/2014
 
 ===============================================================================
  * Request Format
@@ -31,9 +31,9 @@
 
  Responses:
 
- <<< [RT1] OKAY
-   
- <<< [ERR] DENIED Wrong password.
+ | [RT1] OKAY
+ |---
+ | [ERR] DENIED Wrong password.
  
 
 -------------------------------------------------------------------------------
@@ -43,6 +43,70 @@
  |
  | <param> "rt2" to receive a test RT2 response, "rt3" to receive a RT3
  |         response, and omit to receive an RT1 response.
+
+-------------------------------------------------------------------------------
+ >>> PERKS [type] [id]
+ 
+ | Check to see if a person has donator perks.
+ |
+ | [type] Type of account to check, may be "STEAM" or "FORUM".
+ | [id]   If type is "STEAM" then this is a Steam ID or a SourceMod
+ |        signed Account ID. 
+ |        If type is "FORUM" then this is a forum user ID.
+
+ Response:
+
+ | [RT3]
+ | expires1: the unixtime when their $1/mo perks expire.
+ | expires5: the unixtime when their $5/mo perks expire.
+ 
+ Both expire times will be 0 if the user is not found.
+
+-------------------------------------------------------------------------------
+ >>> MEMBER [id]
+ 
+ | Check to see if a person is an RXG member.
+ | 
+ | [id] May be a Steam ID, Steam Account ID, or a minecraft username.
+ |
+ | *** minecraft username is not yet implemented.
+ 
+ Response:
+ 
+ | [RT3]
+ | ismember: "YES" or "NO"
+ | rank: rxg rank e.g. "Basic Admin"
+
+-------------------------------------------------------------------------------
+ >>> DONATIONS [query]
+ 
+ | Query donation info.
+ |
+ | [query] Query type. "total" to get the total donations for this month.
+ |                     "top" to get the top donator for this month.
+ |                     "lasttop" to get the previous month's top donator.
+ |                     "rand" to get a random donator for this month.
+
+ Responses:
+
+ | [RT3] // "total"
+ | total: Total donations for this month.
+ | goal: Monthly donation goal.
+ |---
+ | [RT3] // "top"
+ | name: Name of this month's top donator.
+ | amount: Amount the top donator gave.
+ | // if nobody, name="" and amount=0
+ |---
+ | [RT3] // "lasttop"
+ | name: Name of last month's top donator.
+ | amount: Amount they gave.
+ | // if nobody, name="" and amount=0
+ |---
+ | [RT3] // "rand"
+ | name: Name of randomly selected donator.
+ | amount: Amount they gave.
+ | // if nobody, name="" and amount=0
 
 ===============================================================================
  * Response Format
@@ -105,4 +169,5 @@ Error Response
   BADINPUT	Invalid input was given.
   DENIED	Invalid credentials.
   RESET		The driver had to reset.
-  
+  FAILURE	Invalid usage or unknown error.
+  DBFAILURE	When a result could not be read from the database.
