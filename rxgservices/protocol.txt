@@ -109,6 +109,7 @@
  | name: Name of randomly selected donator.
  | amount: Amount they gave.
  | // if nobody, name="" and amount=0
+ | // amounts are formatted with two decimal digits
 
 ===============================================================================
  * Response Format

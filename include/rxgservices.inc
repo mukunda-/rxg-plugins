@@ -32,8 +32,8 @@ funcenum RGS_Response {
 	public( bool:error, Handle:response, any:data, rtype )
 }
 funcenum RGS_ResponseS {
-	public RGS_ResponseS( bool:error, const String:response[] );
-	public RGS_ResponseS( bool:error, const String:response[], any:data );
+	public( bool:error, const String:response[] ),
+	public( bool:error, const String:response[], any:data )
 }
 
 /** ---------------------------------------------------------------------------
