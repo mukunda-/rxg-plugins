@@ -44,22 +44,25 @@
  |         response, and omit to receive an RT1 response.
 
 -------------------------------------------------------------------------------
- >>> PERKS [type] [id]
+ >>> PERKS [type] [id] [target] ...
  
  | Check to see if a person has donator perks.
  |
- | [type] Type of account to check, may be "STEAM" or "FORUM".
- | [id]   If type is "STEAM" then this is a Steam ID or a SourceMod
- |        signed Account ID. 
- |        If type is "FORUM" then this is a forum user ID.
+ | [type]   Type of account(s) to check, may be "STEAM" or "FORUM".
+ | [id]     ID of requested person, used to identify them in the result.
+ | [target] If type is "STEAM" then this is a Steam ID or a SourceMod
+ |          signed Account ID. If type is "FORUM" then this is a forum 
+ |          user ID.
+ | ...      ID and target pairs may be repeated to look up multiple people.
 
  Response:
 
- | [RT3]
- | expires1: the unixtime when their $1/mo perks expire.
- | expires5: the unixtime when their $5/mo perks expire.
- 
- Both expire times will be 0 if the user is not found.
+ | [RT2]
+ | <id> <expires5> <expires1> // one per ID requested
+ |---
+ | expires5 is the time when $5/mo perks expire.
+ | expires1 is the time when $1/mo perks expire.
+ | Both expire times will be 0 if the user is not found.
 
 -------------------------------------------------------------------------------
  >>> MEMBER [id]
