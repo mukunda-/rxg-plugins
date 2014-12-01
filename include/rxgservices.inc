@@ -47,6 +47,10 @@ funcenum RGS_ResponseS {
  */
 native RGS_Request( RGS_Response:handler, any:data, 
 					const String:message[], any:... );
+					
+// queued with high prio:
+native RGS_RequestH( RGS_Response:handler, any:data, 
+					const String:message[], any:... );
 
 /** ---------------------------------------------------------------------------
  * Make a simple request to the RXG services.
@@ -61,6 +65,8 @@ native RGS_Request( RGS_Response:handler, any:data,
  */
 native RGS_RequestS( RGS_ResponseS:handler, any:data, 
 					 const String:message[], any:... );
+				
+
 
 /** ---------------------------------------------------------------------------
  * Check if the RXG services are available.
@@ -91,6 +97,7 @@ public __pl_rxgservices_SetNTVOptional()
 {
 	MarkNativeAsOptional("RGS_Connected");
 	MarkNativeAsOptional("RGS_Request");
+	MarkNativeAsOptional("RGS_RequestH");
 	MarkNativeAsOptional("RGS_RequestS");
 }
 #endif

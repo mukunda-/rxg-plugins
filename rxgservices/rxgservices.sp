@@ -46,11 +46,15 @@ enum {
 	RQ_PLUGIN,
 	RQ_HANDLER,
 	RQ_SIMPLE,
+	RQ_DATA,
+	RQ_REQUEST,
 	RQ_SIZE
 };
+//-----------------------------------------------------------------------------
+// additional source files
 
 #include "rgs/natives.sp"
-	
+
 //-----------------------------------------------------------------------------
 public OnPluginStart() {  
 	g_request_queue = CreateArray( RQ_SIZE ); 
@@ -64,6 +68,7 @@ public OnPluginStart() {
 	g_ConnectedForward = CreateGlobalForward( "RGS_OnConnected", ET_Ignore );
 } 
 
+//-----------------------------------------------------------------------------
 public OnConfigsExecuted() {
 	Connect();
 }
@@ -101,14 +106,17 @@ public Action:RetryConnect( Handle:timer ) {
  *
  * @param plugin  Plugin owning the handler.
  * @param handler Handler function.
- * @param data    Data to pass to function.
+ * @param resp    Response handle.
+ * @param data    Userdata.
+ * @param rtype   Response type.
  */
 CallHandler( Handle:plugin, Function:handler, bool:error, 
-			 Handle:data, rtype ) {
+			 Handle:resp, any:data, rtype ) {
 			 
 	if( handler == INVALID_FUNCTION ) return;
 	Call_StartFunction( plugin, handler );
 	Call_PushCell( error );
+	Call_PushCell( resp );
 	Call_PushCell( data );
 	Call_PushCell( rtype );
 	Call_Finish();
@@ -119,13 +127,17 @@ CallHandler( Handle:plugin, Function:handler, bool:error,
  *
  * @param plugin  Plugin owning the handler.
  * @param handler Handler function.
- * @param data    Data to pass to function.
+ * @param resp    Response string.
+ * @param data    Userdata.
  */
-CallHandlerS( Handle:plugin, Function:handler, bool:error, String:data[] ) {
+CallHandlerS( Handle:plugin, Function:handler, bool:error, 
+			  String:data[], any:data ) {
+			  
 	if( handler == INVALID_FUNCTION ) return;
 	Call_StartFunction( plugin, handler );
 	Call_PushCell( error );
 	Call_PushString( data );
+	Call_PushCell( data );
 	Call_Finish();
 }
 
@@ -171,7 +183,11 @@ bool:PopHandler( rtype ) {
 	GetArrayArray( g_request_queue, 0, handler );
 	new Handle:h_plugin = Handle:handler[RQ_PLUGIN];
 	new Function:h_function = Function:handler[RQ_HANDLER];
-	
+	new userdata = handler[RQ_DATA];
+	if( handler[RQ_REQUEST] != INVALID_HANDLE ) {
+		// this request never actually got sent. how depressing
+		CloseHandle( handler[RQ_REQUEST] );
+	}
 	RemoveFromArray( g_request_queue, 0 );
 	
 	if( rtype == 0 || rtype == 1 || rtype == 2 ) {
@@ -189,18 +205,18 @@ bool:PopHandler( rtype ) {
 				decl String:text[4096]; 
 				ReadPackString( g_response, text, sizeof text );
 				CallHandlerS( h_plugin, h_function, 
-							  rtype == 0, text );
+							  rtype == 0, text, userdata );
 			} else {  
 				CallHandlerS( h_plugin, h_function, 
-							  rtype == 0, "" ); 
+							  rtype == 0, "", userdata ); 
 			}
 		} else {
 		
-			CallHandler( h_plugin, h_function, 
-						 rtype == 0, g_response, rtype );
+			CallHandler( h_plugin, h_function, rtype == 0, g_response, 
+						 userdata, rtype );
 		}
 	} 
-				 
+	 
 	CloseResponse();
 	return true;
 }
@@ -256,13 +272,32 @@ public OnSocketConnected(Handle:socket, any:data ) {
 	if( pass[0] != 0 ) {
 		decl String:game[32];
 		GetGameFolderName( game, sizeof game );
-		RGS_Request( INVALID_FUNCTION, "AUTH \"%s\" rxg %s", pass, game );
+		RGS_RequestH( INVALID_FUNCTION, "AUTH \"%s\" rxg %s", pass, game );
 	}
+	
+	// flush queue
+	FlushQueued();
 	
 	Call_StartForward(g_ConnectedForward);
 	Call_Finish();
 }
 
+/** ---------------------------------------------------------------------------
+ * Flush any waiting requests.
+ */
+FlushQueued() {
+	for( new i = 0; i < GetArraySize( g_request_queue ); i++ ) {
+		new Handle:rq = Handle:GetArrayCell( g_request_queue, i, RQ_REQUEST );
+		if( rq != INVALID_HANDLE ) {
+			decl String:request[512];
+			ResetPack(rq);
+			ReadPackString( rq, request, sizeof request );
+			SendMessage2( request );
+			CloseHandle( rq );
+			SetArrayCell( g_request_queue, i, INVALID_HANDLE, RQ_REQUEST );
+		}
+	}
+}
 
 /** ---------------------------------------------------------------------------
  * Process a line from a response.
@@ -283,14 +318,17 @@ bool:HandleResponseLine( String:data[] ) {
 			CreateResponsePack();
 			WritePackString( g_response, data[6] );
 			return PopHandler( 1 );
+			
 		} else if( strncmp( data, "[RT2]", 5 ) == 0 ) {
 			// RT2 RESPONSE
 			g_rstate = RS_RT2;
 			CreateResponsePack();
+			
 		} else if( strncmp( data, "[RT3]", 5 ) == 0 ) {
 			// RT3 RESPONSE
 			g_rstate = RS_RT3;
 			CreateResponseKV();
+			
 		} else if( strncmp( data, "[ERR]", 5 ) == 0 ) {
 		
 			// (see rt1)
@@ -383,6 +421,7 @@ public OnSocketReceive( Handle:socket, String:receiveData[],
 	}
 }
 
+//-----------------------------------------------------------------------------
 Close() {
 	// empty stack.
 	g_connecting = false;

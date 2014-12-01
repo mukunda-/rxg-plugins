@@ -196,8 +196,7 @@ public OnPluginStart() {
 			"Donations_OnClientCached", 
 			ET_Ignore, Param_Cell, Param_Cell );
 	 
-	RefreshAllClients();
-	
+	RefreshAllClients(); 
 	RegisterCommands();
 	 
 	#if defined DEBUG // debug: fast timer
