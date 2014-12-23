@@ -565,8 +565,8 @@ public OnClientLockChecked( Handle:owner, Handle:hndl, const String:error[], any
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query,
-		"SELECT count(*) as total FROM sourcebans_store.gift WHERE recipient_id=%d AND accepted=0",
-		account );
+		"SELECT 'gifts' as type, count(*) as total FROM sourcebans_store.gift WHERE recipient_id=%d AND accepted=0 UNION SELECT 'rewards' as type, count(*) as total FROM sourcebans_store.reward_recipient WHERE recipient_id=%d AND accepted=0",
+		account, account );
 	
 	DBRELAY_TQuery( OnClientGiftsLoaded, query, data );
 }
@@ -584,15 +584,30 @@ public OnClientGiftsLoaded( Handle:owner, Handle:hndl, const String:error[], any
 	}
 	if( !hndl ) {
 		CloseHandle(data);
-		LogError( "Error checking pending gifts for %L : %s", client, error );
+		LogError( "Error checking pending gifts/rewards for %L : %s", client, error );
 		return;
 	}
 	
-	SQL_FetchRow( hndl );
-	new num_gifts = SQL_FetchInt( hndl, 0 );
+	// pending gifts
+	if( SQL_MoreRows( hndl ) ) {
 	
-	if( num_gifts > 0 ) {
-		PrintToChat( client, "\x01You have pending gifts. Access the \x04!store \x01to accept them." );
+		SQL_FetchRow( hndl );
+		new num_gifts = SQL_FetchInt( hndl, 1 );
+		
+		if( num_gifts > 0 ) {
+			PrintToChat( client, "\x01 \x04[STORE]\x01 You have pending gifts. Access the \x04!store \x01to accept them." );
+		}
+	}
+	
+	// pending rewards
+	if( SQL_MoreRows( hndl ) ) {
+		
+		SQL_FetchRow( hndl );
+		new num_rewards = SQL_FetchInt( hndl, 1 );
+		
+		if( num_rewards > 0 ) {
+			PrintToChat( client, "\x01 \x04[STORE]\x01 You have pending rewards. Access the \x04!store \x01to accept them." );
+		}
 	}
 	
 	decl String:query[1024];
