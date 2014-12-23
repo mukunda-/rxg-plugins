@@ -1019,14 +1019,24 @@ public Action:Command_cash( client, args ) {
 //-------------------------------------------------------------------------------------------------
 public ShowStorePage( client, id, token ) {
 	
+	decl String:source[13];
+	
+	if( GAME == GAME_CSGO ) {
+		source = "csgo";
+	} else if( GAME == GAME_TF2 ) {
+		source = "tf2";
+	} else {
+		source = "unknown";
+	}
+	
 	decl String:url[1024];
 	FormatEx( url, sizeof url,
 		//"http://store.reflex-gamers.com/quickauth%s.php?id=%d&token=%d",
 		"http://rxgstore2.dev/quickauth?id=%d&token=%d&source=%s",
-		//"http://sourcebans.site.nfoservers.com/store2/quickauth?id=%d&token=%d&source=%s",
+		//"http://store2.reflex-gamers.com/quickauth?id=%d&token=%d&source=%s",
 		id,
 		token,
-		GAME == GAME_CSGO ? "csgo" : "tf2" );
+		source );
 	
 	new Handle:Kv = CreateKeyValues( "motd" );
 	KvSetString( Kv, "title", "RXG Store" );
