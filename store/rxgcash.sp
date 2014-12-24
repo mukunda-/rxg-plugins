@@ -4,6 +4,7 @@
 #include <sdktools> 
 #include <sdkhooks>
 #include <rxgstore>
+#include <rxgcommon>
 
 #undef REQUIRE_PLUGIN
 #include <tf2use>
@@ -19,7 +20,7 @@ public Plugin:myinfo =
 	name = "RXGCASH",
 	author = "mukunda",
 	description = "Dat monay",
-	version = "1.1.2",
+	version = "2.0.0",
 	url = "www.mukunda.com"
 };
  
@@ -106,8 +107,8 @@ public OnPluginStart() {
 	
 	sm_dropcash_chance = CreateConVar( "sm_dropcash_chance", "0.1", "Chance that a CASHWADS will drop.", FCVAR_PLUGIN, true, 0.0, true, 1.0 );
 	sm_dropcash_amount = CreateConVar( "sm_dropcash_amount", "3", "How many CASHWADS will try to drop from killed players.", FCVAR_PLUGIN, true, 0.0 );
-	sm_dropcash_min = CreateConVar( "sm_dropcash_min", "1", "Minimum amount of CENTS a single CASHWAD can give.", FCVAR_PLUGIN, true, 0.0 );
-	sm_dropcash_max = CreateConVar( "sm_dropcash_max", "5", "Maximum amount of CENTS a single CASHWAD can give.", FCVAR_PLUGIN, true, 0.0 );
+	sm_dropcash_min = CreateConVar( "sm_dropcash_min", "10", "Minimum amount of CASH a single CASHWAD can give.", FCVAR_PLUGIN, true, 0.0 );
+	sm_dropcash_max = CreateConVar( "sm_dropcash_max", "50", "Maximum amount of CASH a single CASHWAD can give.", FCVAR_PLUGIN, true, 0.0 );
 	HookConVarChange( sm_dropcash_chance, OnConVarChanged );
 	HookConVarChange( sm_dropcash_amount, OnConVarChanged );
 	HookConVarChange( sm_dropcash_min, OnConVarChanged );
@@ -254,20 +255,16 @@ PrintPickupMessage( client, amount ) {
 		pickup_message_amount[client] += amount;
 	}
 	
-	new a = pickup_message_amount[client];
+	new cash = pickup_message_amount[client];
+	
+	decl String:cash_string[16];
+	FormatNumberInt( cash, cash_string, sizeof cash_string, ',' );
+	
 	//PrintHintText( client, "<font size='20px'>You picked up %d\xC2\xA2!", pickup_message_amount[client] );
 	if( GAME == GAME_CSGO ) {
-		if( a < 100 ) {
-			PrintHintText( client, "<font size='24'>You picked up <font color='#53ed53'>%d\xC2\xA2</font>!</font>", a );
-		} else {
-			PrintHintText( client, "<font size='24'>You picked up <font color='#53ed53'>$%d.%02d</font>!!</font>", a/100,a%100 );
-		}
+		PrintHintText( client, "<font size='24'>You picked up <font color='#53ed53'>$%s</font>!!</font>", cash_string );
 	} else {
-		if( a < 100 ) {
-			PrintHintText( client, "You picked up %d\xC2\xA2!", a );
-		} else {
-			PrintHintText( client, "You picked up $%d.%02d!!", a/100,a%100 );
-		}
+		PrintHintText( client, "You picked up $%s!!", cash_string );
 	}
 }
 
@@ -419,7 +416,8 @@ public Action:OnCashTouch_TF2( entity, client ) {
 	
 	if( client > 0 && client <= MaxClients ) {
 		if( !RXGSTORE_IsClientLoaded(client) ) {
-			PrintToChat( client, "Your items are still being loaded; cannot pickup cash!" );
+			// do not print for TF2 because this event happens to often
+			//PrintToChat( client, "Your items are still being loaded; cannot pickup cash!" );
 			return Plugin_Handled;
 		}
 		
@@ -447,13 +445,13 @@ public Action:Command_DropCash( client, args ) {
 		
 	}
 	
-	new amount = 5;
+	new amount = 50;
 	if( args >= 1 ) {
 		decl String:arg[32];
 		GetCmdArg( 1, arg, sizeof( arg ) );
 		amount = StringToInt( arg );
-		if( amount < 5 ) {
-			PrintCenterText( client, "You need to drop at least 5\xEF\xBF\xBD." );
+		if( amount < 50 ) {
+			PrintCenterText( client, "You need to drop at least $50." );
 			return Plugin_Handled;
 		}
 	}
