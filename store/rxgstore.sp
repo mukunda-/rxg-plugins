@@ -5,6 +5,7 @@
 #include <rxgstore>
 #include <cstrike>
 #include <dbrelay>
+#include <rxgcommon>
 
 #pragma semicolon 1
 
@@ -744,7 +745,10 @@ public Action:Command_items( client, args ) {
 	new cash = g_client_cash[client] + g_client_cash_change[client];
 	if( cash < 0 ) cash = 0;
 	
-	PrintToChat( client, "CASH: $%d.%02d", cash/100,cash%100 ); 
+	decl String:cash_string[16];
+	FormatNumberInt( cash, cash_string, sizeof cash_string, ',' );
+	
+	PrintToChat( client, "CASH: $%s", cash_string ); 
 	return Plugin_Handled;
 }
 
@@ -1008,10 +1012,13 @@ public Action:Command_cash( client, args ) {
 	new cash = g_client_cash[client] + g_client_cash_change[client];
 	if( cash < 0 ) cash = 0;
 	
+	decl String:cash_string[16];
+	FormatNumberInt( cash, cash_string, sizeof cash_string, ',' );
+	
 	if( GAME == GAME_CSGO ) {
-		PrintToChat( client, "\x01You have \x05$%d.%02d\x01.", cash/100, cash%100 );
+		PrintToChat( client, "\x01You have \x05$%s\x01.", cash_string );
 	} else {
-		PrintToChat( client, "\x01You have \x04$%d.%02d\x01.", cash/100, cash%100 );
+		PrintToChat( client, "\x01You have \x04$%s\x01.", cash_string );
 	}
 	return Plugin_Handled;
 }
