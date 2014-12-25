@@ -3,7 +3,6 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <rxgstore>
-#include <cstrike>
 #include <dbrelay>
 #include <rxgcommon>
 
@@ -28,7 +27,7 @@ public Plugin:myinfo = {
 //-------------------------------------------------------------------------------------------------
 #define ITEM_MAX 16
 
-#define RXG_CSGO_CLAN "#rxg"
+//#define RXG_CSGO_CLAN "#rxg"
 #define LOCK_DURATION_EXPIRE 30.0
 
 new String:c_ip[32];
@@ -264,21 +263,21 @@ public Action:Command_broadcast_gift_send( args ) {
 //-------------------------------------------------------------------------------------------------
 public Action:Command_broadcast_gift_receive( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just received a \x04!store \x01gift containing %s%s" );
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just accepted a \x04!store \x01gift containing %s%s" );
 	return Plugin_Handled;
 }
 
 //-------------------------------------------------------------------------------------------------
 public Action:Command_broadcast_reward_receive( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just received a \x04!store \x01reward containing %s%s" );
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just accepted a \x04!store \x01reward containing %s%s" );
 	return Plugin_Handled;
 }
 
 //-------------------------------------------------------------------------------------------------
 public Action:Command_broadcast_review( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just wrote a \x04!store \x01review about %s%s" );
+	BroadcastStoreActivity( args, "\x01 %s%s \x01just wrote a \x04!store \x01review about the %s%s" );
 	return Plugin_Handled;
 }
 
@@ -336,7 +335,7 @@ CommitItemChange( client, item, amount ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"UPDATE sourcebans_store.user_item SET quantity=quantity%s%d WHERE user_id=%d AND item_id=%d",
+		"UPDATE sourcebans_store2.user_item SET quantity=quantity%s%d WHERE user_id=%d AND item_id=%d",
 		amount >= 0 ? "+":"",
 		amount,
 		g_client_data_account[client],
@@ -387,7 +386,7 @@ bool:CommitCashChange( client, cash ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"INSERT INTO sourcebans_store.user (user_id,credit) VALUES (%d,%d) ON DUPLICATE KEY UPDATE credit=credit%s%d",
+		"INSERT INTO sourcebans_store2.user (user_id,credit) VALUES (%d,%d) ON DUPLICATE KEY UPDATE credit=credit%s%d",
 		g_client_data_account[client],
 		cash,
 		cash > 0 ? "+":"-",
@@ -436,7 +435,7 @@ bool:TryTakeCash( client, cash, Handle:plugin, TakeCashCB:cb, any:data ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"UPDATE sourcebans_store.user SET credit=credit-%d WHERE user_id=%d AND credit>=%d",
+		"UPDATE sourcebans_store2.user SET credit=credit-%d WHERE user_id=%d AND credit>=%d",
 		cash,
 		g_client_data_account[client],
 		cash );
@@ -508,7 +507,7 @@ bool:LoadClientData( client, bool:chain=false ) {
 	new time = GetTime();
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"INSERT INTO sourcebans_store.user (user_id,server,ingame) VALUES(%d,'%s',%d) ON DUPLICATE KEY UPDATE server=VALUES(server),ingame=VALUES(ingame)",
+		"INSERT INTO sourcebans_store2.user (user_id,server,ingame) VALUES(%d,'%s',%d) ON DUPLICATE KEY UPDATE server=VALUES(server),ingame=VALUES(ingame)",
 		account,c_ip,time,c_ip,time );
 	DBRELAY_TQuery( OnClientLoggedIn, query, pack );
 	
@@ -533,7 +532,7 @@ public OnClientLoggedIn( Handle:owner, Handle:hndl, const String:error[], any:da
 	}
 	
 	decl String:query[1024];
-	FormatEx( query, sizeof query, "SELECT locked FROM sourcebans_store.user where user_id=%d", account );
+	FormatEx( query, sizeof query, "SELECT locked FROM sourcebans_store2.user where user_id=%d", account );
 	DBRELAY_TQuery( OnClientLockChecked, query, data );
 }
 
@@ -566,7 +565,7 @@ public OnClientLockChecked( Handle:owner, Handle:hndl, const String:error[], any
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query,
-		"SELECT 'gifts' as type, count(*) as total FROM sourcebans_store.gift WHERE recipient_id=%d AND accepted=0 UNION SELECT 'rewards' as type, count(*) as total FROM sourcebans_store.reward_recipient WHERE recipient_id=%d AND accepted=0",
+		"SELECT 'gifts' as type, count(*) as total FROM sourcebans_store2.gift WHERE recipient_id=%d AND accepted=0 UNION SELECT 'rewards' as type, count(*) as total FROM sourcebans_store2.reward_recipient WHERE recipient_id=%d AND accepted=0",
 		account, account );
 	
 	DBRELAY_TQuery( OnClientGiftsLoaded, query, data );
@@ -589,31 +588,28 @@ public OnClientGiftsLoaded( Handle:owner, Handle:hndl, const String:error[], any
 		return;
 	}
 	
+	new num_gifts = 0;
+	new num_rewards = 0;
+	
 	// pending gifts
 	if( SQL_MoreRows( hndl ) ) {
-	
 		SQL_FetchRow( hndl );
-		new num_gifts = SQL_FetchInt( hndl, 1 );
-		
-		if( num_gifts > 0 ) {
-			PrintToChat( client, "\x01 \x04[STORE]\x01 You have pending gifts. Access the \x04!store \x01to accept them." );
-		}
+		num_gifts = SQL_FetchInt( hndl, 1 );
 	}
-	
+
 	// pending rewards
 	if( SQL_MoreRows( hndl ) ) {
-		
 		SQL_FetchRow( hndl );
-		new num_rewards = SQL_FetchInt( hndl, 1 );
-		
-		if( num_rewards > 0 ) {
-			PrintToChat( client, "\x01 \x04[STORE]\x01 You have pending rewards. Access the \x04!store \x01to accept them." );
-		}
+		num_rewards = SQL_FetchInt( hndl, 1 );
+	}
+	
+	if( num_gifts > 0 || num_rewards > 0 ) {
+		PrintToChat( client, "\x01 \x04[STORE]\x01 You have a pending gift or reward. Access the \x04!store \x01to accept it." );
 	}
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"SELECT item_id,quantity FROM sourcebans_store.user_item WHERE user_id=%d AND %s UNION SELECT %d AS item_id,credit AS quantity FROM sourcebans_store.user WHERE user_id=%d",
+		"SELECT item_id,quantity FROM sourcebans_store2.user_item WHERE user_id=%d AND %s UNION SELECT %d AS item_id,credit AS quantity FROM sourcebans_store2.user WHERE user_id=%d",
 		account,
 		sql_itemid_filter,
 		SPITEM_CREDIT,
@@ -685,7 +681,7 @@ LogOutPlayer( client ) {
 	
 		decl String:query[1024];
 		FormatEx( query, sizeof query, 
-			"UPDATE sourcebans_store.user SET server='' WHERE user_id=%d",account );
+			"UPDATE sourcebans_store2.user SET server='' WHERE user_id=%d",account );
 			
 		DBRELAY_TQuery( IgnoredSQLResult, query );
 	}
@@ -1039,8 +1035,8 @@ public ShowStorePage( client, id, token ) {
 	decl String:url[1024];
 	FormatEx( url, sizeof url,
 		//"http://store.reflex-gamers.com/quickauth%s.php?id=%d&token=%d",
-		"http://rxgstore2.dev/quickauth?id=%d&token=%d&source=%s",
-		//"http://store2.reflex-gamers.com/quickauth?id=%d&token=%d&source=%s",
+		//"http://rxgstore2.dev/quickauth?id=%d&token=%d&source=%s",
+		"http://store.reflex-gamers.com/quickauth?id=%d&token=%d&source=%s",
 		id,
 		token,
 		source );
@@ -1118,13 +1114,14 @@ public ConVar_QueryClient( QueryCookie:cookie, client, ConVarQueryResult:result,
 
 	new token = GetRandomInt( 10000, 100000 );
 	
-	decl String:clan_tag[32];
-	CS_GetClientClanTag( client, clan_tag, sizeof clan_tag );
-	new bool:is_member = StrEqual( clan_tag, RXG_CSGO_CLAN );
+	//decl String:clan_tag[32];
+	//CS_GetClientClanTag( client, clan_tag, sizeof clan_tag );
+	//new bool:is_member = StrEqual( clan_tag, RXG_CSGO_CLAN );
+	new bool:is_member = false;
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"INSERT INTO sourcebans_store.quick_auth (user_id, token, server, is_member) VALUES (%d, %d, '%s', %d)",
+		"INSERT INTO sourcebans_store2.quick_auth (user_id, token, server, is_member) VALUES (%d, %d, '%s', %d)",
 		GetSteamAccountID(client),
 		token,
 		c_ip,
