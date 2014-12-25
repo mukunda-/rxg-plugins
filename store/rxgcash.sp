@@ -158,7 +158,7 @@ public Action:Command_SpawnCash( client, args ) {
 	} else {
 		GetClientEyePosition( client, vec );
 	}
-	SpawnCash( vec, NULL_VECTOR, 5,  0 );
+	SpawnCash( vec, NULL_VECTOR, 100,  0 );
 	return Plugin_Handled;
 }
  
