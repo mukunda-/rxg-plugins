@@ -13,7 +13,7 @@ public Plugin:myinfo = {
 	name = "Database Relay",
 	author = "WhiteThunder",
 	description = "Relays database connections and queries through one plugin",
-	version = "1.1.3",
+	version = "1.1.4",
 	url = "www.reflex-gamers.com"
 };
 
@@ -76,7 +76,7 @@ public OnPluginStart() {
 
 	sm_dbrelay_auto_reconnect = CreateConVar( "sm_dbrelay_auto_reconnect", "1", "Whether to automatically reconnect when there is a database connection problem.", FCVAR_PLUGIN );
 	sm_dbrelay_retry_delay = CreateConVar( "sm_dbrelay_retry_delay", "30.0", "Seconds between attempts to retry when the database connection failed.", FCVAR_PLUGIN, true, 1.0 );
-	sm_dbrelay_max_retries = CreateConVar( "sm_dbrelay_max_retries", "10", "Maximum number of times to try to reconnect to the database if connection fails. Set to 0 for no limit.", FCVAR_PLUGIN, true, 1.0 );
+	sm_dbrelay_max_retries = CreateConVar( "sm_dbrelay_max_retries", "100", "Maximum number of times to try to reconnect to the database if connection fails. Set to 0 for no limit.", FCVAR_PLUGIN, true, 1.0 );
 	
 	HookConVarChange( sm_dbrelay_auto_reconnect, OnConVarChanged );
 	HookConVarChange( sm_dbrelay_retry_delay, OnConVarChanged );
