@@ -13,7 +13,7 @@ public Plugin:myinfo = {
 	name = "Database Relay",
 	author = "WhiteThunder",
 	description = "Relays database connections and queries through one plugin",
-	version = "1.1.5",
+	version = "1.1.6",
 	url = "www.reflex-gamers.com"
 };
 
@@ -153,8 +153,8 @@ public Action:Command_status( args ) {
 			last_connect_str, status_content
 		);
 	} else if( g_connecting ) {
-		FormatEx( reply, sizeof reply, "[DBRELAY] STATUS: Connecting... %s",
-			status_content
+		FormatEx( reply, sizeof reply, "[DBRELAY] STATUS: Connecting... %d / %d tries. %s",
+			g_reconnect_tries, c_max_retries, status_content
 		);
 	} else {
 		FormatEx( reply, sizeof reply, "[DBRELAY] STATUS: Not connected! Last connect: %s. %s",
