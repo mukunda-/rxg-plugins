@@ -1,7 +1,6 @@
 
 #include <sourcemod>
 #include <sdktools>
-#include <monoculus>
 #include <rxgstore>
 #include <tf2>
 
@@ -12,7 +11,7 @@ public Plugin:myinfo = {
 	name = "time warp item",
 	author = "Roker",
 	description = "time warp item to slow down time",
-	version = "1.0.0",
+	version = "1.1.0",
 	url = "www.reflex-gamers.com"
 };
 
