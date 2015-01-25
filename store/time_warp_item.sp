@@ -86,7 +86,7 @@ public OnMapStart() {
 
 //-----------------------------------------------------------------------------
 public RXGSTORE_OnUse( client ) {
-	return(warpTime(client));
+	return warpTime(client);
 }
 
 //-----------------------------------------------------------------------------
@@ -125,7 +125,7 @@ bool:warpTime(client) {
 		team_color = "874fad";
 	}
 	
-	PrintToChatAll( "\x07%s%s \x07FFD800has warped time!", team_color, name );
+	PrintToChatAll( "\x07%s%s \x07874fadhas warped time!", team_color, name );
 	time_warped = true;
 	for( new i = 1; i <= MaxClients; i++ ) {
 		if( IsClientInGame(i) && !IsFakeClient(i) ) {
