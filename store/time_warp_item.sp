@@ -1,4 +1,4 @@
- 
+
 #include <sourcemod>
 #include <sdktools>
 #include <monoculus>
@@ -78,8 +78,10 @@ public OnPluginEnd() {
 
 //-----------------------------------------------------------------------------
 public OnMapStart() {
-	SetConVarFloat(host_timescale, 1.0);
+	
+	SetConVarFloat( host_timescale, 1.0 );
 	g_lastwarp = -c_timewarp_cooldown;
+	
 	PrecacheSound( "ui/halloween_loot_spawn.wav", true );
 	PrecacheSound( "ui/halloween_loot_found.wav", true );
 }
@@ -144,7 +146,7 @@ public Action:Timer_warpTimeInc( Handle:timer ) {
 	current_timescale -= 0.03;
 	
 	SetConVarFloat(host_timescale, current_timescale);
-	if(current_timescale > c_timewarp_timescale){
+	if( current_timescale > c_timewarp_timescale ){
 		return Plugin_Continue;
 	}
 	
