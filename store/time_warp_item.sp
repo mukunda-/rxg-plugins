@@ -36,7 +36,6 @@ new Float:current_timescale;
 //-----------------------------------------------------------------------------
 public OnPluginStart() {
 
-	RXGSTORE_RegisterItem( ITEM_NAME, ITEMID, ITEM_FULLNAME );
 	host_timescale = FindConVar("host_timescale");
 	current_timescale = 1.0;
 	
