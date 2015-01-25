@@ -65,12 +65,12 @@ fakeCheats(client, bool:on_off){
 //-------------------------------------------------------------------------------------------------
 public OnLibraryAdded( const String:name[] ) {
 	if( StrEqual( name, "rxgstore" ) ) {
-		//RXGSTORE_RegisterItem( ITEM_NAME, ITEMID, ITEM_FULLNAME );
+		RXGSTORE_RegisterItem( ITEM_NAME, ITEMID, ITEM_FULLNAME );
 	}
 }
 //-------------------------------------------------------------------------------------------------
 public OnPluginEnd() {
-	//RXGSTORE_UnregisterItem( ITEMID );
+	RXGSTORE_UnregisterItem( ITEMID );
 }
 //-------------------------------------------------------------------------------------------------
 public OnMapStart() {
