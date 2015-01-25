@@ -74,6 +74,7 @@ public OnPluginEnd() {
 }
 //-------------------------------------------------------------------------------------------------
 public OnMapStart() {
+	SetConVarFloat(host_timescale, 1.0);
 	g_lastwarp = -c_timewarp_cooldown;
 	PrecacheSound( "ui/halloween_loot_spawn.wav", true );
 	PrecacheSound( "ui/halloween_loot_found.wav", true );
