@@ -156,7 +156,7 @@ public Action:Timer_warpTimeInc( Handle:timer ) {
 //-----------------------------------------------------------------------------
 public Action:Timer_unWarpTime( Handle:timer ) {
 	EmitSoundToAll( "ui/halloween_loot_found.wav", SOUND_FROM_PLAYER, SNDCHAN_AUTO, SNDLEVEL_HOME );
-	PrintToChatAll( "\x07FFD800The time warp has ended!");
+	PrintToChatAll( "\x07874fadThe time warp has ended!");
 	CreateTimer( 0.1, Timer_unWarpTimeInc, _, TIMER_REPEAT );
 }
 
