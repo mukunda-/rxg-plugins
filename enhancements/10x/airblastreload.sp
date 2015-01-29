@@ -7,7 +7,7 @@
 
 //-----------------------------------------------------------------------------
 public Plugin:myinfo = {
-	name = "Airblast Auto Reload",
+	name = "Airblast Ammo Refund",
 	author = "WhiteThunder",
 	description = "Refunds ammo after successful airblast with stock flamethrower",
 	version = "1.0.0",
