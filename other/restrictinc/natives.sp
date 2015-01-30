@@ -9,13 +9,13 @@ new bool:g_bOverideCT[_:WeaponID];
 #endif
 
 //m_iAmmo array index
-new HEGRENADE_AMMO = 11;
-new FLASH_AMMO = 12;
-new SMOKE_AMMO = 13;
+new HEGRENADE_AMMO = 14;
+new FLASH_AMMO = 15;
+new SMOKE_AMMO = 16;
 
 //CS:GO ONLY
-new INC_AMMO = 16;
-new DECOY_AMMO = 17;
+new INC_AMMO = 17;
+new DECOY_AMMO = 18;
 
 RegisterNatives()
 {

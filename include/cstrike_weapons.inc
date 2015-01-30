@@ -159,7 +159,7 @@ new const WeaponSlot:weaponSlots[_:WeaponID] =
 	_:SlotPrimmary,		_:SlotPrimmary,		_:SlotKnife,		_:SlotGrenade,
 	_:SlotGrenade,		_:SlotGrenade,		_:SlotNone
 };
-new const BuyTeams[_:WeaponID] = 
+new BuyTeams[_:WeaponID] = 
 { 
 	UNKNOWNTEAM,			BOTHTEAMS,				BOTHTEAMS,				BOTHTEAMS,	
 	BOTHTEAMS,				BOTHTEAMS,				TERRORISTTEAM,			TERRORISTTEAM,
