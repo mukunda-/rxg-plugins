@@ -10,7 +10,7 @@ public Plugin:myinfo = {
 	name = "Explosive Headshot",
 	author = "Roker",
 	description = "Creates explosions on headshot.",
-	version = "1.1.0",
+	version = "1.2.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -21,6 +21,7 @@ new Handle:sm_explosiveheadshot_radius;
 
 new c_radius;
 new c_damage;
+
 
 //-----------------------------------------------------------------------------
 public OnPluginStart() {
@@ -42,7 +43,6 @@ RecacheConvars() {
 	c_radius = GetConVarInt( sm_explosiveheadshot_radius );
 	c_damage = GetConVarInt( sm_explosiveheadshot_damage );
 }
-
 //-----------------------------------------------------------------------------
 public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[] ) {
 	RecacheConvars();
@@ -51,9 +51,10 @@ public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[
 public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBroadcast ) {
 	
 	new victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
-	new shooter = GetClientOfUserId( GetEventInt( event, "attacker" ) );
+	new shooter = GetEventInt( event, "attacker" );
+	new shooter_index = GetClientOfUserId( GetEventInt( event, "attacker" ) );
 
-	new weapon = GetPlayerWeaponSlot( shooter, TFWeaponSlot_Primary );
+	new weapon = GetPlayerWeaponSlot( shooter_index, TFWeaponSlot_Primary );
 	new index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	
 	new bool:isHeadshot = GetEventInt(event, "customkill") == TF_CUSTOM_HEADSHOT;
@@ -64,20 +65,33 @@ public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBr
 	if( !isHeadshot ) {
 		return Plugin_Continue;
 	}
-		
-	createExplosion(victim,shooter);
+	new Handle:data;
+	CreateDataTimer( 0.0, Timer_createExplosion, data);
+	
+	decl Float:location[3];
+	GetClientEyePosition(victim,location);
+	WritePackCell(data, shooter);
+	WritePackFloat(data, location[0]);
+	WritePackFloat(data, location[1]);
+	WritePackFloat(data, location[2]);
 	
 	return Plugin_Continue;
 }
 //-----------------------------------------------------------------------------
-createExplosion(victim,shooter){
+public Action:Timer_createExplosion(Handle:timer, Handle:data){
+	ResetPack(data);
+	new shooter_index = GetClientOfUserId( ReadPackCell(data) );
 	decl Float:location[3];
-	GetClientEyePosition(victim,location);
+	location[0]  = ReadPackFloat(data);
+	location[1]  = ReadPackFloat(data);
+	location[2]  = ReadPackFloat(data);
+	CloseHandle(data);
+	
 	EmitAmbientSound("ambient/explosions/explode_8.wav", location, SOUND_FROM_WORLD, SNDLEVEL_NORMAL);
 	
 	new ent = CreateEntityByName("env_explosion");	 
 	
-	SetEntPropEnt( ent, Prop_Data, "m_hOwnerEntity", shooter );
+	SetEntPropEnt( ent, Prop_Data, "m_hOwnerEntity", shooter_index );
 	DispatchSpawn(ent);
 	ActivateEntity(ent);
 	SetEntProp(ent, Prop_Data, "m_iMagnitude",c_damage); 
