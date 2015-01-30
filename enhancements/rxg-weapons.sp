@@ -14,7 +14,7 @@ public Plugin:myinfo = {
 	name = "rxg-weapons",
 	author = "REFLEX",
 	description = "Weapon purchasing management.",
-	version = "1.0.1",
+	version = "1.1.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -104,6 +104,7 @@ public OnPluginStart() {
 	InitOppositeMap();
 	
 	HookEvent( "round_start", OnRoundStart );
+	HookEvent( "round_end", OnRoundEnd );
 	HookEvent( "player_death", OnPlayerDeath );
 	//RegConsoleCmd( "rebuy", BlockCommand );
 	
@@ -185,6 +186,9 @@ InitOppositeMap() {
 	MapOpposite( CSWeapon_FIVESEVEN,  CSWeapon_TEC9     );
 	MapOpposite( CSWeapon_MP9,        CSWeapon_MAC10    );
 	MapOpposite( CSWeapon_INCGRENADE, CSWeapon_MOLOTOV  );
+	
+	// hack this up too. (need to remove const from cstrike_weapons.inc)
+	BuyTeams[WEAPON_ELITE] = BOTHTEAMS;
 }
 
 /** ---------------------------------------------------------------------------
@@ -350,18 +354,22 @@ bool:SpecialGrenadeLimited( client, CSWeaponID:id ) {
 
 //-----------------------------------------------------------------------------
 public Action:CS_OnBuyCommand( client, const String:weapon[] ) {
-
+	
 	if( !IsValidClient( client )) return Plugin_Continue;
-	if( g_rebuying_in_progress ) return Plugin_Continue;
+	
 	if( !GetEntProp( client, Prop_Send, "m_bInBuyZone" )) {
 		return Plugin_Continue;
 	}
 	
+	if( g_rebuying_in_progress ) return Plugin_Handled;
+	
 	// get the weapon ID
 	decl String:real_name[64];
 	CS_GetTranslatedWeaponAlias( weapon, real_name, sizeof real_name );
-	
-	if( StrEqual( real_name, "cutters" ) ) real_name = "defuser"; //special fix
+
+	// SPECIAL FIXES
+	if( StrEqual( real_name, "cutters" ) ) real_name = "defuser"; 
+	if( StrEqual( real_name, "cz75a" ) ) real_name = "tec9"; //tec9 because fivseven has problems.
 	
 	new CSWeaponID:id = CS_AliasToWeaponID( real_name );
 	
@@ -369,19 +377,17 @@ public Action:CS_OnBuyCommand( client, const String:weapon[] ) {
 	if( id == CSWeapon_NONE ) return Plugin_Continue;
 	
 	// TODO verify all weapons being translated correctly.
-	decl String:debug1[64];
-	CS_WeaponIDToAlias( id, debug1, sizeof debug1 );
 	
 	// catch invalid weapon name.
 	if( id == CSWeapon_NONE ) return Plugin_Continue; 
 	
 	// catch weapons that aren't in the game.
 	if( AllowedGame[id] != 3 && AllowedGame[id] != 1 ) return Plugin_Continue;
-	 
+
 	// catch trying to buy opposing team's weapons (and remap)
 	id = TranslateWeaponForTeam( client, id );
 	if( id == CSWeapon_NONE ) return Plugin_Handled;
-	 
+	
 	// from here on we have a valid weapon ID that they want to purchase...
 	
 	if( id == CSWeapon_HEGRENADE && !c_hegrenade_buyable ) {
@@ -466,7 +472,10 @@ public OnPlayerDroppedGrenade( client, CSWeaponID:id, amount ) {
 		g_can_buy_flash[client] += amount;
 	}
 	
-	if( id == CSWeapon_MOLOTOV ) g_can_buy_fire[client]++;
+	if( id == CSWeapon_MOLOTOV || id == CSWeapon_INCGRENADE ) {
+		g_can_buy_fire[client]++;
+	}
+	
 	if( id == CSWeapon_SMOKEGRENADE ) g_can_buy_smoke[client]++;
 	
 	new Handle:data;
@@ -501,12 +510,20 @@ SaveClientGrenades( client ) {
 	}
 }
 
+#define ITEM_CZ75A 63
+
 //-----------------------------------------------------------------------------
 CSWeaponID:WeaponIDfromEntity( ent ) {
 	if( ent == -1 ) return CSWeapon_NONE;
 	decl String:classname[64];
 	GetEntityClassname( ent, classname, sizeof(classname) );
 	ReplaceString( classname, sizeof(classname), "weapon_", "" );
+	
+	if( GetEntProp(ent, Prop_Send, "m_iItemDefinitionIndex") == ITEM_CZ75A ) {
+		// this is not a p250, its a fucking cz.
+		return CSWeapon_TEC9;
+	}
+
 	return CS_AliasToWeaponID( classname );
 }
 
@@ -543,7 +560,8 @@ UpdateLoadout( client, CSWeaponID:id, bool:dropped ) {
 			|| weapon_type == WeaponTypeMachineGun ) {
 		
 		if( id == CSWeapon_G3SG1 || id == CSWeapon_SCAR20
-		    || id == CSWeapon_AWP || id == CSWeapon_NEGEV ) {
+		    || id == CSWeapon_AWP || id == CSWeapon_NEGEV
+			|| id == CSWeapon_M249 ) {
 			// kind of hacky, but an easy solution
 			// we dont want to be giving them these weapons.
 			
@@ -574,13 +592,37 @@ UpdateLoadout( client, CSWeaponID:id, bool:dropped ) {
 //-----------------------------------------------------------------------------
 public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
 	
-	CleanupGrenades();
+	g_rebuying_in_progress = true;
 	CreateTimer( 0.4, RebuyPlayerLoadouts, _, TIMER_FLAG_NO_MAPCHANGE );
+}
+	
+//-----------------------------------------------------------------------------
+public OnRoundEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
+	new CSRoundEndReason:reason = 
+			CSRoundEndReason:GetEventInt( event, "reason" );
+			
+	new Float:delay = GetConVarFloat( FindConVar( "mp_round_restart_delay" ));
+	
+	if( reason == CSRoundEnd_Draw || reason == CSRoundEnd_GameStart ) {
+		delay = 0.0;
+	}
+	
+	if( delay <= 0.5 ) {
+		OnRoundAboutToRestart( INVALID_HANDLE );
+	} else {
+		CreateTimer( delay - 0.5, OnRoundAboutToRestart, _, 
+		             TIMER_FLAG_NO_MAPCHANGE );
+	}
+}
+
+//-----------------------------------------------------------------------------
+public Action:OnRoundAboutToRestart( Handle:timer ) {
+	CleanupGrenades();
+	return Plugin_Handled;
 }
 
 //-----------------------------------------------------------------------------
 public Action:RebuyPlayerLoadouts( Handle:timer ) {
-	g_rebuying_in_progress = true;
 	
 	// get a list of clients
 	new clients[MAXPLAYERS+1];
@@ -592,6 +634,8 @@ public Action:RebuyPlayerLoadouts( Handle:timer ) {
 		}
 	}
 	
+	CleanupGrenades();
+	ResetSpecialGrenadeCounters( INVALID_HANDLE ); 
 	
 	// we shuffle the player list to distribute the limited grenades
 	for( new i = count - 1; i >= 1; i-- ) {
@@ -664,9 +708,13 @@ CleanupGrenades() {
  * Give a player an item by weapon ID.
  */
 GivePlayerWeapon( client, CSWeaponID:id ) {
-	decl String:name2[64];
-	FormatEx( name2, sizeof name2, "weapon_%s", weaponNames[WeaponID:id] );
-	GivePlayerItem( client, name2 );
+	//decl String:name2[64];
+	//FormatEx( name2, sizeof name2, "weapon_%s", weaponNames[WeaponID:id] );
+	
+	if( id == CSWeapon_FIVESEVEN ) id = CSWeapon_TEC9; // hacks
+	ClientCommand( client, "buy %s", weaponNames[WeaponID:id] );
+	
+	//GivePlayerItem( client, name2 );
 }
 
 //-----------------------------------------------------------------------------
@@ -717,7 +765,7 @@ public RebuyPlayerLoadout( client ) {
 			if( pistol != -1 ) {
 				CS_DropWeapon( client, pistol, false );
 			}
-
+			
 			GivePlayerWeapon( client, weap );
 		}
 	}
@@ -727,6 +775,10 @@ public RebuyPlayerLoadout( client ) {
 		if( g_rebuy_data[client][i] ) {
 			new CSWeaponID:nadeid = RebuyGrenadeIDs[i-REBUY_HE];
 			nadeid = TranslateWeaponForTeam( client, nadeid );
+			
+			if( nadeid == CSWeapon_HEGRENADE && !c_hegrenade_buyable ) {
+				continue;
+			}
 		
 			if( Restrict_CanBuyWeapon( client, team, WeaponID:nadeid )) {
 				for( new j = 0; j < g_rebuy_data[client][i]; j++ ) {
@@ -764,6 +816,9 @@ public RebuyPlayerLoadout( client ) {
 		}
 	}
 	
+	// and fuck shit fuck. 
+	// (mp_defuser_allocation doesn't work in hostage??)
+	ClientCommand( client, "buy defuser" );
 }
 
 //-----------------------------------------------------------------------------
