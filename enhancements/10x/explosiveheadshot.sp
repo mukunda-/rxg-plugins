@@ -68,7 +68,7 @@ public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBr
 		PrintToChatAll("Not headshot.");
 		return Plugin_Continue;
 	}
-	
+		
 	createExplosion(victim,shooter);
 	
 	return Plugin_Continue;
@@ -81,11 +81,11 @@ createExplosion(victim,shooter){
 	
 	new ent = CreateEntityByName("env_explosion");	 
 	
+	SetEntPropEnt( ent, Prop_Data, "m_hOwnerEntity", shooter );
 	DispatchSpawn(ent);
 	ActivateEntity(ent);
 	SetEntProp(ent, Prop_Data, "m_iMagnitude",c_damage); 
 	SetEntProp(ent, Prop_Data, "m_iRadiusOverride",c_radius); 
-	SetEntPropEnt( ent, Prop_Data, "m_hOwnerEntity", shooter );
 	
 	TeleportEntity(ent, location, NULL_VECTOR, NULL_VECTOR);
 	AcceptEntityInput(ent, "explode");
