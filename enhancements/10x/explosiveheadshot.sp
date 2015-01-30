@@ -24,7 +24,7 @@ new c_damage;
 
 //-----------------------------------------------------------------------------
 public OnPluginStart() {
-	HookEvent( "player_death", Event_Player_Death );
+	HookEvent( "player_death", Event_Player_Death, EventHookMode_Post);
 	sm_explosiveheadshot_radius = CreateConVar( "sm_explosiveheadshot_radius", "100", "Radius of explosive headshots.", FCVAR_PLUGIN );
 	sm_explosiveheadshot_damage = CreateConVar( "sm_explosiveheadshot_damage", "100", "Damage of explosive headshots.", FCVAR_PLUGIN );
 	
@@ -36,7 +36,6 @@ public OnPluginStart() {
 //-----------------------------------------------------------------------------
 public OnMapStart(){
 	PrecacheSound("ambient/explosions/explode_8.wav", true);
-	g_ExplosionSprite = PrecacheModel("sprites/sprite_fire01.vmt");
 }
 //-----------------------------------------------------------------------------
 RecacheConvars() {
