@@ -9,9 +9,9 @@ new bool:g_bOverideCT[_:WeaponID];
 #endif
 
 //m_iAmmo array index
-new HEGRENADE_AMMO = 14;
-new FLASH_AMMO = 15;
-new SMOKE_AMMO = 16;
+new HEGRENADE_AMMO = 11;
+new FLASH_AMMO = 12;
+new SMOKE_AMMO = 13;
 
 //CS:GO ONLY
 new INC_AMMO = 17;
@@ -21,9 +21,9 @@ RegisterNatives()
 {
 	if(g_iGame == GAME_CSGO)
 	{
-		HEGRENADE_AMMO = 13;
-		FLASH_AMMO = 14;
-		SMOKE_AMMO = 15;
+		HEGRENADE_AMMO = 14;
+		FLASH_AMMO = 15;
+		SMOKE_AMMO = 16;
 	}
 	RegPluginLibrary("weaponrestrict");
 	
