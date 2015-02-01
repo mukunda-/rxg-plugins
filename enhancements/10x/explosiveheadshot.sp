@@ -11,7 +11,7 @@ public Plugin:myinfo = {
 	name = "Explosive Headshot",
 	author = "Roker",
 	description = "Creates explosions on headshot.",
-	version = "1.2.0",
+	version = "1.2.1",
 	url = "www.reflex-gamers.com"
 };
 
