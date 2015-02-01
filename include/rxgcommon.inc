@@ -4,24 +4,29 @@
 
 #define _rxgcommon_included
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+stock bool:IsValidClient( client ) {
+	return ( client > 0 && client <= MaxClients && IsClientInGame(client) );
+}
+
+//-----------------------------------------------------------------------------
 stock WritePackHandle( Handle:pack, Handle:hndl ) {
 	WritePackCell( pack, hndl );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 stock Handle:ReadPackHandle( Handle:pack ) {
 	return Handle:ReadPackCell( pack );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 stock CopyVector( Float:source[3], Float:destination[3] ) {
 	destination[0] = source[0];
 	destination[1] = source[1];
 	destination[2] = source[2];
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 stock FormatNumberInt(value, String:buffer[], size, separator=',') {
     decl String:helper[size];
     IntToString(value, helper, size);
