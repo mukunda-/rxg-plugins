@@ -62,14 +62,12 @@ public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBr
 	new weapon = GetPlayerWeaponSlot( shooter, TFWeaponSlot_Primary );
 	new index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	
-	new bool:isHeadshot = GetEventInt(event, "customkill") == TF_CUSTOM_HEADSHOT;
+	new bool:isHeadshot = GetEventInt( event, "customkill" ) == TF_CUSTOM_HEADSHOT;
 	
-	if( index != WEAPON_INDEX ) {
+	if( !isHeadshot || index != WEAPON_INDEX ) {
 		return Plugin_Continue;
 	}
-	if( !isHeadshot ) {
-		return Plugin_Continue;
-	}
+	
 	new Handle:data;
 	CreateDataTimer( 0.0, Timer_createExplosion, data);
 	
