@@ -55,17 +55,15 @@ public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBr
 	new shooter_id = GetEventInt( event, "attacker" );
 	new shooter = GetClientOfUserId( shooter_id );
 	
-	if(!isValidClient(shooter)) {
+	if( !IsValidClient(shooter) || !IsPlayerAlive(shooter) ) {
 		return Plugin_Continue;
 	}
-	if(!isPlayerAlive(shooter)) {
-		return Plugin_Continue;
-	}
+
 	new weapon = GetPlayerWeaponSlot( shooter, TFWeaponSlot_Primary );
 	new index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	
 	new bool:isHeadshot = GetEventInt(event, "customkill") == TF_CUSTOM_HEADSHOT;
-	 
+	
 	if( index != WEAPON_INDEX ) {
 		return Plugin_Continue;
 	}
