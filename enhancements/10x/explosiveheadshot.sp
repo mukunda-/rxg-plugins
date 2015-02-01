@@ -84,8 +84,16 @@ public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBr
 }
 //-----------------------------------------------------------------------------
 public Action:Timer_createExplosion(Handle:timer, Handle:data){
+
 	ResetPack(data);
 	new shooter_index = GetClientOfUserId( ReadPackCell(data) );
+	
+	if( shooter_index == 0 ) {
+		// invalid client
+		CloseHandle(data);
+		return Plugin_Handled;
+	}
+	
 	decl Float:location[3];
 	location[0]  = ReadPackFloat(data);
 	location[1]  = ReadPackFloat(data);
@@ -105,4 +113,6 @@ public Action:Timer_createExplosion(Handle:timer, Handle:data){
 	TeleportEntity(ent, location, NULL_VECTOR, NULL_VECTOR);
 	AcceptEntityInput(ent, "explode");
 	AcceptEntityInput(ent, "kill");
+	
+	return Plugin_Handled;
 }
