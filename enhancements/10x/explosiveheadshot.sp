@@ -2,6 +2,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <tf2_stocks>
+#include <rxgcommon>
 
 #pragma semicolon 1
 
@@ -51,10 +52,16 @@ public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[
 public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBroadcast ) {
 	
 	new victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
-	new shooter = GetEventInt( event, "attacker" );
-	new shooter_index = GetClientOfUserId( GetEventInt( event, "attacker" ) );
-
-	new weapon = GetPlayerWeaponSlot( shooter_index, TFWeaponSlot_Primary );
+	new shooter_id = GetEventInt( event, "attacker" );
+	new shooter = GetClientOfUserId( shooter_id );
+	
+	if(!isValidClient(shooter)) {
+		return Plugin_Continue;
+	}
+	if(!isPlayerAlive(shooter)) {
+		return Plugin_Continue;
+	}
+	new weapon = GetPlayerWeaponSlot( shooter, TFWeaponSlot_Primary );
 	new index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	
 	new bool:isHeadshot = GetEventInt(event, "customkill") == TF_CUSTOM_HEADSHOT;
@@ -70,7 +77,7 @@ public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBr
 	
 	decl Float:location[3];
 	GetClientEyePosition(victim,location);
-	WritePackCell(data, shooter);
+	WritePackCell(data, shooter_id);
 	WritePackFloat(data, location[0]);
 	WritePackFloat(data, location[1]);
 	WritePackFloat(data, location[2]);
