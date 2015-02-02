@@ -37,7 +37,7 @@
 //1.0.3
 //   exclude bots 
 
-#define VERSION "2.2.3"
+#define VERSION "2.2.4"
 
 //-------------------------------------------------------------------------------------------------
 public Plugin:myinfo = {
@@ -518,7 +518,7 @@ bool:CheckRegistration( Handle:curl, Handle:op ) {
 	KvGetString( op, "resultfile", resultfile, sizeof resultfile ); 
 	
 	new response;
-	curl_easy_getinfo_int(curl,CURLINFO_RESPONSE_CODE,response);
+	curl_easy_getinfo_int( curl, CURLINFO_RESPONSE_CODE, response );
 	if( response != 200 ) { // 200 is HTTP_RESPONSE_OK
 		TryDeleteFile( resultfile );
 		return false;
@@ -526,13 +526,18 @@ bool:CheckRegistration( Handle:curl, Handle:op ) {
 	
 	// verify registration:
 	new Handle:file = OpenFile( resultfile, "r" );
-	decl String:result[64];
+	decl String:result[256];
 	result[0] = 0;
 	ReadFileLine( file, result, sizeof result );
 	CloseHandle(file); 
 	
 	TrimString( result );
 	if( !StrEqual( result, "OK" ) ) {
+		if( result[0] != 0 ) {
+			LogToFile( g_logfile, "Result file contained \"%s\".", result );
+		} else {
+			LogToFile( g_logfile, "Result file was empty." );
+		}
 		return false;
 	}
 	return true;
