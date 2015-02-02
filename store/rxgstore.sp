@@ -20,7 +20,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.0.0",
+    version     = "2.1.0",
     url         = "www.mukunda.com"
 };
 
@@ -327,11 +327,16 @@ Update() {
 		}
 	}
 }
-  
+
 //-------------------------------------------------------------------------------------------------
 CommitItemChange( client, item, amount ) {
 	
 	if( amount == 0 ) return;
+	
+	// log item usage
+	decl String:player_name[33];
+	GetClientName( client, player_name, sizeof player_name );
+	LogMessage( "%s used a %s", player_name, item_names[item] );
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
