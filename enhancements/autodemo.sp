@@ -8,6 +8,8 @@
 
 #pragma semicolon 1
 
+// 2.2.3
+//  additional diagnostic support
 // 2.2.2
 //  show index for upload failures
 //  doubled transfer timeout
@@ -35,13 +37,13 @@
 //1.0.3
 //   exclude bots 
 
-#define VERSION "2.2.1"
+#define VERSION "2.2.3"
 
 //-------------------------------------------------------------------------------------------------
 public Plugin:myinfo = {
 	name = "autodemo",
 	author = "mukunda",
-	description = "record and upload demos",
+	description = "Record and upload SourceTV demos.",
 	version = VERSION,
 	url = "www.mukunda.com"
 };
@@ -108,6 +110,7 @@ Handle:KvGetHandle( Handle:kv, const String:key[] ) {
 //-------------------------------------------------------------------------------------------------
 bool:TryDeleteFile( const String:file[] ) {
 	if( FileExists(file) ) {
+		LogToFile( g_logfile, "Deleting \"%s\" ...", file );
 		return DeleteFile(file);
 	}
 	return true;
@@ -225,18 +228,26 @@ public OnLibraryAdded( const String:name[] ) {
 
 //-------------------------------------------------------------------------------------------------
 CleanupDemos() {
+	
 	new Handle:dir = OpenDirectory( demo_path );	
 	decl String:entry[128];
 	new FileType:ft;
 	new time = GetTime();
+	new total = 0;
+	
 	while( ReadDirEntry( dir, entry, sizeof entry, ft ) ) {
 		if( ft != FileType_File ) continue;
 		decl String:path[256];
 		Format( path, sizeof path, "%s%s", demo_path, entry );
 		
 		if( (time - GetFileTime( path, FileTime_LastChange )) > (60*60*12) ) {
+			total++;
 			DeleteFile( path );
 		}
+	}
+	
+	if( total > 0 ) {
+		LogToFile( g_logfile, "Cleaned up %d demo files.", total );
 	}
 	CloseHandle( dir );
 }
@@ -315,7 +326,6 @@ public OnMapEnd() {
 	StopDemo();
 }
 
-
 //-------------------------------------------------------------------------------------------------
 ResetLogging() {
 	ServerCommand( "log 0; log 1;" );
@@ -374,6 +384,7 @@ StartDemo() {
 	demo_save = false;
 
 	PrintToChatAll( "Recording Demo... %s.dem", demo_name );
+	LogToFile( g_logfile, "Started recording \"%s.dem\".", demo_name );
 }
  
 //-------------------------------------------------------------------------------------------------
@@ -396,6 +407,8 @@ StopDemo() {
 	ServerCommand("tv_stoprecord");
 	demo_active = false;
 	
+	LogToFile( g_logfile, "Stopped recording \"%s.dem\".", demo_name );
+	
 	if( !g_save_all && !demo_save ) {
 		return; // nobody requested this demo to be saved, discard.
 	}
@@ -416,17 +429,7 @@ StopDemo() {
 	KvSetNum( op, "score0", demo_scores[0] );
 	KvSetNum( op, "score1", demo_scores[1] );
 	KvSetNum( op, "retries", 0 );
-	/*
-	new Handle:pack = CreateDataPack();
-	WritePackCell( pack, 0 ); // file index  
-	WritePackCell( pack, 0 ); // reserved slot for file handle
-	WritePackString( pack, demo_name );
-	WritePackString( pack, logfile );
-	WritePackCell( pack, demo_time );
-	WritePackFloat( pack, duration );
-	WritePackCell( pack, demo_scores[0] );
-	WritePackCell( pack, demo_scores[1] );
-*/
+ 
 	CreateTimer( 2.0, StartTransfer, op );
 }
 
@@ -434,15 +437,7 @@ StopDemo() {
 public Action:StartTransfer( Handle:timer, any:data ) {
 	DemoUpload(data);
 	return Plugin_Handled;
-}
-/*
-//-------------------------------------------------------------------------------------------------
-SkipPackStrings( Handle:pack, count ) {
-	decl String:buffer[256];
-	for( new i = 0; i < count; i++ ) {
-		ReadPackString(pack,buffer,sizeof buffer);
-	}
-}*/
+} 
 
 //-------------------------------------------------------------------------------------------------
 DemoUpload( Handle:op ) {
@@ -476,6 +471,7 @@ DemoUpload( Handle:op ) {
 		new Handle:outfile = curl_OpenFile( resultfile, "wb" );
 		curl_easy_setopt_handle( curl, CURLOPT_WRITEDATA, outfile );
 		
+		LogToFile( g_logfile, "Registering: %s ...", name );
 		PrintToServer( "[autodemo] Registering demo: %s", name );
 		KvSetHandle( op, "file", outfile );
 		KvSetString( op, "resultfile", resultfile );
@@ -506,6 +502,7 @@ DemoUpload( Handle:op ) {
 			return;
 		}
 		
+		LogToFile( g_logfile, "Uploading: %s ...", source );
 		PrintToServer( "[autodemo] Uploading file: %s", source );
 		KvSetHandle( op, "file", infile );
 		
@@ -541,6 +538,7 @@ bool:CheckRegistration( Handle:curl, Handle:op ) {
 	return true;
 }
 
+//-------------------------------------------------------------------------------------------------
 DeleteDemo( Handle:op ) {
 	decl String:demo[256];
 	KvGetString( op, "name", demo, sizeof demo );
@@ -558,17 +556,17 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 	KvGetString( op, "name", name, sizeof name );
 		
 	if( code == CURLE_OK ) {
-		
-		
 		if( index == 2 ) {
 			
 			if( !CheckRegistration( hndl, op ) ) {
 				CloseHandle(hndl);
 				
 				if( !CanRetryTransfer(op) ) {
-					LogToFile( g_logfile, "Couldn't register demo on site: \"%s\"", name );
+					LogToFile( g_logfile, "Couldn't register demo on site: \"%s\". Giving up.", name );
 					CloseHandle(op);
 					return;
+				} else {
+					LogToFile( g_logfile, "Registration failed for \"%s\". Retrying...", name );
 				}
 				
 				// retry
@@ -578,8 +576,6 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 			CloseHandle(hndl);
 			
 			DeleteDemo(op);
-			
-			
 			CloseHandle(op);
 			
 			return; // operation complete
@@ -593,9 +589,11 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 	} else {
 		CloseHandle(hndl);
 		if( !CanRetryTransfer( op ) ) {
-			LogToFile( g_logfile, "Upload failure for: \"%s\" (index %d). code %d", name, index, code );
+			LogToFile( g_logfile, "Upload failure for: \"%s\" (index %d). code %d. Giving up.", name, index, code );
 			CloseHandle(op);
 			return;
+		} else {
+			LogToFile( g_logfile, "Upload failure for: \"%s\" (index %d). code %d. Retrying...", name, index, code );
 		}
 		
 		DemoUpload(op);
