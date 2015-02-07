@@ -20,7 +20,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.1.0",
+    version     = "2.1.1",
     url         = "www.mukunda.com"
 };
 
@@ -1039,9 +1039,7 @@ public ShowStorePage( client, id, token ) {
 	
 	decl String:url[1024];
 	FormatEx( url, sizeof url,
-		//"http://store.reflex-gamers.com/quickauth%s.php?id=%d&token=%d",
-		//"http://rxgstore2.dev/quickauth?id=%d&token=%d&source=%s",
-		"http://store.reflex-gamers.com/quickauth?id=%d&token=%d&source=%s",
+		"http://store.reflex-gamers.com/quickauth?id=%d&token=%d&game=%s",
 		id,
 		token,
 		source );
