@@ -15,7 +15,7 @@
 // 1.0.2
 //   added RXGSTORE_IsConnected
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
@@ -24,7 +24,7 @@ public Plugin:myinfo = {
     url         = "www.mukunda.com"
 };
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 #define ITEM_MAX 16
 
 //#define RXG_CSGO_CLAN "#rxg"
@@ -80,7 +80,7 @@ new Float:g_last_update;
 #define UPDATE_METHOD_TIMED 1
 
 #define UPDATE_TIMED_INTERVAL 50.0
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 #pragma unused GAME
 new GAME;
 
@@ -88,7 +88,7 @@ new GAME;
 #define GAME_TF2	1
  
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max ) {
 
 	item_trie = CreateTrie();
@@ -118,7 +118,7 @@ public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max 
 	RegPluginLibrary( "rxgstore" );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnPluginStart() {
 	
 	RegConsoleCmd( "sm_cash", Command_cash );
@@ -156,7 +156,7 @@ public OnPluginStart() {
 	BuildSQLItemIDFilter();
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_unload_user_inventory( args ) {
 	
 	if( args > 0 ) {
@@ -177,7 +177,7 @@ public Action:Command_unload_user_inventory( args ) {
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_reload_user_inventory( args ) {
 	
 	if( args > 0 ) {
@@ -198,7 +198,7 @@ public Action:Command_reload_user_inventory( args ) {
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 BroadcastStoreActivity( args, const String:msg[] ) {
 	
 	if( args > 0 ) {
@@ -246,35 +246,35 @@ BroadcastStoreActivity( args, const String:msg[] ) {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_broadcast_purchase( args ) {
 	
 	BroadcastStoreActivity( args, "\x01 %s%s \x01just bought %s%s \x01from the \x04!store" );
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_broadcast_gift_send( args ) {
 	
 	BroadcastStoreActivity( args, "\x01 %s%s \x01just sent a \x04!store \x01gift containing %s%s" );
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_broadcast_gift_receive( args ) {
 	
 	BroadcastStoreActivity( args, "\x01 %s%s \x01just accepted a \x04!store \x01gift containing %s%s" );
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_broadcast_reward_receive( args ) {
 	
 	BroadcastStoreActivity( args, "\x01 %s%s \x01just accepted a \x04!store \x01reward containing %s%s" );
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_broadcast_review( args ) {
 	
 	BroadcastStoreActivity( args, "\x01 %s%s \x01just wrote a \x04!store \x01review about the %s%s" );
@@ -282,7 +282,7 @@ public Action:Command_broadcast_review( args ) {
 }
 
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 BuildSQLItemIDFilter() {
 	FormatEx( sql_itemid_filter, sizeof sql_itemid_filter, "item_id IN(" );
 	new count = 0;
@@ -302,18 +302,18 @@ BuildSQLItemIDFilter() {
 	StrCat( sql_itemid_filter, sizeof sql_itemid_filter, ")" );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
 	Update();
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:OnTimedUpdate( Handle:timer ) {
 	Update();
 	return Plugin_Continue;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 Update() {
 	if ( !DBRELAY_IsConnected() ) return;
 	if( GetGameTime() - g_last_update < MIN_UPDATE_PERIOD ) {
@@ -328,7 +328,7 @@ Update() {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 CommitItemChange( client, item, amount ) {
 	
 	if( amount == 0 ) return;
@@ -358,7 +358,7 @@ CommitItemChange( client, item, amount ) {
 	DBRELAY_TQuery( OnCommitItem, query, pack ); 
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnCommitItem( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	ResetPack(data);
 	new client = ReadPackCell(data);
@@ -382,7 +382,7 @@ public OnCommitItem( Handle:owner, Handle:hndl, const String:error[], any:data )
 	g_client_items[client][item] += amount;
 } 
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 bool:CommitCashChange( client, cash ) {
 
 	if( !DBRELAY_IsConnected() ) return false;
@@ -409,7 +409,7 @@ bool:CommitCashChange( client, cash ) {
 	return true;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnCommitCash( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 
 	ResetPack(data);
@@ -430,7 +430,7 @@ public OnCommitCash( Handle:owner, Handle:hndl, const String:error[], any:data )
 	g_client_cash[client] += amount;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 bool:TryTakeCash( client, cash, Handle:plugin, TakeCashCB:cb, any:data ) {
 	if( !DBRELAY_IsConnected() ||
 		!IsClientInGame(client) || 
@@ -457,7 +457,7 @@ bool:TryTakeCash( client, cash, Handle:plugin, TakeCashCB:cb, any:data ) {
 	return true;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnTakeCash( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	ResetPack(data);
 	new userid = ReadPackCell(data);
@@ -494,7 +494,7 @@ public OnTakeCash( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	Call_Finish();
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 bool:LoadClientData( client, bool:chain=false ) {
 	// conditions for this function: client is in-game and authorized
 	
@@ -519,7 +519,7 @@ bool:LoadClientData( client, bool:chain=false ) {
 	return true;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnClientLoggedIn( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	
 	ResetPack(data);
@@ -541,7 +541,7 @@ public OnClientLoggedIn( Handle:owner, Handle:hndl, const String:error[], any:da
 	DBRELAY_TQuery( OnClientLockChecked, query, data );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnClientLockChecked( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	
 	ResetPack(data);
@@ -576,7 +576,7 @@ public OnClientLockChecked( Handle:owner, Handle:hndl, const String:error[], any
 	DBRELAY_TQuery( OnClientGiftsLoaded, query, data );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnClientGiftsLoaded( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	
 	ResetPack(data);
@@ -623,7 +623,7 @@ public OnClientGiftsLoaded( Handle:owner, Handle:hndl, const String:error[], any
 	DBRELAY_TQuery( OnClientInventoryLoaded, query, data );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnClientInventoryLoaded( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 
 	ResetPack(data);
@@ -677,7 +677,7 @@ public OnClientInventoryLoaded( Handle:owner, Handle:hndl, const String:error[],
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 LogOutPlayer( client ) {
 
 	if( DBRELAY_IsConnected() ) {
@@ -692,7 +692,7 @@ LogOutPlayer( client ) {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public IgnoredSQLResult( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	if( !hndl ) {
 		LogError( "SQL Error --- %s", error );
@@ -700,23 +700,23 @@ public IgnoredSQLResult( Handle:owner, Handle:hndl, const String:error[], any:da
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnMapStart() {
 	g_last_update = -MIN_UPDATE_PERIOD;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnClientConnected(client) {
 	g_client_data_loaded[client] = false; 
 	 
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnClientDisconnect( client ) {
 	LogOutPlayer( client );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnDBRelayConnected() {
 	
 	for( new i = 1; i <= MaxClients; i++ ) {
@@ -724,7 +724,7 @@ public OnDBRelayConnected() {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_items( client, args ) {
 	if( client == 0 ) return Plugin_Handled;
 	if( !DBRELAY_IsConnected() || !g_client_data_loaded[client] ) {
@@ -753,7 +753,7 @@ public Action:Command_items( client, args ) {
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public UseItemMenu( Handle:menu, MenuAction:action, client, param2) {
 	
 	if( action == MenuAction_End)  {
@@ -780,7 +780,7 @@ public UseItemMenu( Handle:menu, MenuAction:action, client, param2) {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public ShowUseItemMenu( client ) {
 	new Handle:menu = CreateMenu( UseItemMenu );
 	new items = 0;
@@ -807,7 +807,7 @@ public ShowUseItemMenu( client ) {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_use_item( client, args ) {
 	if( client == 0 ) return Plugin_Handled;
 	if( !DBRELAY_IsConnected() || !g_client_data_loaded[client] ) {
@@ -853,19 +853,19 @@ public Action:Command_use_item( client, args ) {
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 UseItem( client, item ) {
 	CommitItemChange( client, item, -1 );
 }
 
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 CachePluginFunctions( Handle:plugin, slot ) {
 	item_plugins[slot] = plugin;
 	item_functions[slot][ITEMFUNC_ONUSE] = GetFunctionByName( plugin, "RXGSTORE_OnUse" );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_RegisterItem( Handle:plugin, numParams ) {
 	
 	new itemid = GetNativeCell(2);
@@ -910,7 +910,7 @@ public Native_RegisterItem( Handle:plugin, numParams ) {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_UnregisterItem( Handle:plugin, numParams ) {
 	new itemid = GetNativeCell(1);
 	if( !item_map[itemid] ) return false;
@@ -926,7 +926,7 @@ public Native_UnregisterItem( Handle:plugin, numParams ) {
 	return true;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_ItemCount( Handle:plugin, numParams ) {
 	new client = GetNativeCell(1);
 	new itemid = GetNativeCell(2);
@@ -939,25 +939,25 @@ public Native_ItemCount( Handle:plugin, numParams ) {
 	return g_client_items[client][slot]+g_client_items_change[client][slot];
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_GetCash( Handle:plugin, numParams ) {
 	new client = GetNativeCell(1);
 	if( !DBRELAY_IsConnected() || !g_client_data_loaded[client] ) return 0;
 	return g_client_cash[client]+g_client_cash_change[client];
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_AddCash( Handle:plugin, numParams ) {
 	new client = GetNativeCell(1);
 	if( !IsClientInGame(client) ) return false;
 	return CommitCashChange( client, GetNativeCell(2) );
 }
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_TakeCash( Handle:plugin, numParams ) {
 	return TryTakeCash( GetNativeCell(1), GetNativeCell(2), plugin, GetNativeCell(3), GetNativeCell(4) );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_CanUseItem( Handle:plugin, numParams ) {
 	new client = GetNativeCell(1);
 	new itemid = GetNativeCell(2);
@@ -967,7 +967,7 @@ public Native_CanUseItem( Handle:plugin, numParams ) {
 	return (g_client_items[client][slot]+g_client_items_change[client][slot]) > 0;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_UseItem( Handle:plugin, numParams ) {
 	new client = GetNativeCell(1);
 	new itemid = GetNativeCell(2);
@@ -982,13 +982,13 @@ public Native_UseItem( Handle:plugin, numParams ) {
 	return true;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_ShowUseItemMenu( Handle:plugin, numParams ) {
 	new client = GetNativeCell(1);
 	ShowUseItemMenu(client);
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_IsClientLoaded( Handle:plugin, numParams ) {
 	new client = GetNativeCell(1);
 	if( !IsClientInGame(client) ) return false;
@@ -996,12 +996,12 @@ public Native_IsClientLoaded( Handle:plugin, numParams ) {
 	return DBRELAY_IsConnected() && g_client_data_loaded[client];
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Native_IsConnected( Handle:plugin, numParams ) {
 	return DBRELAY_IsConnected();
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_cash( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	
@@ -1024,7 +1024,7 @@ public Action:Command_cash( client, args ) {
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public ShowStorePage( client, id, token ) {
 	
 	decl String:source[13];
@@ -1052,7 +1052,7 @@ public ShowStorePage( client, id, token ) {
 	CloseHandle( Kv );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnQuickAuthSave( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	
 	DBRELAY_TQuery( OnQuickAuthFetch, "SELECT LAST_INSERT_ID()", data );
@@ -1064,7 +1064,7 @@ public OnQuickAuthSave( Handle:owner, Handle:hndl, const String:error[], any:dat
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnQuickAuthFetch( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	
 	if( !hndl ) {
@@ -1089,7 +1089,7 @@ public OnQuickAuthFetch( Handle:owner, Handle:hndl, const String:error[], any:da
 	ShowStorePage( client, id, token );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action:Command_store( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	
@@ -1103,7 +1103,7 @@ public Action:Command_store( client, args ) {
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public ConVar_QueryClient( QueryCookie:cookie, client, ConVarQueryResult:result, const String:cvarName[], const String:cvarValue[] ) {
 
 	if( cookie == QUERYCOOKIE_FAILED ) {
