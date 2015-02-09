@@ -20,7 +20,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.1.1",
+    version     = "2.2.0",
     url         = "www.mukunda.com"
 };
 
@@ -185,11 +185,13 @@ public Action:Command_reload_user_inventory( args ) {
 		decl String:account_string[16];
 		GetCmdArg( 1, account_string, sizeof account_string );
 		new account = StringToInt(account_string);
+		decl String:initial_space[6];
+		initial_space = GAME == GAME_CSGO ? "\x01 " : "";
 		
 		for( new i = 1; i <= MaxClients; i++ ) {
 			if( g_client_data_account[i] == account ) {
 				LoadClientData(i);
-				PrintToChat( i, "\x01 \x04[STORE]\x01 Your inventory has been updated." );
+				PrintToChat( i, "%s\x04[STORE]\x01 Your inventory has been updated.", initial_space );
 				return Plugin_Handled;
 			}
 		}
@@ -199,7 +201,7 @@ public Action:Command_reload_user_inventory( args ) {
 }
 
 //-----------------------------------------------------------------------------
-BroadcastStoreActivity( args, const String:msg[] ) {
+BroadcastStoreActivity( args, const String:msg[], bool:single = false ) {
 	
 	if( args > 0 ) {
 	
@@ -214,8 +216,9 @@ BroadcastStoreActivity( args, const String:msg[] ) {
 				decl String:player_name[33];
 				GetClientName( i, player_name, sizeof player_name );
 				
-				decl String:team_color[7];
-				decl String:item_color[7];
+				decl String:team_color[11];
+				decl String:item_color[11];
+				decl String:initial_space[6];
 				new client_team = GetClientTeam(i);
 				
 				if( client_team == 2 ){
@@ -227,18 +230,27 @@ BroadcastStoreActivity( args, const String:msg[] ) {
 				}
 				
 				item_color = GAME == GAME_TF2 ? "\x07874fad" : "\x03";
+				initial_space = GAME == GAME_CSGO ? "\x01 " : "";
 				
 				new arg = 2;
 				
-				while( args >= arg ) {
-					
+				if( single ) {
 					decl String:item[64];
 					GetCmdArg( arg, item, sizeof item );
-					
-					PrintToChatAll( msg, team_color, player_name, item_color, item );
-					
-					arg++;
+					PrintToChatAll( msg, initial_space, team_color, player_name, item_color, item );
+				} else {
+					// show starting message then items on separate lines
+					PrintToChatAll( msg, initial_space, team_color, player_name );
+					while( args >= arg ) {
+						decl String:item[64];
+						GetCmdArg( arg, item, sizeof item );
+						
+						PrintToChatAll( "%s%s + %s", initial_space, item_color, item );
+						
+						arg++;
+					}
 				}
+				
 				
 				return;
 			}
@@ -249,35 +261,35 @@ BroadcastStoreActivity( args, const String:msg[] ) {
 //-----------------------------------------------------------------------------
 public Action:Command_broadcast_purchase( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just bought %s%s \x01from the \x04!store" );
+	BroadcastStoreActivity( args, "%s%s%s \x01just made a \x04!store \x01purchase:" );
 	return Plugin_Handled;
 }
 
 //-----------------------------------------------------------------------------
 public Action:Command_broadcast_gift_send( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just sent a \x04!store \x01gift containing %s%s" );
+	BroadcastStoreActivity( args, "%s%s%s \x01just sent a \x04!store \x01gift:" );
 	return Plugin_Handled;
 }
 
 //-----------------------------------------------------------------------------
 public Action:Command_broadcast_gift_receive( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just accepted a \x04!store \x01gift containing %s%s" );
+	BroadcastStoreActivity( args, "%s%s%s \x01just accepted a \x04!store \x01gift:" );
 	return Plugin_Handled;
 }
 
 //-----------------------------------------------------------------------------
 public Action:Command_broadcast_reward_receive( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just accepted a \x04!store \x01reward containing %s%s" );
+	BroadcastStoreActivity( args, "%s%s%s \x01just accepted a \x04!store \x01reward:" );
 	return Plugin_Handled;
 }
 
 //-----------------------------------------------------------------------------
 public Action:Command_broadcast_review( args ) {
 	
-	BroadcastStoreActivity( args, "\x01 %s%s \x01just wrote a \x04!store \x01review about the %s%s" );
+	BroadcastStoreActivity( args, "%s%s%s \x01just wrote a \x04!store \x01review about the %s%s", true );
 	return Plugin_Handled;
 }
 
@@ -608,8 +620,11 @@ public OnClientGiftsLoaded( Handle:owner, Handle:hndl, const String:error[], any
 		num_rewards = SQL_FetchInt( hndl, 1 );
 	}
 	
+	decl String:initial_space[6];
+	initial_space = GAME == GAME_CSGO ? "\x01 " : "";
+	
 	if( num_gifts > 0 || num_rewards > 0 ) {
-		PrintToChat( client, "\x01 \x04[STORE]\x01 You have a pending gift or reward. Access the \x04!store \x01to accept it." );
+		PrintToChat( client, "%s\x04[STORE]\x01 You have a pending gift or reward. Access the \x04!store \x01to accept it.", initial_space );
 	}
 	
 	decl String:query[1024];
