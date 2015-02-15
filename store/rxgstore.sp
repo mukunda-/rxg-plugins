@@ -20,7 +20,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.2.0",
+    version     = "2.2.1",
     url         = "www.mukunda.com"
 };
 
@@ -245,7 +245,7 @@ BroadcastStoreActivity( args, const String:msg[], bool:single = false ) {
 						decl String:item[64];
 						GetCmdArg( arg, item, sizeof item );
 						
-						PrintToChatAll( "%s%s + %s", initial_space, item_color, item );
+						PrintToChatAll( "%s%s%s", initial_space, item_color, item );
 						
 						arg++;
 					}
