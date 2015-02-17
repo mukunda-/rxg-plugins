@@ -14,7 +14,7 @@ public Plugin:myinfo = {
 	name = "rxg-weapons",
 	author = "REFLEX",
 	description = "Weapon purchasing management.",
-	version = "1.1.1",
+	version = "1.1.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -44,6 +44,8 @@ new g_nades_graceperiod;
 new Handle:ammo_grenade_limit_default;
 new Handle:ammo_grenade_limit_flashbang;
 new Handle:ammo_grenade_limit_total;
+new Handle:mp_buytime;
+new Handle:rxg_auto_rebuy;
 
 new c_ammo_grenade_limit_default;
 new c_ammo_grenade_limit_flashbang;
@@ -102,6 +104,10 @@ public OnPluginStart() {
 	ammo_grenade_limit_default   = FindConVar( "ammo_grenade_limit_default" );
 	ammo_grenade_limit_flashbang = FindConVar( "ammo_grenade_limit_flashbang" );
 	ammo_grenade_limit_total     = FindConVar( "ammo_grenade_limit_total" );
+	rxg_auto_rebuy = CreateConVar( "rxg_auto_rebuy", "1", 
+		"Auto-rebuy for players who afk during the buy period.", 
+		FCVAR_PLUGIN );
+	mp_buytime = FindConVar( "mp_buytime" );
 	  
 	HookConVarChange( ammo_grenade_limit_default,   OnCVarChanged );
 	HookConVarChange( ammo_grenade_limit_flashbang, OnCVarChanged );
@@ -509,6 +515,28 @@ public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
 	}
 	
 	g_nades_graceperiod = true;
+	
+	if( GetConVarBool( rxg_auto_rebuy )) {
+		CreateTimer( GetConVarFloat( mp_buytime ) - 5.0, 
+					 DoAutoRebuy, _, TIMER_FLAG_NO_MAPCHANGE );
+	}
+}
+
+//-----------------------------------------------------------------------------
+public Action:DoAutoRebuy( Handle:timer ) {
+	for( new i = 1; i <= MaxClients; i++ ) {
+		if( !IsClientInGame(i) 
+			|| IsFakeClient(i) 
+			|| !IsPlayerAlive(i) 
+			|| !GetEntProp( i, Prop_Send, "m_bInBuyZone" )
+			|| g_rebuy_used[i] ) {
+			continue;
+		}
+		
+		g_rebuy_used[i] = true;
+		RebuyPlayerLoadout( i );
+	}
+	return Plugin_Handled;
 }
 
 //-----------------------------------------------------------------------------
