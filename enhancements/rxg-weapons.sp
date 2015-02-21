@@ -525,11 +525,11 @@ public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
 //-----------------------------------------------------------------------------
 public Action:DoAutoRebuy( Handle:timer ) {
 	for( new i = 1; i <= MaxClients; i++ ) {
-		if( !IsClientInGame(i) 
-			|| IsFakeClient(i) 
-			|| !IsPlayerAlive(i) 
-			|| !GetEntProp( i, Prop_Send, "m_bInBuyZone" )
-			|| g_rebuy_used[i] ) {
+		if( !IsClientInGame(i)   // is connected
+			|| IsFakeClient(i)   // is not a bot
+			|| !IsPlayerAlive(i) // is alive
+			|| !GetEntProp( i, Prop_Send, "m_bInBuyZone" ) // is in buy zone
+			|| g_rebuy_used[i] ) { // didn't buy anything
 			continue;
 		}
 		
