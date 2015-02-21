@@ -14,7 +14,7 @@ public Plugin:myinfo = {
 	name = "rxg-weapons",
 	author = "REFLEX",
 	description = "Weapon purchasing management.",
-	version = "1.1.2",
+	version = "1.2.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -610,6 +610,10 @@ public Action:ResetSpecialGrenadeCounters( Handle:timer ) {
 GivePlayerWeapon( client, CSWeaponID:id ) { 
 	if( id == CSWeapon_FIVESEVEN ) id = CSWeapon_TEC9; // hacks
 	
+	if( id == CSWeapon_TASER ) { // hack number 2
+		ClientCommand( client, "buy taser 34" );
+		return;
+	}
 	ClientCommand( client, "buy %s", weaponNames[WeaponID:id] ); 
 }
 
@@ -665,9 +669,10 @@ public RebuyPlayerLoadout( client ) {
 		weap = TranslateWeaponForTeam( client, weap );
 		
 		if( weap != CSWeapon_NONE ) {
-			if( pistol != -1 ) {
-				CS_DropWeapon( client, pistol, false );
-			}
+			// dont need to do this nemore
+			//if( pistol != -1 ) {
+			//	CS_DropWeapon( client, pistol, false );
+			//}
 			
 			GivePlayerWeapon( client, weap );
 		}
