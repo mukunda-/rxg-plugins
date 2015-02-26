@@ -21,6 +21,15 @@ new bool:extra_stats[MAXPLAYERS+1];
 //-----------------------------------------------------------------------------
 public OnPluginStart() {
 	HookEvent( "player_death", Event_Player_Death);
+	HookEvent( "teamplay_round_win", Event_Round_End );
+}
+//-----------------------------------------------------------------------------
+public Action:Event_Round_End( Handle:event, const String:name[], bool:dontBroadcast ) {
+	for(new i=1;i<MaxClients;i++){
+		if(GetEntProp(i, Prop_Send, "m_iDecapitations") > 0){
+			removeStats(i);
+		}
+	}
 }
 //-----------------------------------------------------------------------------
 public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBroadcast ) {
