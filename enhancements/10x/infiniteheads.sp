@@ -25,7 +25,7 @@ public OnPluginStart() {
 }
 //-----------------------------------------------------------------------------
 public Action:Event_Round_End( Handle:event, const String:name[], bool:dontBroadcast ) {
-	for(new i=1;i<MaxClients;i++){
+	for(new i=1;i<=MaxClients;i++){
 		if(GetEntProp(i, Prop_Send, "m_iDecapitations") > 0){
 			removeStats(i);
 		}
