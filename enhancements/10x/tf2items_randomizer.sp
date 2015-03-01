@@ -1,9 +1,11 @@
 #pragma semicolon 1
+//#tf2items_randomizer#
 
 #include <sourcemod>
 #include <sdktools>
 #include <tf2_stocks>
 #include <tf2items>
+#include <tf2attributes>
 #undef REQUIRE_EXTENSIONS
 #tryinclude <steamtools>
 #define REQUIRE_EXTENSIONS
@@ -14,11 +16,11 @@
 
 //#define TF2ITEMSOLD
 
-#define PLUGIN_NAME		"[TF2Items] 10x Mayhem Randomizer"
+#define PLUGIN_NAME		"[TF2Items] Randomizer"
 #define PLUGIN_AUTHOR		"FlaminSarge"
-#define PLUGIN_VERSION		"1.57" //As of Dec22, 2012
+#define PLUGIN_VERSION		"1.591" //As of Aug11, 2013
 #define PLUGIN_CONTACT		"https://forums.alliedmods.net/showthread.php?t=139069"
-#define PLUGIN_DESCRIPTION	"[TF2] Randomizer rebuilt around TF2Items extension"
+#define PLUGIN_DESCRIPTION	"[TF2] Randomizer rebuilt around the TF2Items extension"
 
 #define EF_BONEMERGE			(1 << 0)
 #define EF_BONEMERGE_FASTCULL	(1 << 7)
@@ -31,66 +33,66 @@ public Plugin:myinfo = {
 	url				= PLUGIN_CONTACT
 };
 
-new TFClassType:setclass[MAXPLAYERS + 1];
-new setwep[MAXPLAYERS + 1][3];
-new cloakwep[MAXPLAYERS + 1];
-new TFClassType:getclass[MAXPLAYERS + 1];
+new TFClassType:iRndClass[MAXPLAYERS + 1];
+new iRndWeapon[MAXPLAYERS + 1][3];
+new iRndCloak[MAXPLAYERS + 1];
+new TFClassType:iDefClass[MAXPLAYERS + 1];
 //new bool:RoundStarted;
 //new pOldAmmo[MAXPLAYERS + 1][2];
 //new bool:g_bMapLoaded = false;
 new bool:bUbered[MAXPLAYERS + 1] = { false, ... };
 //new playerWeapon[MAXPLAYERS + 1][6][2] = -1;
 #if defined _visweps_included
-new bool:visibleweapons = false;
+new bool:bVisWeps = false;
 #endif
 new bool:tf2items_giveweapon = false;
 #if defined _steamtools_included
 new bool:steamtools = false;
 #endif
-new Handle:g_hSdkEquipWearable;
-new bool:g_bSdkStarted;
+new Handle:hSDKEquipWearable;
+new bool:bSDKStarted;
 new bool:bJarated[MAXPLAYERS + 1];
 new bool:bDoubleJumped[MAXPLAYERS + 1];
 new iLastButtons[MAXPLAYERS + 1];
 new bool:bDontRespawn[MAXPLAYERS + 1];
-new Float:flBabyFaceSpeed[MAXPLAYERS + 1] = { -1.0, ... };
+//new Float:flBabyFaceSpeed[MAXPLAYERS + 1] = { -1.0, ... };
 //new bTeleOnSpawn[MAXPLAYERS + 1];
 //new Float:vecTeleOnSpawnOrigin[MAXPLAYERS + 1][3];
 //new Float:vecTeleOnSpawnAngles[MAXPLAYERS + 1][3];
 
 // cvars
-new bool:cvar_enabled;
-new bool:cvar_announce;
-new cvar_partial;
-new bool:cvar_destroy;
+new bool:bCvarEnabled;
+new bool:bCvarAnnounce;
+new iCvarPartial;
+new bool:bCvarDestroy;
 //new cvar_fixammo;
 //new cvar_fixpyro;
-new bool:cvar_fixspy;
-new cvar_fixuber;
+new bool:bCvarFixSpy;
+new iCvarFixUber;
 #define FIXUBER_HEALBEAMS	(1 << 0)
 #define FIXUBER_UBERS		(1 << 1)
 
-new bool:cvar_betaweapons;
-new bool:cvar_customweapons;
+new bool:bCvarBetaWeapons;
+new bool:bCvarCustomWeapons;
 //new bool:cvar_fixreload;
-new bool:cvar_goldenwrench;
-new bool:cvar_fixfood;
+new bool:bCvarGoldenWrench;
+new bool:bCvarFixFood;
 #if defined _steamtools_included
-new bool:cvar_gamedesc;
+new bool:bCvarGameDesc;
 #endif
-new cvar_spycloak;
+new bool:bCvarSpyCloak;
 
-new bool:cvar_debug;
+new bool:bCvarDebug;
 
 // fixes
 //new ammo_count[MAXPLAYERS + 1][2];
 //new spy_status[MAXPLAYERS + 1];
-new healbeamparticles[MAXPLAYERS + 1][3];
-new healtarget[MAXPLAYERS + 1] = { -1, ... };
-new eyeparticle[MAXPLAYERS + 1] = { INVALID_ENT_REFERENCE, ... };
+new iHealBeamParticles[MAXPLAYERS + 1][3];
+new iHealTarget[MAXPLAYERS + 1] = { -1, ... };
+new iEyeParticle[MAXPLAYERS + 1] = { INVALID_ENT_REFERENCE, ... };
 
 //weapons
-static const weapon_primary[] =
+static const iWeaponPrimary[] =
 {
 	-1,
 	13,
@@ -147,7 +149,7 @@ static const weapon_primary[] =
 	996,
 	997
 };
-static const String:weapon_primary_name[][] =
+static const String:strWeaponPrimary[][] =
 {
 	"Normal",					//0
 	"Scattergun",				//1
@@ -204,7 +206,7 @@ static const String:weapon_primary_name[][] =
 	"Loose Cannon",
 	"Rescue Ranger"
 };
-static const weapon_secondary[] =
+static const iWeaponSecondary[] =
 {
 	-1,
 	16,
@@ -250,9 +252,10 @@ static const weapon_secondary[] =
 	812,
 	735,
 	810,
-	998
+	998,
+	933
 };
-static const String:weapon_secondary_name[][] =
+static const String:strWeaponSecondary[][] =
 {
 	"Normal",
 	"SMG",
@@ -298,9 +301,10 @@ static const String:weapon_secondary_name[][] =
 	"Flying Guillotine",
 	"Sapper",
 	"Red-Tape Recorder",
-	"Vaccinator"
+	"Vaccinator",
+	"Ap-Sap"
 };
-static const weapon_tertiary[] =
+static const iWeaponMelee[] =
 {
 	-1,
 	0,
@@ -379,9 +383,10 @@ static const weapon_tertiary[] =
 	775,
 	813,
 	939,
-	954
+	954,
+	1013
 };
-static const String:weapon_tertiary_name[][] =
+static const String:strWeaponMelee[][] =
 {
 	"Normal",
 	"Bat",
@@ -460,9 +465,10 @@ static const String:weapon_tertiary_name[][] =
 	"Escape Plan",
 	"Neon Annihilator",
 	"Bat Outta Hell",
-	"Memory Maker"
+	"Memory Maker",
+	"Ham Shank"
 };
-static const weapon_cloakary[] =	//so clever at naming these things
+static const iWeaponCloakary[] =	//so clever at naming these things b/c why not
 {
 	-1,
 	30,
@@ -471,7 +477,7 @@ static const weapon_cloakary[] =	//so clever at naming these things
 	297,
 	947
 };
-static const String:weapon_cloakary_name[][] =
+static const String:strWeaponCloakary[][] =
 {
 	"Normal",
 	"Invisibility Watch",
@@ -535,13 +541,11 @@ new bool:pBonkCooldown[MAXPLAYERS + 1];
 new bool:pJarCooldown[MAXPLAYERS + 1];
 new bool:pBallCooldown[MAXPLAYERS + 1];
 new bool:pLongEatCooldown[MAXPLAYERS + 1];*/
-new pDalokohsBuff[MAXPLAYERS + 1];
+new bool:bDalokohsBuff[MAXPLAYERS + 1];
 
-new Handle:g_hItemInfoTrie = INVALID_HANDLE;
+new Handle:hItemInfoTrie = INVALID_HANDLE;
 //new Handle:hMaxHealth;
 //new Handle:hHeal_Radius;
-//new Handle:hGetBaseEntity;
-
 
 #if defined _steamtools_included
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
@@ -569,7 +573,7 @@ public OnPluginStart()
 	new Handle:cv_version = CreateConVar("tf2items_rnd_version", PLUGIN_VERSION, "[TF2Items]Randomizer Version", FCVAR_NOTIFY | FCVAR_PLUGIN | FCVAR_SPONLY);
 	new Handle:cv_enabled = CreateConVar("tf2items_rnd_enabled", "0", "Enables/disables forcing random class and giving random weapons.", FCVAR_NOTIFY | FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	new Handle:cv_announce = CreateConVar("tf2items_rnd_announce", "1", "Enables/disables the Randomizer announcement in chat on join/enable.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	new Handle:cv_partial = CreateConVar("tf2items_rnd_normals", "0", "If >0, increases chance of each weapon roll being set to normal.", FCVAR_NOTIFY | FCVAR_PLUGIN, true, 0.0, true, 100.0);
+	new Handle:cv_partial = CreateConVar("tf2items_rnd_normals", "0", "If >0, increases chance of each weapon roll being set to normal, -1 is no normals", FCVAR_NOTIFY | FCVAR_PLUGIN, true, -1.0, true, 100.0);
 	new Handle:cv_destroy = CreateConVar("tf2items_rnd_destroy_buildings", "1", "Destroys Engineer buildings when a player respawns as a different class.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 //	new Handle:cv_fixammo = CreateConVar("tf2items_rnd_fix_ammo", "1", "Emulates proper ammo handling.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 //	new Handle:cv_fixpyro = CreateConVar("tf2items_rnd_fix_pyro", "1", "Properly limits the Pyro's speed when scoped or spun down.", FCVAR_PLUGIN, true, 0.0, true, 1.0);
@@ -612,26 +616,26 @@ public OnPluginStart()
 //	HookConVarChange(FindConVar("sv_tags"), cvhook_tags);
 
 	SetConVarString(cv_version, PLUGIN_VERSION);
-	cvar_enabled = GetConVarBool(cv_enabled);
-	cvar_announce = GetConVarBool(cv_announce);
-	cvar_partial = GetConVarInt(cv_partial);
-	cvar_destroy = GetConVarBool(cv_destroy);
+	bCvarEnabled = GetConVarBool(cv_enabled);
+	bCvarAnnounce = GetConVarBool(cv_announce);
+	iCvarPartial = GetConVarInt(cv_partial);
+	bCvarDestroy = GetConVarBool(cv_destroy);
 //	cvar_fixammo = GetConVarBool(cv_fixammo);
 //	cvar_fixpyro = GetConVarBool(cv_fixpyro);
-	cvar_fixspy = GetConVarBool(cv_fixspy);
-	cvar_fixuber = GetConVarInt(cv_fixuber);
-	cvar_betaweapons = GetConVarBool(cv_betaweapons);
-	cvar_customweapons = GetConVarBool(cv_customweapons);
+	bCvarFixSpy = GetConVarBool(cv_fixspy);
+	iCvarFixUber = GetConVarInt(cv_fixuber);
+	bCvarBetaWeapons = GetConVarBool(cv_betaweapons);
+	bCvarCustomWeapons = GetConVarBool(cv_customweapons);
 //	cvar_fixreload = GetConVarBool(cv_fixreload);
-	cvar_goldenwrench = GetConVarBool(cv_goldenwrench);
-	cvar_fixfood = GetConVarBool(cv_fixfood);
+	bCvarGoldenWrench = GetConVarBool(cv_goldenwrench);
+	bCvarFixFood = GetConVarBool(cv_fixfood);
 #if defined _steamtools_included
-	cvar_gamedesc = GetConVarBool(cv_gamedesc);
+	bCvarGameDesc = GetConVarBool(cv_gamedesc);
 #endif
 //	cvar_manifix = GetConVarBool(cv_gdmanifix);
-	cvar_spycloak = GetConVarBool(cv_spycloak);
+	bCvarSpyCloak = GetConVarBool(cv_spycloak);
 
-	cvar_debug = GetConVarBool(cv_debug);
+	bCvarDebug = GetConVarBool(cv_debug);
 
 	/***********
 	 * Commands *
@@ -643,13 +647,14 @@ public OnPluginStart()
 	RegAdminCmd("tf2items_rnd_loadout", Command_MyLoadout, 0, "Re-displays loadout to client");
 	RegAdminCmd("sm_myloadout", Command_MyLoadout, 0, "Re-displays loadout to client");
 	RegAdminCmd("sm_myweps", Command_MyLoadout, 0, "Re-displays loadout to client");
+	RegAdminCmd("sm_cantsee", Command_CantSee, 0, "Sets client's active weapon to be half-invisible");
 	RegAdminCmd("tf2items_rnd_set", Command_SetLoadout, ADMFLAG_CHEATS, "Set a client's loadout- cmd target class wep1 wep2 wep3 cloak");
 	RegAdminCmd("rnd_set", Command_SetLoadout, ADMFLAG_CHEATS, "Set a client's loadout- cmd target class wep1 wep2 wep3 cloak");
 //	RegAdminCmd("sm_healring", Cmd_Healring, 0, "sm_healring <0/1>");
 //	RegConsoleCmd("sm_rollme", Command_RollMe,
 
 	AddCommandListener(Cmd_destroy, "destroy");	//I figure I'll have it Cmd_commandstring, except for taunts.
-	AddCommandListener(Cmd_build, "build");
+//	AddCommandListener(Cmd_build, "build");
 	AddCommandListener(Cmd_taunt, "+taunt");
 	AddCommandListener(Cmd_taunt, "taunt");
 	AddCommandListener(Cmd_taunt, "+use_action_slot_item_server");
@@ -684,7 +689,7 @@ public OnPluginStart()
 	hWeaponsHud = CreateHudSynchronizer();
 
 #if defined _visweps_included
-	visibleweapons = LibraryExists("visweps");
+	bVisWeps = LibraryExists("visweps");
 #endif
 	tf2items_giveweapon = LibraryExists("tf2items_giveweapon");
 #if defined _steamtools_included
@@ -696,7 +701,7 @@ public OnPluginStart()
 		if (!IsValidClient(client)) continue;
 		OnClientPutInServer(client);
 		if (!IsPlayerAlive(client)) continue;
-		getclass[client] = TF2_GetPlayerClass(client);
+		iDefClass[client] = TF2_GetPlayerClass(client);
 	}
 }
 /*stock TagsCheck(const String:tag[], bool:remove = false)	//DarthNinja
@@ -709,14 +714,14 @@ public OnPluginStart()
 	{
 		decl String:newTags[255];
 		Format(newTags, sizeof(newTags), "%s,%s", tags, tag);
-		ReplaceString(newTags, sizeof(newTags), ",,", ",", false);
+		ReplaceString(newTags, sizeof(newTags), ",,", ", ", false);
 		SetConVarString(hTags, newTags);
 		GetConVarString(hTags, tags, sizeof(tags));
 	}
 	else if (StrContains(tags, tag, false) > -1 && remove)
 	{
 		ReplaceString(tags, sizeof(tags), tag, "", false);
-		ReplaceString(tags, sizeof(tags), ",,", ",", false);
+		ReplaceString(tags, sizeof(tags), ",,", ", ", false);
 		SetConVarString(hTags, tags);
 	}
 //	CloseHandle(hTags);
@@ -747,7 +752,8 @@ public Action:Cmd_destroy(client, String:cmd[], args)
 	DestroyClientBuilding(client, TFObjectType:building, mode);
 	return Plugin_Continue;
 }
-public Action:Cmd_build(client, String:cmd[], args)
+//Useless now that m_aBuildableObjectTypes exists
+/*public Action:Cmd_build(client, String:cmd[], args)
 {
 	if (args < 1) return Plugin_Continue;
 	if (!IsValidClient(client)) return Plugin_Continue;
@@ -772,27 +778,33 @@ public Action:Cmd_build(client, String:cmd[], args)
 	{
 		SetEntProp(builder, Prop_Data, "m_iSubType", building);
 		SetEntProp(builder, Prop_Send, "m_iObjectMode", mode);
-/*		decl String:classname[64];
-		for (new i = 0; i < 48; i++)
-		{
-			new ent = GetEntPropEnt(client, Prop_Send, "m_hMyWeapons", i);
-			if (ent > MaxClients && IsValidEntity(ent) && GetEntityClassname(ent, classname, sizeof(classname)) && StrEqual(classname, "tf_weapon_builder", false))
-			{
-
-			}
-		}*/
+//		decl String:classname[64];
+//		for (new i = 0; i < 48; i++)
+//		{
+//			new ent = GetEntPropEnt(client, Prop_Send, "m_hMyWeapons", i);
+//			if (ent > MaxClients && IsValidEntity(ent) && GetEntityClassname(ent, classname, sizeof(classname)) && StrEqual(classname, "tf_weapon_builder", false))
+//			{
+//
+//			}
+//		}
 	}
 //	new TFClassType:class = TF2_GetPlayerClass(client);
-/*	TF2_SetPlayerClass(client, TFClass_Engineer, _, false);
-	FakeClientCommand(client, "build %d %d", building, _:mode);
-	TF2_SetPlayerClass(client, class, _, false);*/
+//	TF2_SetPlayerClass(client, TFClass_Engineer, _, false);
+//	FakeClientCommand(client, "build %d %d", building, _:mode);
+//	TF2_SetPlayerClass(client, class, _, false);
 	return Plugin_Continue;
-}
+}*/
 public Action:Cmd_taunt(client, String:cmd[], args)
 {
 	if (tf2items_giveweapon) return Plugin_Continue;
 	if (!IsValidClient(client)) return Plugin_Continue;
 	if (!IsPlayerAlive(client)) return Plugin_Continue;
+	decl String:arg1[32];
+	if (args > 0)
+	{
+		GetCmdArg(1, arg1, sizeof(arg1));
+		if (StrEqual(arg1, "AmputatorFix")) return Plugin_Continue;
+	}
 	new TFClassType:class = TF2_GetPlayerClass(client);
 	if (class != TFClass_Spy && (TF2_IsPlayerInCondition(client, TFCond_Disguised) || TF2_IsPlayerInCondition(client, TFCond_Disguising))) return Plugin_Handled;
 	if (StrContains(cmd, "taunt", false) != -1
@@ -822,6 +834,7 @@ public Action:Cmd_taunt(client, String:cmd[], args)
 	}
 	return Plugin_Continue;
 }
+
 /*public Action:Timer_SetAmpTauntBack(Handle:timer, Handle:pack)
 {
 	ResetPack(pack);
@@ -837,6 +850,7 @@ public Action:Cmd_taunt(client, String:cmd[], args)
 	}
 	return Plugin_Stop;
 }*/
+
 public Action:Timer_RemoveHealing(Handle:timer, any:userid)
 {
 	new client = GetClientOfUserId(userid);
@@ -845,6 +859,7 @@ public Action:Timer_RemoveHealing(Handle:timer, any:userid)
 	if (GetEntProp(client, Prop_Send, "m_nNumHealers") <= 1) TF2_RemoveCondition(client, TFCond_Healing);
 	return Plugin_Continue;
 }
+
 stock DestroyClientBuilding(client, TFObjectType:building, TFObjectMode:mode = TFObjectMode_None)
 {
 	new String:classname[] = "obj_dispenser";
@@ -864,13 +879,18 @@ stock DestroyClientBuilding(client, TFObjectType:building, TFObjectMode:mode = T
 		AcceptEntityInput(i, "RemoveHealth");
 	}
 }
-//m_iAmmo = FindSendPropInfo("CTFPlayer", "m_iAmmo");
+
 public OnPluginEnd()
 {
 	for (new client = 1; client <= MaxClients; client++)
 	{
 		ClearHealBeams(client);
 		ClearEyeParticle(client);
+		if (IsClientInGame(client))
+		{
+			TF2Attrib_RemoveByName(client, "maxammo metal increased");
+			TF2Attrib_RemoveByName(client, "major move speed bonus");
+		}
 	}
 }
 public OnLibraryRemoved(const String:name[])
@@ -878,7 +898,7 @@ public OnLibraryRemoved(const String:name[])
 #if defined _visweps_included
 	if (StrEqual(name, "visweps"))
 	{
-		visibleweapons = false;
+		bVisWeps = false;
 	}
 #endif
 	if (StrEqual(name, "tf2items_giveweapon"))
@@ -891,7 +911,7 @@ public OnLibraryRemoved(const String:name[])
 		steamtools = false;
 	}
 #endif
-	if (cvar_debug) LogMessage("Library %s removed from Randomizer", name);
+	if (bCvarDebug) LogMessage("Library %s removed from Randomizer", name);
 }
 
 public OnLibraryAdded(const String:name[])
@@ -899,7 +919,7 @@ public OnLibraryAdded(const String:name[])
 #if defined _visweps_included
 	if (StrEqual(name, "visweps"))
 	{
-		visibleweapons = true;
+		bVisWeps = true;
 	}
 #endif
 	if (StrEqual(name, "tf2items_giveweapon"))
@@ -912,7 +932,7 @@ public OnLibraryAdded(const String:name[])
 		steamtools = true;
 	}
 #endif
-	if (cvar_debug) LogMessage("Library %s added for Randomizer", name);
+	if (bCvarDebug) LogMessage("Library %s added for Randomizer", name);
 }
 public OnClientPutInServer(client)
 {
@@ -927,7 +947,7 @@ public OnClientPutInServer(client)
 	pLongEatCooldown[client] = false;
 	pJarCooldown[client] = false;
 	pBallCooldown[client] = false;*/
-	pDalokohsBuff[client] = 0;
+	bDalokohsBuff[client] = false;
 	bJarated[client] = false;
 	bDoubleJumped[client] = false;
 	bUbered[client] = false;
@@ -955,13 +975,13 @@ public OnClientDisconnect_Post(client)
 	pLongEatCooldown[client] = false;
 	pJarCooldown[client] = false;
 	pBallCooldown[client] = false;*/
-	pDalokohsBuff[client] = 0;
+	bDalokohsBuff[client] = false;
 	bJarated[client] = false;
 	bUbered[client] = false;
 	bDontRespawn[client] = false;
 //	bTeleOnSpawn[client] = 0;
 	bHasAnnounce[client] = false;
-	getclass[client] = TFClass_Unknown;
+	iDefClass[client] = TFClass_Unknown;
 	for (new i = 0; i < MaxTimers; i++)
 	{
 		hTimers[client][i] = INVALID_HANDLE;
@@ -1020,13 +1040,13 @@ public Action:Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroad
 		if (rage > 100.0) rage = 100.0;
 		SetEntPropFloat(client, Prop_Send, "m_flRageMeter", rage);
 	}*/
-	if (IsValidClient(attacker) && IsPlayerAlive(client) && class != TFClass_Soldier && buffclient == 226 && !GetEntProp(client, Prop_Send, "m_bRageDraining"))
-	{
-		new Float:rage = GetEntPropFloat(client, Prop_Send, "m_flRageMeter");
-		rage += (damage / 3.50);
-		if (rage > 100.0) rage = 100.0;
-		SetEntPropFloat(client, Prop_Send, "m_flRageMeter", rage);
-	}
+//	if (IsValidClient(attacker) && IsPlayerAlive(client) && class != TFClass_Soldier && buffclient == 226 && !GetEntProp(client, Prop_Send, "m_bRageDraining"))
+//	{
+//		new Float:rage = GetEntPropFloat(client, Prop_Send, "m_flRageMeter");
+//		rage += (damage / 3.50);
+//		if (rage > 100.0) rage = 100.0;
+//		SetEntPropFloat(client, Prop_Send, "m_flRageMeter", rage);
+//	}
 	if (!IsValidClient(attacker)) return;
 	if (!IsPlayerAlive(attacker)) return;
 	if (weapon == TF_WEAPON_MINIGUN && GetIndexOfWeaponSlot(attacker, TFWeaponSlot_Primary) == 15 && GetEntProp(GetPlayerWeaponSlot(attacker, TFWeaponSlot_Primary), Prop_Send, "m_iEntityLevel") == (-128+5) && (GetClientButtons(attacker) & (IN_ATTACK|IN_ATTACK2)) == IN_ATTACK2)
@@ -1064,7 +1084,7 @@ public Action:Event_PlayerHurt(Handle:event, const String:name[], bool:dontBroad
 		SetEntPropFloat(attacker, Prop_Send, "m_flRageMeter", rage);
 	}
 	buffclient = GetIndexOfWeaponSlot(attacker, TFWeaponSlot_Secondary);
-	if (attackerclass != TFClass_Soldier && (buffclient == 129 || buffclient == 354))
+	if (attackerclass != TFClass_Soldier && (buffclient == 129 || buffclient == 226 || buffclient == 354))
 	{
 		if (custom == TF_CUSTOM_BURNING && GetIndexOfWeaponSlot(attacker, TFWeaponSlot_Primary) == 594) return;
 		new Float:rage = GetEntPropFloat(attacker, Prop_Send, "m_flRageMeter");
@@ -1102,12 +1122,15 @@ public Action:Event_PlayerJarated(UserMsg:msg_id, Handle:bf, const players[], pl
 	new client = BfReadByte(bf);
 	new victim = BfReadByte(bf);
 	new jar = GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
-	if (jar != -1 && GetEntProp(jar, Prop_Send, "m_iItemDefinitionIndex") == 58 && GetEntProp(jar, Prop_Send, "m_iEntityLevel") == (-128+6))
+	new Address:attrib = Address_Null;
+	if (jar != -1 && GetEntProp(jar, Prop_Send, "m_iItemDefinitionIndex") == 58 && (attrib = TF2Attrib_GetByName(jar, "bleeding duration")) != Address_Null)
 	{
-		if (!bJarated[victim]) CreateTimer(0.0, Timer_NoPiss, GetClientUserId(victim));	//TF2_RemoveCondition(victim, TFCond_Jarated);
-		TF2_MakeBleed(victim, client, 10.0);
+		if (TF2Attrib_GetByName(jar, "jarate description") == Address_Null && !bJarated[victim])
+			CreateTimer(0.0, Timer_NoPiss, GetClientUserId(victim));	//TF2_RemoveCondition(victim, TFCond_Jarated);
+		TF2_MakeBleed(victim, client, TF2Attrib_GetValue(attrib));
 	}
 	else bJarated[victim] = true;
+	return;
 }
 public Action:Timer_NoPiss(Handle:timer, any:userid)
 {
@@ -1125,8 +1148,8 @@ public Action:Timer_NoPiss(Handle:timer, any:userid)
 
 public cvhook_enabled(Handle:cvar, const String:oldVal[], const String:newVal[])
 {
-	cvar_enabled = GetConVarBool(cvar);
-	if (cvar_enabled)
+	bCvarEnabled = GetConVarBool(cvar);
+	if (bCvarEnabled)
 	{
 		for (new i = 1; i <= MaxClients; i++)
 		{
@@ -1135,7 +1158,7 @@ public cvhook_enabled(Handle:cvar, const String:oldVal[], const String:newVal[])
 		}
 		PrintToChatAll("[TF2Items]Randomizer Enabled!");
 #if defined _steamtools_included
-		if (steamtools && cvar_gamedesc)
+		if (steamtools && bCvarGameDesc)
 		{
 			decl String:gameDesc[64];
 			Format(gameDesc, sizeof(gameDesc), "[TF2Items]Randomizer v%s", PLUGIN_VERSION);
@@ -1147,11 +1170,16 @@ public cvhook_enabled(Handle:cvar, const String:oldVal[], const String:newVal[])
 	{
 		for (new i = 1; i <= MaxClients; i++)
 		{
-			if (IsClientInGame(i) && IsPlayerAlive(i)) TF2_RespawnPlayer(i);
+			if (IsClientInGame(i))
+			{
+				TF2Attrib_RemoveByName(i, "maxammo metal increased");
+				TF2Attrib_RemoveByName(i, "major move speed bonus");
+				if (IsPlayerAlive(i)) TF2_RespawnPlayer(i);
+			}
 		}
 		PrintToChatAll("[TF2Items]Randomizer Disabled!");
 #if defined _steamtools_included
-		if (steamtools && cvar_gamedesc)
+		if (steamtools && bCvarGameDesc)
 		{
 			Steam_SetGameDescription("Team Fortress");
 		}
@@ -1159,31 +1187,31 @@ public cvhook_enabled(Handle:cvar, const String:oldVal[], const String:newVal[])
 	}
 }
 
-public cvhook_announce(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_announce = GetConVarBool(cvar); }
-public cvhook_partial(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_partial	=	GetConVarInt(cvar); }
-public cvhook_destroy(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_destroy	=	GetConVarBool(cvar); }
+public cvhook_announce(Handle:cvar, const String:oldVal[], const String:newVal[]) { bCvarAnnounce = GetConVarBool(cvar); }
+public cvhook_partial(Handle:cvar, const String:oldVal[], const String:newVal[]) { iCvarPartial	=	GetConVarInt(cvar); }
+public cvhook_destroy(Handle:cvar, const String:oldVal[], const String:newVal[]) { bCvarDestroy	=	GetConVarBool(cvar); }
 //public cvhook_fixammo(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_fixammo = GetConVarBool(cvar); }
 //public cvhook_fixpyro(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_fixpyro = GetConVarBool(cvar); }
-public cvhook_fixspy (Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_fixspy	=	GetConVarBool(cvar); }
-public cvhook_fixuber(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_fixuber	=	GetConVarInt(cvar); }
-public cvhook_betaweapons(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_betaweapons = GetConVarBool(cvar); }
-public cvhook_customweapons(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_customweapons = GetConVarBool(cvar); }
+public cvhook_fixspy (Handle:cvar, const String:oldVal[], const String:newVal[]) { bCvarFixSpy	=	GetConVarBool(cvar); }
+public cvhook_fixuber(Handle:cvar, const String:oldVal[], const String:newVal[]) { iCvarFixUber	=	GetConVarInt(cvar); }
+public cvhook_betaweapons(Handle:cvar, const String:oldVal[], const String:newVal[]) { bCvarBetaWeapons = GetConVarBool(cvar); }
+public cvhook_customweapons(Handle:cvar, const String:oldVal[], const String:newVal[]) { bCvarCustomWeapons = GetConVarBool(cvar); }
 //public cvhook_fixreload(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_fixreload = GetConVarBool(cvar); }
-public cvhook_goldenwrench(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_goldenwrench = GetConVarBool(cvar); }
-public cvhook_fixfood(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_fixfood = GetConVarBool(cvar); }
+public cvhook_goldenwrench(Handle:cvar, const String:oldVal[], const String:newVal[]) { bCvarGoldenWrench = GetConVarBool(cvar); }
+public cvhook_fixfood(Handle:cvar, const String:oldVal[], const String:newVal[]) { bCvarFixFood = GetConVarBool(cvar); }
 #if defined _steamtools_included
-public cvhook_gamedesc(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_gamedesc = GetConVarBool(cvar); }
+public cvhook_gamedesc(Handle:cvar, const String:oldVal[], const String:newVal[]) { bCvarGameDesc = GetConVarBool(cvar); }
 #endif
 //public cvhook_manifix(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_manifix = GetConVarBool(cvar); }
-public cvhook_spycloak(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_spycloak = GetConVarBool(cvar); }
+public cvhook_spycloak(Handle:cvar, const String:oldVal[], const String:newVal[]) { bCvarSpyCloak = GetConVarBool(cvar); }
 
-public cvhook_debug(Handle:cvar, const String:oldVal[], const String:newVal[]) { cvar_debug = GetConVarBool(cvar); }
+public cvhook_debug(Handle:cvar, const String:oldVal[], const String:newVal[]) { bCvarDebug = GetConVarBool(cvar); }
 
 SetRandomization(client)
 {
-	setclass[client] = TFClassType:mt_rand(1, 9); //GetRandomInt(1, 9);
-	if (cvar_enabled && IsValidClient(client)) SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", setclass[client]);	//This may or may not be good.
-	setwep[client][0] = -2;
+	iRndClass[client] = TFClassType:mt_rand(1, 9); //GetRandomInt(1, 9);
+	if (bCvarEnabled && IsValidClient(client)) SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", iRndClass[client]);	//This may or may not be good.
+	iRndWeapon[client][0] = -2;
 }
 
 public OnClientDisconnect(client)
@@ -1245,11 +1273,13 @@ public OnMapStart()
 	PrecacheSound("vo/pyro_paincrticialdeath03.wav", true);
 	PrecacheSound("weapons/drg_wrench_teleport.wav", true);
 	PrecacheSound("weapons/teleporter_send.wav", true);
-//	if (FileExists("models/buildables/toolbox_placement_sentry1.mdl", true)) PrecacheModel("models/buildables/toolbox_placement_sentry1.mdl", true);
+	if (FileExists("models/buildables/toolbox_placement_sentry1.mdl", true)) PrecacheModel("models/buildables/toolbox_placement_sentry1.mdl", true);
+	if (FileExists("models/buildables/toolbox_placement.mdl", true)) PrecacheModel("models/buildables/toolbox_placement.mdl", true);
+	if (FileExists("models/buildables/toolbox_placed.mdl", true)) PrecacheModel("models/buildables/toolbox_placed.mdl", true);
 	PrepareAllModels();
 //	new String:mapname[64];
 //	GetCurrentMap(mapname, sizeof(mapname));
-	cvar_enabled = GetConVarBool(FindConVar("tf2items_rnd_enabled"));
+	bCvarEnabled = GetConVarBool(FindConVar("tf2items_rnd_enabled"));
 //	if (strncmp(mapname, "zf_", 3, false) == 0) ServerCommand("tf2items_rnd_enabled 0");
 	IsMedieval(true);
 }
@@ -1281,8 +1311,8 @@ public Action:Command_EnableRnd(client, args)
 	GetCurrentMap(mapname, sizeof(mapname));
 //	if (strncmp(mapname, "zf_", 3, false) == 0) ReplyToCommand(client, "[TF2Items] Randomizer is disabled on Zombie Fortress, though it should now work. Wait for an update.");
 //	else
-	if (cvar_enabled) ReplyToCommand(client, "[TF2Items]Randomizer is already enabled!");
-	else if (!cvar_enabled)
+	if (bCvarEnabled) ReplyToCommand(client, "[TF2Items]Randomizer is already enabled!");
+	else if (!bCvarEnabled)
 	{
 		ServerCommand("tf2items_rnd_enabled 1");
 		ReplyToCommand(client, "[TF2Items] Enabled Randomizer");
@@ -1291,8 +1321,8 @@ public Action:Command_EnableRnd(client, args)
 }
 public Action:Command_DisableRnd(client, args)
 {
-	if (!cvar_enabled) ReplyToCommand(client, "[TF2Items]Randomizer is already disabled!");
-	else if (cvar_enabled)
+	if (!bCvarEnabled) ReplyToCommand(client, "[TF2Items]Randomizer is already disabled!");
+	else if (bCvarEnabled)
 	{
 		ServerCommand("tf2items_rnd_enabled 0");
 		ReplyToCommand(client, "[TF2Items] Disabled Randomizer");
@@ -1302,9 +1332,9 @@ public Action:Command_DisableRnd(client, args)
 public Action:Timer_Announce(Handle:timer, any:userid)
 {
 	new client = GetClientOfUserId(userid);
-	if (cvar_enabled && cvar_announce && IsValidClient(client) && !bHasAnnounce[client])
+	if (bCvarEnabled && bCvarAnnounce && IsValidClient(client) && !bHasAnnounce[client])
 	{
-		PrintToChat(client, "\x01\x0700FF59[TF2Items]Randomizer\x01 v%s by FlaminSarge - edited for 10x Mayhem by Roker", PLUGIN_VERSION);
+		PrintToChat(client, "\x01\x0700FF59[TF2Items]Randomizer\x01 v%s by FlaminSarge", PLUGIN_VERSION);
 		PrintToChat(client, "--Random class, random weapons. You only reroll if killed by an enemy.");
 		PrintToChat(client, "\x01--Type \x0700FF59/myweps\x01 in chat to list your weapons and see the details of any custom weapons.");
 		bHasAnnounce[client] = true;
@@ -1319,7 +1349,7 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 	if (!IsValidClient(client)) return;
 	if (!IsPlayerAlive(client)) return;
 
-	flBabyFaceSpeed[client] = -1.0;
+//	flBabyFaceSpeed[client] = -1.0;
 	for (new i = 0; i < MaxCooldowns; i++)
 	{
 		if (i == ReloadCooldown) continue;
@@ -1330,96 +1360,100 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 	pLongEatCooldown[client] = false;
 	pJarCooldown[client] = false;
 	pBallCooldown[client] = false;*/
-	pDalokohsBuff[client] = 0;
+	bDalokohsBuff[client] = false;
 	bJarated[client] = false;
 	bUbered[client] = false;
 	ClearEyeParticle(client);
 
-	if (cvar_enabled && !bHasAnnounce[client] && !IsFakeClient(client))
+	if (bCvarEnabled && !bHasAnnounce[client] && !IsFakeClient(client))
 	{
 		hTimerAnnounce[client] = CreateTimer(4.0, Timer_Announce, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 	}
 	new TFClassType:cur = TF2_GetPlayerClass(client);
 	if (cur == TFClass_Unknown) return;
 	// Randomize if necessary.
-	if (!cvar_enabled)
+	if (!bCvarEnabled)
 	{
-//		setclass[client] = cur;
-		setwep[client] = { 0, 0, 0 };
+//		iRndClass[client] = cur;
+		iRndWeapon[client] = { 0, 0, 0 };
 	}
-	else if (setwep[client][0] == -2)
+	else if (iRndWeapon[client][0] == -2)
 	{
-		if (cvar_partial != 0 && mt_rand(1, 100) <= cvar_partial) setwep[client][0] = 0;	//GetRandomInt now mt_rand
-		else setwep[client][0] = mt_rand(0, sizeof(weapon_primary) - 1);
+		if (iCvarPartial > 0 && mt_rand(1, 100) <= iCvarPartial) iRndWeapon[client][0] = 0;	//GetRandomInt now mt_rand
+		else iRndWeapon[client][0] = mt_rand(iCvarPartial == -1 ? 1 : 0, sizeof(iWeaponPrimary) - 1);
 
-		if (cvar_partial != 0 && mt_rand(1, 100) <= cvar_partial) setwep[client][1] = 0;
-		else setwep[client][1] = mt_rand(0, sizeof(weapon_secondary) - 1);
+		if (iCvarPartial > 0 && mt_rand(1, 100) <= iCvarPartial) iRndWeapon[client][1] = 0;
+		else iRndWeapon[client][1] = mt_rand(iCvarPartial == -1 ? 1 : 0, sizeof(iWeaponSecondary) - 1);
 
-		if (cvar_partial != 0 && mt_rand(1, 100) <= cvar_partial) setwep[client][2] = 0;
-		else setwep[client][2] = mt_rand(0, sizeof(weapon_tertiary) - 1);
+		if (iCvarPartial > 0 && mt_rand(1, 100) <= iCvarPartial) iRndWeapon[client][2] = 0;
+		else iRndWeapon[client][2] = mt_rand(iCvarPartial == -1 ? 1 : 0, sizeof(iWeaponMelee) - 1);
 
-		if (cvar_spycloak && setclass[client] == TFClass_Spy)
+		if (bCvarSpyCloak && iRndClass[client] == TFClass_Spy)
 		{
-			if (cvar_partial != 0 && mt_rand(1, 100) <= cvar_partial) cloakwep[client] = 0;
+			if (iCvarPartial > 0 && mt_rand(1, 100) <= iCvarPartial) iRndCloak[client] = 0;
 			else
 			{
-				cloakwep[client] = mt_rand(0, sizeof(weapon_cloakary) - 3);
-				if (cloakwep[client] == 1)
+				iRndCloak[client] = mt_rand(iCvarPartial == -1 ? 1 : 0, sizeof(iWeaponCloakary) - 3);
+				if (iRndCloak[client] == 1)
 				{
 					new invis = mt_rand(0, 2);
-					if (invis > 0) cloakwep[client] = invis + 3;
+					if (invis > 0) iRndCloak[client] = invis + 3;
 				}
 			}
-		} else cloakwep[client] = -1;
+		} else iRndCloak[client] = -1;
 
-		if (!cvar_betaweapons)
+		if (!bCvarBetaWeapons)
 		{
-			if (setwep[client][0] == 18) setwep[client][0] = 11;
-//			if (setwep[client][0] == 32) setwep[client][0] = 4;
-//			if (setwep[client][1] == 26) setwep[client][1] = 5;
-//			if (setwep[client][1] == 27) setwep[client][1] = 3;
+			if (iRndWeapon[client][0] == 18) iRndWeapon[client][0] = 11;
+//			if (iRndWeapon[client][0] == 32) iRndWeapon[client][0] = 4;
+//			if (iRndWeapon[client][1] == 26) iRndWeapon[client][1] = 5;
+//			if (iRndWeapon[client][1] == 27) iRndWeapon[client][1] = 3;
 		}
-		if (!cvar_customweapons)
+		if (!bCvarCustomWeapons)
 		{
-			if (setwep[client][0] == 19) setwep[client][0] = 16;
-			if (setwep[client][0] == 26) setwep[client][0] = 21;
-			if (setwep[client][2] == 26) setwep[client][2] = 3;
-			if (setwep[client][2] == 27) setwep[client][2] = 16;
-			if (setwep[client][2] == 37) setwep[client][2] = 6;
-			if (setwep[client][1] == 24) setwep[client][1] = 8;
+			if (iRndWeapon[client][0] == 19) iRndWeapon[client][0] = 16;
+			if (iRndWeapon[client][0] == 26) iRndWeapon[client][0] = 21;
+			if (iRndWeapon[client][2] == 26) iRndWeapon[client][2] = 3;
+			if (iRndWeapon[client][2] == 27) iRndWeapon[client][2] = 16;
+			if (iRndWeapon[client][2] == 37) iRndWeapon[client][2] = 6;
+			if (iRndWeapon[client][1] == 24) iRndWeapon[client][1] = 8;
 		}
-		if (!cvar_goldenwrench)
+		if (!bCvarGoldenWrench)
 		{
-			if (setwep[client][2] == 24) setwep[client][2] = 6;
-			if (setwep[client][2] == 25) setwep[client][2] = 12;
-//			if (setwep[client][2] == 37) setwep[client][2] = 6;
-			if (setwep[client][2] == 50) setwep[client][2] = 0;
+			if (iRndWeapon[client][2] == 24) iRndWeapon[client][2] = 6;
+			if (iRndWeapon[client][2] == 25) iRndWeapon[client][2] = 12;
+//			if (iRndWeapon[client][2] == 37) iRndWeapon[client][2] = 6;
+			if (iRndWeapon[client][2] == 50) iRndWeapon[client][2] = 0;
 		}
 		if (IsMedieval())
 		{
-			if (setwep[client][0] != 0 && setwep[client][0] != 13 && setwep[client][0] != 29) setwep[client][0] = 0;
-			switch (setwep[client][1])
+			if (iRndWeapon[client][0] != 0 && iRndWeapon[client][0] != 13 && iRndWeapon[client][0] != 29) iRndWeapon[client][0] = 0;
+			switch (iRndWeapon[client][1])
 			{
 				case 0, 6, 7, 11, 12, 13, 14, 15, 17, 20, 21, 22, 23, 24, 28, 29, 32: {}
-				default: setwep[client][1] = 0;
+				default: iRndWeapon[client][1] = 0;
 			}
 		}
 		if (IsFakeClient(client))
 		{
-			if (setwep[client][0] == 26) setwep[client][0] = 0;
-			switch (setwep[client][1])
+			if (iRndWeapon[client][0] == 26) iRndWeapon[client][0] = 0;
+			switch (iRndWeapon[client][1])
 			{
-				case 0, 6, 7, 11, 12, 17, 28: setwep[client][1] = 0;
-				case 42, 43: if (TF2_GetPlayerClass(client) == TFClass_Engineer) setwep[client][1] = 0;	//bots crash sappers
+				case 0, 6, 7, 11, 12, 17, 28: iRndWeapon[client][1] = 0;
+				case 42, 43:
+				{
+					//if (TF2_GetPlayerClass(client) == TFClass_Engineer)
+					iRndWeapon[client][1] = 0;	//bots crash sappers
+				}
 			}
 		}
-		if (setwep[client][0] == 24 && setwep[client][1] == 16) setwep[client][0] = 5;
-//		if (cur != TFClass_Heavy && setwep[client][1] == 17) setwep[client][1] = 6;
+		if (iRndWeapon[client][0] == 24 && iRndWeapon[client][1] == 16) iRndWeapon[client][0] = 5;
+//		if (cur != TFClass_Heavy && iRndWeapon[client][1] == 17) iRndWeapon[client][1] = 6;
 	}
 	// Check class and weapons.
-	if (cvar_enabled && cur != setclass[client])
+	if (bCvarEnabled && cur != iRndClass[client])
 	{
-		if (cvar_destroy && cur == TFClass_Engineer)
+		if (bCvarDestroy && cur == TFClass_Engineer)
 		{
 			decl String:classname[32];
 			static MaxEntities = 0;
@@ -1451,7 +1485,7 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 			vecTeleOnSpawnOrigin[client] = NULL_VECTOR;
 			vecTeleOnSpawnAngles[client] = NULL_VECTOR;
 		}*/
-//		TF2_SetPlayerClass(client, setclass[client], false, true);
+//		TF2_SetPlayerClass(client, iRndClass[client], false, true);
 		if (!bDontRespawn[client])
 		{
 			bDontRespawn[client] = true;
@@ -1460,14 +1494,14 @@ public Event_PlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 			GetClientAbsOrigin(client, vecTeleOnSpawnOrigin[client]);
 			GetClientAbsAngles(client, vecTeleOnSpawnAngles[client]);*/
 
-			TF2_SetPlayerClass(client, setclass[client], false, true);
+			TF2_SetPlayerClass(client, iRndClass[client], false, true);
 			if (IsPlayerAlive(client)) CreateTimer(0.0, Timer_Respawn, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE); //TF2_RespawnPlayer(client);
 			CreateTimer(0.3, Timer_DontRespawn, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 		}
 //		CreateTimer(0.0, Timer_RegeneratePlayer, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 	}
-	getclass[client] = TF2_GetPlayerClass(client);
-/*	if (!tf2items_giveweapon && getclass[client] != TFClass_Soldier && getclass[client] != TFClass_Pyro)
+	iDefClass[client] = TF2_GetPlayerClass(client);
+/*	if (!tf2items_giveweapon && iDefClass[client] != TFClass_Soldier && iDefClass[client] != TFClass_Pyro)
 	{
 		SetEntPropFloat(client, Prop_Send, "m_flRageMeter", 0.0);
 		SetEntProp(client, Prop_Send, "m_bRageDraining", 0);
@@ -1562,7 +1596,7 @@ public Event_PostInventoryApplication(Handle:event, const String:name[], bool:do
 
 public Action:Timer_LockerWeaponReset(Handle:timer, any:userid)
 {
-	if (cvar_enabled)
+	if (bCvarEnabled)
 	{
 		new client = GetClientOfUserId(userid);
 		if (IsValidClient(client))
@@ -1584,7 +1618,7 @@ public Action:Timer_LockerWeaponReset(Handle:timer, any:userid)
 
 /*public Action:timer_checkammos(Handle:timer)
 {
-	if (cvar_enabled && cvar_fixreload)
+	if (bCvarEnabled && cvar_fixreload)
 	{
 		for (new i = 1; i <= MaxClients; i++)
 		{
@@ -1622,7 +1656,7 @@ public Action:Timer_CheckHealth(Handle:timer, any:userid)
 	if (IsValidClient(client))
 	{
 		new max = TF2_GetMaxHealth(client);
-		if (setwep[client][0] == 24 || setwep[client][1] == 16) TF2_SetHealth(client, RoundToFloor(max * 1.5 > 350 ? 350.0 : max * 1.5));
+		if (iRndWeapon[client][0] == 24 || iRndWeapon[client][1] == 16) TF2_SetHealth(client, RoundToFloor(max * 1.5 < 350 ? 350.0 : max * 1.5));
 		else
 		{
 			if (GetClientHealth(client) > RoundToFloor(1.5 * max)) TF2_SetHealth(client, RoundToFloor(1.5 * max));
@@ -1662,13 +1696,19 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 			}
 		}
 
-		if (custom == TF_CUSTOM_DECAPITATION && weaponid == TF_WEAPON_SWORD && IsValidClient(attacker) && IsPlayerAlive(attacker) && TF2_GetPlayerClass(attacker) != TFClass_DemoMan)
+		if (custom == TF_CUSTOM_DECAPITATION && weaponid == TF_WEAPON_SWORD && IsValidClient(attacker) && IsPlayerAlive(attacker) && TF2_GetPlayerClass(attacker) != TFClass_DemoMan && !StrEqual(weapon, "demokatana"))
 		{
-			if (StrEqual(weapon, "sword", false) || StrEqual(weapon, "nessieclub", false) || StrEqual(weapon, "headtaker", false)) AddDecapitation(attacker, client);
+			new mel = GetPlayerWeaponSlot(attacker, TFWeaponSlot_Melee);
+			new Address:attrib = TF2Attrib_GetByName(mel, "decapitate type");
+			if (attrib != Address_Null && TF2Attrib_GetValue(attrib) == 1.0) AddDecapitation(attacker, client);
+//			if (StrEqual(weapon, "sword", false) || StrEqual(weapon, "nessieclub", false) || StrEqual(weapon, "headtaker", false)) AddDecapitation(attacker, client);
 		}
 		if (!(deathflags & TF_DEATHFLAG_DEADRINGER) && weaponid == TF_WEAPON_KNIFE && custom == TF_CUSTOM_BACKSTAB && IsValidClient(attacker) && IsPlayerAlive(attacker) && TF2_GetPlayerClass(attacker) != TFClass_Spy)
 		{
-			if (StrEqual(weapon, "eternal_reward", false) || StrEqual(weapon, "voodoo_pin", false)) InstantDisguise(attacker, client);
+			new mel = GetPlayerWeaponSlot(attacker, TFWeaponSlot_Melee);
+			new Address:attrib = TF2Attrib_GetByName(mel, "disguise on backstab");
+			if (attrib != Address_Null && TF2Attrib_GetValue(attrib) == 1.0) InstantDisguise(attacker, client);
+//			if (StrEqual(weapon, "eternal_reward", false) || StrEqual(weapon, "voodoo_pin", false)) InstantDisguise(attacker, client);
 		}
 		if (IsValidClient(assister) && IsPlayerAlive(assister) && GetIndexOfWeaponSlot(assister, TFWeaponSlot_Primary) == 752 && TF2_GetPlayerClass(assister) != TFClass_Sniper)
 		{
@@ -1689,7 +1729,7 @@ public Action:Event_PlayerDeath(Handle:event, const String:name[], bool:dontBroa
 	{
 		decl String:weaponlog[64];
 		GetEventString(event, "weapon_logclassname", weaponlog, sizeof(weaponlog));
-		if (((attacker && attacker != client) || custom == TF_CUSTOM_DECAPITATION_BOSS || (custom >= 58 && custom <= 60) || (strcmp(weaponlog, "eyeball_rocket", false) == 0)) && cvar_enabled) SetRandomization(client);
+		if (((attacker && attacker != client) || custom == TF_CUSTOM_DECAPITATION_BOSS || (custom >= 58 && custom <= 60) || (strcmp(weaponlog, "eyeball_rocket", false) == 0)) && bCvarEnabled) SetRandomization(client);
 		for (new i = 0; i < MaxTimers; i++)
 		{
 			ClearTimer(hTimers[client][i]);
@@ -1762,15 +1802,15 @@ stock InstantDisguise(client, victim)
 stock CreateDisguiseWeapon(client)
 {
 	decl String:formatBuffer[32], String:weaponClassname[64];
-	new pri = setwep[client][0];
+	new pri = iRndWeapon[client][0];
 	if (pri < 0) pri = 0;
-	new idx = weapon_primary[pri];
+	new idx = iWeaponPrimary[pri];
 	Format(formatBuffer, sizeof(formatBuffer), "%d_%s", idx, "classname");
-	if (!GetTrieString(g_hItemInfoTrie, formatBuffer, weaponClassname, sizeof(weaponClassname)) || strncmp(weaponClassname, "tf_wearable", 11, false) == 0)
+	if (!GetTrieString(hItemInfoTrie, formatBuffer, weaponClassname, sizeof(weaponClassname)) || strncmp(weaponClassname, "tf_wearable", 11, false) == 0)
 	{
 		idx = GetDefaultWeaponIndex(TF2_GetPlayerClass(client), TFWeaponSlot_Primary);
 		Format(formatBuffer, sizeof(formatBuffer), "%d_%s", idx, "classname");
-		GetTrieString(g_hItemInfoTrie, formatBuffer, weaponClassname, sizeof(weaponClassname));
+		GetTrieString(hItemInfoTrie, formatBuffer, weaponClassname, sizeof(weaponClassname));
 	}
 	/* Start TF2Items generation method
 	new Handle:hWeapon = PrepareItemHandle(idx);
@@ -1782,7 +1822,7 @@ stock CreateDisguiseWeapon(client)
 	}*/
 	new actualindex;
 	Format(formatBuffer, sizeof(formatBuffer), "%d_%s", idx, "index");
-	GetTrieValue(g_hItemInfoTrie, formatBuffer, actualindex);
+	GetTrieValue(hItemInfoTrie, formatBuffer, actualindex);
 //	new weapon = GivePlayerItem(client, weaponClassname);
 	new weapon = CreateEntityByName(weaponClassname);
 	if (!IsValidEntity(weapon))
@@ -1825,7 +1865,7 @@ public Event_RoundWin(Handle:event, const String:name[], bool:dontBroadcast)
 
 /*public Action:timer_checkplayers(Handle:timer) {
 	// Simply cap ammo if Randomizer isn't enabled.
-	if (!cvar_enabled)
+	if (!bCvarEnabled)
 	{
 		decl max, slot, String:name[64];
 		for (new i = 1; i <= MaxClients; i++)
@@ -1864,12 +1904,12 @@ public Event_RoundWin(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 	// Step 2: Calm down, then check all the players.
 	for (new i = 1; i <= MaxClients; i++) {
-		if (IsClientInGame(i) && IsPlayerAlive(i) && setwep[i][0] > -2) {
+		if (IsClientInGame(i) && IsPlayerAlive(i) && iRndWeapon[i][0] > -2) {
 			// Check for unassigned (default) weapons.
-			new bad = false, pri = setwep[i][0], sec = setwep[i][1], mel = setwep[i][2];
-			if (pri > 0) bad = !isWeaponEquipped(i, 0, weapon_primary[pri]);
-			if (sec > 0 && !bad) bad = !isWeaponEquipped(i, 1, weapon_secondary[sec]);
-			if (mel > 0 && !bad) bad = !isWeaponEquipped(i, 2, weapon_tertiary[mel]);
+			new bad = false, pri = iRndWeapon[i][0], sec = iRndWeapon[i][1], mel = iRndWeapon[i][2];
+			if (pri > 0) bad = !isWeaponEquipped(i, 0, iWeaponPrimary[pri]);
+			if (sec > 0 && !bad) bad = !isWeaponEquipped(i, 1, iWeaponSecondary[sec]);
+			if (mel > 0 && !bad) bad = !isWeaponEquipped(i, 2, iWeaponMelee[mel]);
 			if (bad) {
 				GiveRndWeapons(i);
 			} else {
@@ -1898,12 +1938,14 @@ public Event_RoundWin(Handle:event, const String:name[], bool:dontBroadcast)
 
 public GiveRndWeapons(client)
 {
-	if (cvar_enabled)
+	if (bCvarEnabled)
 	{
+		new TFClassType:class = TF2_GetPlayerClass(client);
+		if (class != TFClass_Engineer) TF2Attrib_SetByName(client, "maxammo metal increased", 2.0);
+		else TF2Attrib_RemoveByName(client, "maxammo metal increased");
 		TF2_SetMetal(client, 200);
-		GiveMetalFixer(client);
-		new pri = setwep[client][0], sec = setwep[client][1], mel = setwep[client][2];
-//		if (pri < 0 || pri >= sizeof(weapon_primary_name) || sec < 0 || sec >= sizeof(weapon_secondary_name) || mel < 0 || mel >= sizeof(weapon_tertiary_name) || (TF2_GetPlayerClass(client) == TFClass_Spy && cloakwep[client] >= sizeof(weapon_cloakary_name)))
+		new pri = iRndWeapon[client][0], sec = iRndWeapon[client][1], mel = iRndWeapon[client][2];
+//		if (pri < 0 || pri >= sizeof(strWeaponPrimary) || sec < 0 || sec >= sizeof(strWeaponSecondary) || mel < 0 || mel >= sizeof(strWeaponMelee) || (TF2_GetPlayerClass(client) == TFClass_Spy && iRndCloak[client] >= sizeof(strWeaponCloakary)))
 //		{
 //			for (new i = 1; i <= MaxClients; i++)
 //			{
@@ -1911,39 +1953,54 @@ public GiveRndWeapons(client)
 //				{
 //					decl String:auth[32];
 //					GetClientAuthString(i, auth, sizeof(auth));
-//					if (StrEqual(auth, "STEAM_0:1:19100391", false)) PrintToChat(i, "%d, %d, %d, %d", pri, sec, mel, cloakwep[client]);
+//					if (StrEqual(auth, "STEAM_0:1:19100391", false)) PrintToChat(i, "%d, %d, %d, %d", pri, sec, mel, iRndCloak[client]);
 //				}
 //			}
 //		}
 		CreateTimer(0.8, Timer_ShowInventory, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
 		if (pri < 0) pri = 0;
-		new TFClassType:class = TF2_GetPlayerClass(client);
 /*		SetHudTextParams(-1.0, 0.1, 5.0, 255, 255, 255, 255,0,0.2,0.0,0.1);
-		if (class == TFClass_Spy && cloakwep[client] > -1) ShowHudText(client, -1, "[TF2Items]Randomizer:\n%s\n%s\n%s\n%s", weapon_primary_name[pri], weapon_secondary_name[sec], weapon_tertiary_name[mel], weapon_cloakary_name[cloakwep[client]]);
-		else ShowHudText(client, -1, "[TF2Items]Randomizer\n%s\n%s\n%s", weapon_primary_name[pri], weapon_secondary_name[sec], weapon_tertiary_name[mel]); */
-//		if (class == TFClass_Spy && cloakwep[client] > -1) PrintHintText(client, "[TF2Items]Randomizer: %s, %s, %s, %s", weapon_primary_name[pri], weapon_secondary_name[sec], weapon_tertiary_name[mel], weapon_cloakary_name[cloakwep[client]]);
-//		else PrintHintText(client, "[TF2Items]Randomizer: %s, %s, %s", weapon_primary_name[pri], weapon_secondary_name[sec], weapon_tertiary_name[mel]);
+		if (class == TFClass_Spy && iRndCloak[client] > -1) ShowHudText(client, -1, "[TF2Items]Randomizer:\n%s\n%s\n%s\n%s", strWeaponPrimary[pri], strWeaponSecondary[sec], strWeaponMelee[mel], strWeaponCloakary[iRndCloak[client]]);
+		else ShowHudText(client, -1, "[TF2Items]Randomizer\n%s\n%s\n%s", strWeaponPrimary[pri], strWeaponSecondary[sec], strWeaponMelee[mel]); */
+//		if (class == TFClass_Spy && iRndCloak[client] > -1) PrintHintText(client, "[TF2Items]Randomizer: %s, %s, %s, %s", strWeaponPrimary[pri], strWeaponSecondary[sec], strWeaponMelee[mel], strWeaponCloakary[iRndCloak[client]]);
+//		else PrintHintText(client, "[TF2Items]Randomizer: %s, %s, %s", strWeaponPrimary[pri], strWeaponSecondary[sec], strWeaponMelee[mel]);
 		// primary
+		if (pri >= sizeof(iWeaponMelee))
+		{
+			LogError("[TF2Items]Randomizer had primary weapon index %d on client %d %N, this is invalid", pri, client, client);
+			pri = 0;
+		}
 		if (pri > 0)
 		{
 //			RemovePlayerBooties(client);
-			GiveWeaponOfIndex(client, weapon_primary[pri]);
+			GiveWeaponOfIndex(client, iWeaponPrimary[pri]);
 		}
 		// secondary
+		if (sec >= sizeof(iWeaponMelee))
+		{
+			LogError("[TF2Items]Randomizer had secondary weapon index %d on client %d %N, this is invalid", sec, client, client);
+			sec = 0;
+		}
 		if (sec > 0)
 		{
 //			RemovePlayerTarge(client);
 //			RemovePlayerBack(client);
-			if (pDalokohsBuff[client]) GiveWeaponOfIndex(client, ((pDalokohsBuff[client] == 2) ? 2433 : 2159));
-			else GiveWeaponOfIndex(client, weapon_secondary[sec]);
+			new wep = GiveWeaponOfIndex(client, iWeaponSecondary[sec]);
+			if (wep > MaxClients && bDalokohsBuff[client] && (iWeaponSecondary[sec] == 433 || iWeaponSecondary[sec] == 159))
+				TF2Attrib_SetByName(wep, "hidden maxhealth non buffed", 50.0);
 		}
 		// melee
+		if (mel >= sizeof(iWeaponMelee))
+		{
+			LogError("[TF2Items]Randomizer had melee weapon index %d on client %d %N, this is invalid", mel, client, client);
+			mel = 0;
+		}
 		if (mel > 0)
 		{
-			GiveWeaponOfIndex(client, weapon_tertiary[mel]);
+			GiveWeaponOfIndex(client, iWeaponMelee[mel]);
 			if (class != TFClass_Engineer && !IsMedieval() && !IsFakeClient(client))
 			{
-				switch (weapon_tertiary[mel])
+				switch (iWeaponMelee[mel])
 				{
 					case 7, 142, 155, 169, 329, 589, 2197:
 					{
@@ -1952,22 +2009,23 @@ public GiveRndWeapons(client)
 							GiveWeaponOfIndex(client, 25);
 							GiveWeaponOfIndex(client, 26);
 						}
-						if (sec > 0 || class != TFClass_Spy) GiveWeaponOfIndex(client, 28);
+						GiveWeaponOfIndex(client, 28);
 					}
 				}
 			}
 		}
 		if (class == TFClass_Spy)
 		{
-			if (cloakwep[client] > 0)
+			if (iRndCloak[client] > 0)
 			{
-				GiveWeaponOfIndex(client, weapon_cloakary[cloakwep[client]]);
+				GiveWeaponOfIndex(client, iWeaponCloakary[iRndCloak[client]]);
 			}
 			new slot = GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
 			new idx = (IsValidEntity(slot) ? GetEntProp(slot, Prop_Send, "m_iItemDefinitionIndex") : -1);
 			if (idx == 225 || idx == 574) TF2_RemoveWeaponSlot(client, 3);
 			else if (!IsValidEntity(GetPlayerWeaponSlot(client, 3))) GiveWeaponOfIndex(client, 27);
 		}
+
 /*		if (class == TFClass_Sniper || class == TFClass_Medic || class == TFClass_Engineer)
 		{
 			CreateTimer(0.01, Timer_InvisGlitchFix, any:client);
@@ -2015,13 +2073,13 @@ public Action:Timer_ShowInventory(Handle:timer, any:userid)
 	new client = GetClientOfUserId(userid);
 	if (!IsValidClient(client)) return Plugin_Continue;
 	ClearHudText(client);
-	new pri = setwep[client][0], sec = setwep[client][1], mel = setwep[client][2];
+	new pri = iRndWeapon[client][0], sec = iRndWeapon[client][1], mel = iRndWeapon[client][2];
 	if (pri < 0) pri = 0;
 	new TFClassType:class = TF2_GetPlayerClass(client);
 	new bool:red = (GetClientTeam(client) == _:TFTeam_Red);
 	SetHudTextParams(-1.0, 0.1, 5.0, red ? 255 : 0, red ? 0 : 110, red ? 0 : 255, 255, 0, 0.1, 0.1, 0.2);
-	if (class == TFClass_Spy && cloakwep[client] > -1) ShowSyncHudText(client, hWeaponsHud, "[TF2Items]Randomizer\n%s\n%s\n%s\n%s", weapon_primary_name[pri], weapon_secondary_name[sec], weapon_tertiary_name[mel], weapon_cloakary_name[cloakwep[client]]);
-	else ShowSyncHudText(client, hWeaponsHud, "[TF2Items]Randomizer\n%s\n%s\n%s", weapon_primary_name[pri], weapon_secondary_name[sec], weapon_tertiary_name[mel]);
+	if (class == TFClass_Spy && iRndCloak[client] > -1) ShowSyncHudText(client, hWeaponsHud, "[TF2Items]Randomizer\n%s\n%s\n%s\n%s", strWeaponPrimary[pri], strWeaponSecondary[sec], strWeaponMelee[mel], strWeaponCloakary[iRndCloak[client]]);
+	else ShowSyncHudText(client, hWeaponsHud, "[TF2Items]Randomizer\n%s\n%s\n%s", strWeaponPrimary[pri], strWeaponSecondary[sec], strWeaponMelee[mel]);
 	return Plugin_Continue;
 }
 public Action:Command_MyLoadout(client, args)
@@ -2031,12 +2089,12 @@ public Action:Command_MyLoadout(client, args)
 		ReplyToCommand(client, "[TF2Items] Command is in-game only.");
 		return Plugin_Handled;
 	}
-	if (!cvar_enabled)
+	if (!bCvarEnabled)
 	{
 		ReplyToCommand(client, "[TF2Items] Randomizer is not enabled.");
 		return Plugin_Handled;
 	}
-	if (!IsPlayerAlive(client) && setwep[client][0] == -2)
+	if (!IsPlayerAlive(client) && iRndWeapon[client][0] == -2)
 	{
 		ReplyToCommand(client, "[TF2Items] You must wait to respawn to see your new randomized loadout.");
 		return Plugin_Handled;
@@ -2044,18 +2102,59 @@ public Action:Command_MyLoadout(client, args)
 	CreateTimer(0.0, Timer_ShowInventory, GetClientUserId(client));
 	decl String:message[128];
 	new TFClassType:class = TF2_GetPlayerClass(client);
-	new pri = setwep[client][0], sec = setwep[client][1], mel = setwep[client][2];
+	new pri = iRndWeapon[client][0], sec = iRndWeapon[client][1], mel = iRndWeapon[client][2];
 	if (pri < 0) pri = 0;
-	if (class == TFClass_Spy && cloakwep[client] > -1) Format(message, sizeof(message), "[TF2Items]Randomizer: %s, %s, %s, %s", weapon_primary_name[pri], weapon_secondary_name[sec], weapon_tertiary_name[mel], weapon_cloakary_name[cloakwep[client]]);
-	else Format(message, sizeof(message), "[TF2Items]Randomizer: %s, %s, %s", weapon_primary_name[pri], weapon_secondary_name[sec], weapon_tertiary_name[mel]);
+	if (class == TFClass_Spy && iRndCloak[client] > -1) Format(message, sizeof(message), "[TF2Items]Randomizer: %s, %s, %s, %s", strWeaponPrimary[pri], strWeaponSecondary[sec], strWeaponMelee[mel], strWeaponCloakary[iRndCloak[client]]);
+	else Format(message, sizeof(message), "[TF2Items]Randomizer: %s, %s, %s", strWeaponPrimary[pri], strWeaponSecondary[sec], strWeaponMelee[mel]);
 	PrintToChat(client, message);
 	DisplayCustomWeaponInfo(client);
 	return Plugin_Handled;
 }
 
+public Action:Command_CantSee(client, args)
+{
+	if (!IsValidClient(client))
+	{
+		ReplyToCommand(client, "[TF2Items] Command is in-game only.");
+		return Plugin_Handled;
+	}
+	if (!bCvarEnabled)
+	{
+		ReplyToCommand(client, "[TF2Items] Randomizer is not enabled.");
+		return Plugin_Handled;
+	}
+	if (!IsPlayerAlive(client))
+	{
+		ReplyToCommand(client, "[TF2Items] Cannot use command while dead.");
+		return Plugin_Handled;
+	}
+	decl String:classname[32];
+	new entity = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	if (entity <= MaxClients || !IsValidEntity(entity))
+	{
+		ReplyToCommand(client, "[TF2Items] You don't have an active weapon to make transparent!");
+		return Plugin_Handled;
+	}
+	if (GetEntityClassname(entity, classname, sizeof(classname)) && strncmp(classname, "tf_weapon_", 10, false) == 0)
+	{
+		if (GetEntityRenderMode(entity) == RENDER_TRANSCOLOR)
+		{
+			SetEntityRenderMode(entity, RENDER_NORMAL); 
+			SetEntityRenderColor(entity, 255, 255, 255, 255);
+			ReplyToCommand(client, "[TF2Items]Randomizer: Made your active weapon fully visible.");
+		}
+		else
+		{
+			SetEntityRenderMode(entity, RENDER_TRANSCOLOR);
+			SetEntityRenderColor(entity, 255, 255, 255, 75);
+			ReplyToCommand(client, "[TF2Items]Randomizer: Made your active weapon transparent.");
+		}
+	}
+	return Plugin_Handled;
+}
 stock DisplayCustomWeaponInfo(client)
 {
-	new pri = setwep[client][0], sec = setwep[client][1], mel = setwep[client][2];
+	new pri = iRndWeapon[client][0], sec = iRndWeapon[client][1], mel = iRndWeapon[client][2];
 	if (pri < 0) pri = 0;
 	new Handle:menu = CreateMenu(CustomWeaponInfo);
 	new count = 0;
@@ -2184,9 +2283,9 @@ public CustomWeaponInfo(Handle:menu, MenuAction:action, param1, param2)
 	//if (GetEntProp(wepslot, Prop_Send, "m_iEntityLevel") > 1) return false;
 	decl String:weapon[27];
 	GetEdictClassname(wepslot, weapon, sizeof(weapon));
-	if (slot == 0) for (new i = 0; i < sizeof(weapon_primary); i++) if (StrEqual(weapon, weapon_primary[i])) return true;
-	if (slot == 1) for (new i = 0; i < sizeof(weapon_secondary); i++) if (StrEqual(weapon, weapon_secondary[i])) return true;
-	if (slot == 2) for (new i = 0; i < sizeof(weapon_tertiary); i++) if (StrEqual(weapon, weapon_tertiary[i])) return true;
+	if (slot == 0) for (new i = 0; i < sizeof(iWeaponPrimary); i++) if (StrEqual(weapon, iWeaponPrimary[i])) return true;
+	if (slot == 1) for (new i = 0; i < sizeof(iWeaponSecondary); i++) if (StrEqual(weapon, iWeaponSecondary[i])) return true;
+	if (slot == 2) for (new i = 0; i < sizeof(iWeaponMelee); i++) if (StrEqual(weapon, iWeaponMelee[i])) return true;
 	return false;
 }*/
 
@@ -2211,18 +2310,18 @@ public CustomWeaponInfo(Handle:menu, MenuAction:action, param1, param2)
 stock RefillAmmo(client, Float:amount)
 {
 	decl String:name[64];
-	new prilol = setwep[client][0];
+	new prilol = iRndWeapon[client][0];
 	if (prilol == -2) prilol = 0;
-	new seclol = setwep[client][1];
+	new seclol = iRndWeapon[client][1];
 	new pri, sec, weaponAmmo, currentAmmo;
-	if (cvar_enabled)
+	if (bCvarEnabled)
 	{
-		pri = weapon_primary[prilol];
-		sec = weapon_secondary[seclol];
+		pri = iWeaponPrimary[prilol];
+		sec = iWeaponSecondary[seclol];
 		if (pri != -1)
 		{
 			Format(name, 32, "%d_ammo", pri);
-			if (GetTrieValue(g_hItemInfoTrie, name, weaponAmmo) && weaponAmmo != 0 && weaponAmmo != -1)
+			if (GetTrieValue(hItemInfoTrie, name, weaponAmmo) && weaponAmmo != 0 && weaponAmmo != -1)
 			{
 				currentAmmo = GetSpeshulAmmo(client, TFWeaponSlot_Primary) + RoundToFloor(amount * weaponAmmo);
 				SetSpeshulAmmo(client, TFWeaponSlot_Primary, ((currentAmmo >= weaponAmmo) ? weaponAmmo : currentAmmo));
@@ -2234,7 +2333,7 @@ stock RefillAmmo(client, Float:amount)
 			default:
 			{
 				Format(name, 32, "%d_ammo", sec);
-				if (GetTrieValue(g_hItemInfoTrie, name, weaponAmmo) && weaponAmmo != 0 && weaponAmmo != -1)
+				if (GetTrieValue(hItemInfoTrie, name, weaponAmmo) && weaponAmmo != 0 && weaponAmmo != -1)
 				{
 					currentAmmo = GetSpeshulAmmo(client, TFWeaponSlot_Secondary) + RoundToFloor(amount * weaponAmmo);
 					SetSpeshulAmmo(client, TFWeaponSlot_Secondary, ((currentAmmo >= weaponAmmo) ? weaponAmmo : currentAmmo));
@@ -2246,7 +2345,7 @@ stock RefillAmmo(client, Float:amount)
 
 public Action:Event_ItemPickup(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if (!cvar_enabled) return;
+	if (!bCvarEnabled) return;
 	new client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if (!IsValidClient(client)) return;
 	if (GetIndexOfWeaponSlot(client, TFWeaponSlot_Melee) == 404) return;
@@ -2258,7 +2357,7 @@ public Action:Event_ItemPickup(Handle:event, const String:name[], bool:dontBroad
 	if (StrEqual(item, "ammopack_large", false))
 	{
 //		RefillAmmo(client, 1.0);
-		if (setwep[client][0] >= 0 && weapon_primary[setwep[client][0]] == 2228 && GetEntProp(GetPlayerWeaponSlot(client, TFWeaponSlot_Primary), Prop_Send, "m_iClip1") == 0) SetSpeshulAmmo(client, TFWeaponSlot_Primary, 1);
+		if (iRndWeapon[client][0] >= 0 && iWeaponPrimary[iRndWeapon[client][0]] == 2228 && GetEntProp(GetPlayerWeaponSlot(client, TFWeaponSlot_Primary), Prop_Send, "m_iClip1") == 0) SetSpeshulAmmo(client, TFWeaponSlot_Primary, 1);
 	}
 }
 public Output_IgniteArrowsStart(const String:output[], caller, activator, Float:delay)
@@ -2301,8 +2400,9 @@ stock bool:CheckIgniteHuntsman(client, torch)
 	if (TF2_GetPlayerClass(client) == TFClass_Sniper) return true;
 	if (!IsValidEntity(torch)) return true;
 	new wep = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+	if (wep < MaxClients || !IsValidEntity(wep)) return true;
 	new String:cls[64];
-	GetEntityClassname(wep, cls, sizeof(cls));
+	if (!GetEntityClassname(wep, cls, sizeof(cls))) cls = "";
 	if (!StrEqual(cls, "tf_weapon_compound_bow", false)) return false;
 	if (GetEntProp(wep, Prop_Send, "m_bArrowAlight")) return true;
 	GetClientEyePosition(client, clPos);
@@ -2489,7 +2589,10 @@ stock DoHudText(client)
 				flSavedInfo[client][PrimarySavedInfo] = -1.0;
 			}
 		}
-		if (line1[0] != '\0') ShowSyncHudText(client, hHuds[PrimaryHud], line1);
+		if (line1[0] != '\0')
+		{
+			ShowSyncHudText(client, hHuds[PrimaryHud], line1);
+		}
 	}
 	else if (flSavedInfo[client][PrimarySavedInfo] != -1)
 	{
@@ -2504,24 +2607,26 @@ stock DoHudText(client)
 		{
 			cls = "";
 			sec = FindPlayerTarge(client);
-			if (sec > MaxClients && IsValidEntity(sec) && class != TFClass_DemoMan)
+			if (sec > MaxClients && IsValidEntity(sec) && class != TFClass_DemoMan && GetEntPropFloat(client, Prop_Send, "m_flChargeMeter") == 100)
 			{
 				if (1 != flSavedInfo[client][SecondarySavedInfo])
 				{
 					Format(line2, sizeof(line2), "Charge: Reload+AltFire");
 					flSavedInfo[client][SecondarySavedInfo] = 1.0;
 				}
+				cls = "1";
 			}
 			sec = FindPlayerBack(client, {57}, 1);
 			if (sec > MaxClients && IsValidEntity(sec) && class != TFClass_Sniper)
 			{
-				if (1 != flSavedInfo[client][SecondarySavedInfo])
+				if (2 != flSavedInfo[client][SecondarySavedInfo])
 				{
 					Format(line2, sizeof(line2), "Razorback: Active");
-					flSavedInfo[client][SecondarySavedInfo] = 1.0;
+					flSavedInfo[client][SecondarySavedInfo] = 2.0;
 				}
+				cls = "2";
 			}
-			else if (flSavedInfo[client][SecondarySavedInfo] != -1)
+			if (cls[0] == '\0' && flSavedInfo[client][SecondarySavedInfo] != -1)
 			{
 				ClearSyncHud(client, hHuds[SecondaryHud]);
 				flSavedInfo[client][SecondarySavedInfo] = -1.0;
@@ -2558,7 +2663,7 @@ stock DoHudText(client)
 			if (charge != flSavedInfo[client][SecondarySavedInfo])
 			{
 				Format(line2, sizeof(line2), "Ubercharge: %.0f%%", charge * 100);
-				if (idx == 998) Format(line2, sizeof(line2), "%s (%s)", line2, (uber == 2 ? "Fire" : (uber == 1 ? "Blast" : "Bullet")));
+				if (idx == 998) Format(line2, sizeof(line2), "%s%% (%s)", line2, (uber == 2 ? "Fire" : (uber == 1 ? "Blast" : "Bullet")));
 				flSavedInfo[client][SecondarySavedInfo] = charge;
 			}
 		}
@@ -2704,7 +2809,10 @@ stock DoHudText(client)
 				flSavedInfo[client][SecondarySavedInfo] = -1.0;
 			}
 		}*/
-		if (line2[0] != '\0') ShowSyncHudText(client, hHuds[SecondaryHud], line2);
+		if (line2[0] != '\0')
+		{
+			ShowSyncHudText(client, hHuds[SecondaryHud], line2);
+		}
 	}
 	else if (flSavedInfo[client][SecondarySavedInfo] != -1)
 	{
@@ -2717,8 +2825,8 @@ stock DoHudText(client)
 	{
 		if (StrEqual(cls, "tf_weapon_sword", false) && class != TFClass_DemoMan)
 		{
-			new idx = GetEntProp(mel, Prop_Send, "m_iItemDefinitionIndex");
-			if (idx == 132 || idx == 266 || idx == 482)
+			new Address:attrib = TF2Attrib_GetByName(mel, "decapitate type");
+			if (attrib != Address_Null && TF2Attrib_GetValue(attrib) == 1.0)
 			{
 				new heads = GetEntProp(client, Prop_Send, "m_iDecapitations");
 				if (heads != flSavedInfo[client][MeleeSavedInfo])
@@ -2727,6 +2835,16 @@ stock DoHudText(client)
 					flSavedInfo[client][MeleeSavedInfo] = float(heads);
 				}
 			}
+/*			new idx = GetEntProp(mel, Prop_Send, "m_iItemDefinitionIndex");
+			if (idx == 132 || idx == 266 || idx == 482)
+			{
+				new heads = GetEntProp(client, Prop_Send, "m_iDecapitations");
+				if (heads != flSavedInfo[client][MeleeSavedInfo])
+				{
+					Format(line3, sizeof(line3), "Heads: %d", heads);
+					flSavedInfo[client][MeleeSavedInfo] = float(heads);
+				}
+			}*/
 		}
 /*		if (StrEqual(cls, "tf_weapon_knife", false) && class != TFClass_Spy)
 		{
@@ -2795,7 +2913,10 @@ stock DoHudText(client)
 				flSavedInfo[client][MeleeSavedInfo] = -1.0;
 			}
 		}
-		if (line3[0] != '\0') ShowSyncHudText(client, hHuds[MeleeHud], line3);
+		if (line3[0] != '\0')
+		{
+			ShowSyncHudText(client, hHuds[MeleeHud], line3);
+		}
 	}
 	else if (flSavedInfo[client][MeleeSavedInfo] != -1)
 	{
@@ -2813,7 +2934,10 @@ stock DoHudText(client)
 			Format(line4, sizeof(line4), "Disguise: %s %s", disguiseteam == (_:TFTeam_Blue) ? "Blue" : "Red", TF2_GetClassName(TFClassType:disguiseclass));
 			flSavedInfo[client][DisguiseSavedInfo] = float(token);
 		}
-		if (line4[0] != '\0') ShowSyncHudText(client, hHuds[DisguiseHud], line4);
+		if (line4[0] != '\0')
+		{
+			ShowSyncHudText(client, hHuds[DisguiseHud], line4);
+		}
 	}
 	else if (flSavedInfo[client][DisguiseSavedInfo] != -1)
 	{
@@ -2858,6 +2982,7 @@ public OnGameFrame()	//asherkin is in here somewhere
 //	decl ammo0old, ammo0new, ammo1old, ammo1new, max;
 //	decl cond;
 	static bool:hasBuilder[MAXPLAYERS + 1];
+	static Float:flLastHype[MAXPLAYERS + 1] = { -1.0, ... };
 	static lastwep[MAXPLAYERS + 1] = { -1, ... };
 	static lastprim[MAXPLAYERS + 1] = { -1, ... };
 	decl String:weapon[64]; //status, bool:deadring, Spy stuff?
@@ -2869,32 +2994,55 @@ public OnGameFrame()	//asherkin is in here somewhere
 		if (IsClientInGame(client) && IsPlayerAlive(client))
 		{
 			new TFClassType:class = TF2_GetPlayerClass(client);
-			if (flBabyFaceSpeed[client] == -1) flBabyFaceSpeed[client] = GetEntPropFloat(client, Prop_Send, "m_flMaxspeed");
 			new activewep = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+			if (class != TFClass_Scout && GetIndexOfWeaponSlot(client, TFWeaponSlot_Primary) == 772)
+			{
+				new Float:flCurrHype = GetEntPropFloat(client, Prop_Send, "m_flHypeMeter");
+				if (flLastHype[client] != flCurrHype)
+				{
+					TF2Attrib_SetByName(client, "major move speed bonus", 1.0 + flCurrHype / 100.0);	//try SET BONUS: move speed set bonus for 1.60
+//					PrintToChatAll("%.6f", 1.0 + flCurrHype / 100.0);
+					if (flLastHype[client] < flCurrHype) SetEntPropFloat(client, Prop_Send, "m_flMaxspeed", 1.0);
+					TF2_AddCondition(client, TFCond_SpeedBuffAlly, 0.001);
+					flLastHype[client] = flCurrHype;
+				}
+			}
+			else if (flLastHype[client] > 0)
+			{
+				TF2Attrib_RemoveByName(client, "major move speed bonus");
+				flLastHype[client] = -1.0;
+			}
+/*			if (flBabyFaceSpeed[client] == -1) flBabyFaceSpeed[client] = GetEntPropFloat(client, Prop_Send, "m_flMaxspeed");
 			new prim = GetIndexOfWeaponSlot(client, TFWeaponSlot_Primary);
 			if (prim != lastprim[client]) flBabyFaceSpeed[client] = GetEntPropFloat(client, Prop_Send, "m_flMaxspeed");
 			lastprim[client] = prim;
 			if (activewep != lastwep[client]) flBabyFaceSpeed[client] = GetEntPropFloat(client, Prop_Send, "m_flMaxspeed");
 			lastwep[client] = activewep;
 			if (flBabyFaceSpeed[client] == 1) flBabyFaceSpeed[client] = -1.0;
-			if (class != TFClass_Scout && prim == 772 && !TF2_IsPlayerInCondition(client, TFCond_Dazed) && !TF2_IsPlayerInCondition(client, TFCond_Charging))
+			new sec = GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
+			if (class != TFClass_Scout
+				&& prim == 772
+				&& !TF2_IsPlayerInCondition(client, TFCond_Dazed)
+				&& !TF2_IsPlayerInCondition(client, TFCond_Charging)
+				&& !(activewep == sec && GetIndexOfWeaponSlot(client, TFWeaponSlot_Secondary) == 411 && GetEntPropEnt(sec, Prop_Send, "m_hHealingTarget") > 0)
+				)
 			{
 //				new melee = GetIndexOfWeaponSlot(client, TFWeaponSlot_Melee);
 				new Float:newspeed = (flBabyFaceSpeed[client]) + (GetEntPropFloat(client, Prop_Send, "m_flHypeMeter") / 100.0 * flBabyFaceSpeed[client]);
-/*				if (melee == 172) newspeed *= 0.85;
-				if (class == TFClass_Heavy && TF2_IsPlayerInCondition(client, TFCond_CritCola))
-				{
-					newspeed *= 1.35;
-				}
-				else if (melee == 239 && activewep == GetPlayerWeaponSlot(client, TFWeaponSlot_Melee))
-				{
-					newspeed *= 1.3;
-				}*/
+//				if (melee == 172) newspeed *= 0.85;
+//				if (class == TFClass_Heavy && TF2_IsPlayerInCondition(client, TFCond_CritCola))
+//				{
+//					newspeed *= 1.35;
+//				}
+//				else if (melee == 239 && activewep == GetPlayerWeaponSlot(client, TFWeaponSlot_Melee))
+//				{
+//					newspeed *= 1.3;
+//				}
 				if (flBabyFaceSpeed[client] > 1) SetEntPropFloat(client, Prop_Send, "m_flMaxspeed", newspeed);
-			}
+			}*/
 			if (bDoubleJumped[client] && (GetEntityFlags(client) & FL_ONGROUND)) bDoubleJumped[client] = false;
 			GetClientWeapon(client, weapon, sizeof(weapon));
-			if (!hasBuilder[client] && (StrEqual(weapon, "tf_weapon_builder", false) || StrEqual(weapon, "tf_weapon_sapper", false)))
+/*			if (!hasBuilder[client] && (StrEqual(weapon, "tf_weapon_builder", false) || StrEqual(weapon, "tf_weapon_sapper", false)))
 			{
 				hasBuilder[client] = true;
 			}
@@ -2915,7 +3063,15 @@ public OnGameFrame()	//asherkin is in here somewhere
 						}
 					}
 				}
-			} //STUFF TO DO HERE
+			}*/
+			if (bCvarFixSpy && (TF2_IsPlayerInCondition(client, TFCond_Disguised) || TF2_IsPlayerInCondition(client, TFCond_Disguising)) && activewep > MaxClients && IsValidEntity(activewep) && activewep == GetPlayerWeaponSlot(client, TFWeaponSlot_Primary) && StrEqual(weapon, "tf_weapon_particle_cannon", false))
+			{
+				if (GetEntPropFloat(activewep, Prop_Send, "m_flLastFireTime") > GetGameTime() - 0.05)
+				{
+					TF2_RemovePlayerDisguise(client);	//Fixes altfire on Mangler
+				}
+			}
+			//STUFF TO DO HERE
 /*			if (cvar_fixreload)
 			{
 				if (IsClientInGame(client) && IsPlayerAlive(client))
@@ -2956,27 +3112,27 @@ public OnGameFrame()	//asherkin is in here somewhere
 				}
 			}*/
 			// Fix Ubercharge
-			if (cvar_fixuber)
+			if (iCvarFixUber)
 			{
-				if (getclass[client] != TFClass_Medic)	//Not a Medic
+				if (iDefClass[client] != TFClass_Medic)	//Not a Medic
 				{
 					slot = GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
 					if (slot > MaxClients && IsValidEdict(slot))	//Valid secondary
 					{
 						GetEdictClassname(slot, weapon, sizeof(weapon));
-						new bool:resetclass = false;
+						new bool:iResetClass = false;
 						new idx = GetEntProp(slot, Prop_Send, "m_iItemDefinitionIndex");
 						if (StrEqual(weapon, "tf_weapon_medigun", false))	//it's a medigun
 						{
 							// 1: Fix medigun beam.
 							target = GetEntPropEnt(slot, Prop_Send, "m_hHealingTarget");
-							oldtarget = healtarget[client];
-							if (class != TFClass_Medic && target != oldtarget && (cvar_fixuber & FIXUBER_HEALBEAMS))
+							oldtarget = iHealTarget[client];
+							if (class != TFClass_Medic && target != oldtarget && (iCvarFixUber & FIXUBER_HEALBEAMS))
 							{
 								DoNewHealBeams(client, slot, target);
 							}
 							// 2: Fix ubercharges.
-							if (GetEntProp(slot, Prop_Send, "m_bChargeRelease") && (cvar_fixuber & FIXUBER_UBERS)) //Charge Activated
+							if (GetEntProp(slot, Prop_Send, "m_bChargeRelease") && (iCvarFixUber & FIXUBER_UBERS)) //Charge Activated
 							{
 //								GetClientWeapon(client, weapon, sizeof(weapon));
 //								if (StrEqual(weapon, "tf_weapon_medigun", false))
@@ -2999,7 +3155,7 @@ public OnGameFrame()	//asherkin is in here somewhere
 										}
 									}
 									TF2_AddCondition(client, cond, 0.1);
-									if (getclass[client] != TFClass_Medic && class != TFClass_Medic)
+									if (iDefClass[client] != TFClass_Medic && class != TFClass_Medic)
 									{
 										ClearHealBeams(client);
 										decl String:model[PLATFORM_MAX_PATH];
@@ -3027,11 +3183,11 @@ public OnGameFrame()	//asherkin is in here somewhere
 //								}
 //								SetEntPropFloat(slot, Prop_Send, "m_flChargeLevel", charge);
 							}
-							else resetclass = true;
-							/* if (TF2_GetPlayerClass(client) == TFClass_Medic && getclass[client] != TFClass_Medic && bUbered[client])
+							else iResetClass = true;
+							/* if (TF2_GetPlayerClass(client) == TFClass_Medic && iDefClass[client] != TFClass_Medic && bUbered[client])
 							{
 								CreateTimer(0.1, Timer_ResetUberClass, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
-								//TF2_SetPlayerClass(client, getclass[client], _, false);
+								//TF2_SetPlayerClass(client, iDefClass[client], _, false);
 //								PrintToChat(client, "[TF2Items] Setting you back to whatever class you were before you ubered... if Randomizer isn't on, this is an error! Tell Flamin: 'one'!");
 //								if (TF2_IsPlayerInCondition(client, TFCond_Ubercharged)) TF2_RemoveCondition(client, TFCond_Ubercharged);
 //								if (TF2_IsPlayerInCondition(client, TFCond_Kritzkrieged)) TF2_RemoveCondition(client, TFCond_Kritzkrieged);
@@ -3039,18 +3195,18 @@ public OnGameFrame()	//asherkin is in here somewhere
 								bUbered[client] = false;
 							}*/
 						}
-						else resetclass = true;
-						if (resetclass && TF2_GetPlayerClass(client) == TFClass_Medic && getclass[client] != TFClass_Medic && bUbered[client])
+						else iResetClass = true;
+						if (iResetClass && TF2_GetPlayerClass(client) == TFClass_Medic && iDefClass[client] != TFClass_Medic && bUbered[client])
 						{
 							CreateTimer(0.1, Timer_ResetUberClass, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
-							//TF2_SetPlayerClass(client, getclass[client], _, false);
+							//TF2_SetPlayerClass(client, iDefClass[client], _, false);
 //							PrintToChat(client, "[TF2Items] Setting you back to whatever class you were before you ubered... if Randomizer isn't on, this is an error! Tell Flamin: 'two'!");
 //							if (TF2_IsPlayerInCondition(client, TFCond_Ubercharged)) TF2_RemoveCondition(client, TFCond_Ubercharged);
 //							if (TF2_IsPlayerInCondition(client, TFCond_Kritzkrieged)) TF2_RemoveCondition(client, TFCond_Kritzkrieged);
 //							if (TF2_IsPlayerInCondition(client, TFCond_MegaHeal)) TF2_RemoveCondition(client, TFCond_MegaHeal);
 							bUbered[client] = false;
-							SetVariantString("");
-							AcceptEntityInput(client, "SetCustomModel");
+//							SetVariantString("");
+//							AcceptEntityInput(client, "SetCustomModel");
 						}
 					}
 				}
@@ -3060,7 +3216,8 @@ public OnGameFrame()	//asherkin is in here somewhere
 		{
 			if (bDoubleJumped[client]) bDoubleJumped[client] = false;
 			if (hasBuilder[client]) hasBuilder[client] = false;
-			flBabyFaceSpeed[client] = -1.0;
+//			flBabyFaceSpeed[client] = -1.0;
+//			flLastHype[client] = -1.0;
 			lastwep[client] = -1;
 			lastprim[client] = -1;
 		}
@@ -3069,9 +3226,9 @@ public OnGameFrame()	//asherkin is in here somewhere
 
 stock ClearEyeParticle(client)
 {
-	new eye = EntRefToEntIndex(eyeparticle[client]);
+	new eye = EntRefToEntIndex(iEyeParticle[client]);
 	if (eye > MaxClients && IsValidEntity(eye)) AcceptEntityInput(eye, "Kill");
-	eyeparticle[client] = INVALID_ENT_REFERENCE;
+	iEyeParticle[client] = INVALID_ENT_REFERENCE;
 }
 
 stock ChangeEyeParticle(client)
@@ -3103,34 +3260,34 @@ stock ChangeEyeParticle(client)
 	ActivateEntity(particle);
 	SetEntPropEnt(particle, Prop_Send, "m_hOwnerEntity", client);
 	AcceptEntityInput(particle, "Start");
-	eyeparticle[client] = EntIndexToEntRef(particle);
+	iEyeParticle[client] = EntIndexToEntRef(particle);
 }
 
 stock ClearHealBeams(client)
 {
 	new healbeams[3];
-	healbeams[0] = EntRefToEntIndex(healbeamparticles[client][0]);
-	healbeams[1] = EntRefToEntIndex(healbeamparticles[client][1]);
-	healbeams[2] = EntRefToEntIndex(healbeamparticles[client][2]);
+	healbeams[0] = EntRefToEntIndex(iHealBeamParticles[client][0]);
+	healbeams[1] = EntRefToEntIndex(iHealBeamParticles[client][1]);
+	healbeams[2] = EntRefToEntIndex(iHealBeamParticles[client][2]);
 	if (healbeams[0] > MaxClients && IsValidEntity(healbeams[0])) AcceptEntityInput(healbeams[0], "Kill");
 	if (healbeams[1] > MaxClients && IsValidEntity(healbeams[1])) AcceptEntityInput(healbeams[1], "Kill");
 	if (healbeams[2] > MaxClients && IsValidEntity(healbeams[2])) AcceptEntityInput(healbeams[2], "Kill");
-	healbeamparticles[client][0] = INVALID_ENT_REFERENCE;
-	healbeamparticles[client][1] = INVALID_ENT_REFERENCE;
-	healbeamparticles[client][2] = INVALID_ENT_REFERENCE;
+	iHealBeamParticles[client][0] = INVALID_ENT_REFERENCE;
+	iHealBeamParticles[client][1] = INVALID_ENT_REFERENCE;
+	iHealBeamParticles[client][2] = INVALID_ENT_REFERENCE;
 }
 
 stock DoNewHealBeams(client, weapon, target)
 {
 	ClearHealBeams(client);
-	healtarget[client] = target;
+	iHealTarget[client] = target;
 	if (IsValidClient(target) && IsPlayerAlive(target))
 	{
 		new particle = CreateEntityByName("info_particle_system");
 		if (IsValidEdict(particle))
 		{
 			decl Float:pos[3], Float:ang[3], Float:targpos[3];
-			healbeamparticles[client][0] = EntIndexToEntRef(particle);
+			iHealBeamParticles[client][0] = EntIndexToEntRef(particle);
 
 			// weapon targetname (start)
 			decl String:targetname[9];
@@ -3157,7 +3314,7 @@ stock DoNewHealBeams(client, weapon, target)
 			TeleportEntity(info_target, targpos, NULL_VECTOR, NULL_VECTOR);
 			SetVariantString(playertarget);
 			AcceptEntityInput(info_target, "SetParent");
-			healbeamparticles[client][2] = EntIndexToEntRef(info_target);
+			iHealBeamParticles[client][2] = EntIndexToEntRef(info_target);
 
 			// set particle stuff
 			decl String:effect_name[35];
@@ -3166,9 +3323,9 @@ stock DoNewHealBeams(client, weapon, target)
 			DispatchKeyValue(particle, "effect_name", effect_name);
 			DispatchKeyValue(particle, "cpoint1", controlpoint);
 			DispatchSpawn(particle);
-			SetVariantString(targetname);
-			AcceptEntityInput(particle, "SetParent");
-			SetVariantString("muzzle");
+			SetVariantString("!activator");
+			AcceptEntityInput(particle, "SetParent", weapon);
+			SetVariantString("weapon_bone_L");
 			AcceptEntityInput(particle, "SetParentAttachment");
 			ActivateEntity(particle);
 			AcceptEntityInput(particle, "Start");
@@ -3178,7 +3335,7 @@ stock DoNewHealBeams(client, weapon, target)
 				new particle2 = CreateEntityByName("info_particle_system");
 				if (IsValidEdict(particle2))
 				{
-					healbeamparticles[client][1] = EntIndexToEntRef(particle2);
+					iHealBeamParticles[client][1] = EntIndexToEntRef(particle2);
 
 					TeleportEntity(particle2, pos, ang, NULL_VECTOR);
 
@@ -3188,9 +3345,9 @@ stock DoNewHealBeams(client, weapon, target)
 					DispatchKeyValue(particle2, "effect_name", effect_name);
 					DispatchKeyValue(particle2, "cpoint1", controlpoint);
 					DispatchSpawn(particle2);
-					SetVariantString(targetname);
-					AcceptEntityInput(particle2, "SetParent");
-					SetVariantString("muzzle");
+					SetVariantString("!activator");
+					AcceptEntityInput(particle2, "SetParent", weapon);
+					SetVariantString("weapon_bone_L");
 					AcceptEntityInput(particle2, "SetParentAttachment");
 					ActivateEntity(particle2);
 					AcceptEntityInput(particle2, "Start");
@@ -3203,7 +3360,9 @@ public Action:Timer_ResetUberClass(Handle:timer, any:userid)
 {
 	new client = GetClientOfUserId(userid);
 	if (!IsValidClient(client)) return;
-	if (getclass[client] != TFClass_Unknown) TF2_SetPlayerClass(client, getclass[client], _, false);
+	if (iDefClass[client] != TFClass_Unknown) TF2_SetPlayerClass(client, iDefClass[client], _, false);
+	SetVariantString("");
+	AcceptEntityInput(client, "SetCustomModel");
 }
 public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:angles[3], &weapon)
 {
@@ -3299,12 +3458,15 @@ public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:ang
 		{
 			new idxslot2 = GetIndexOfWeaponSlot(client, TFWeaponSlot_Secondary);
 			new wep = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-			if ((buttons & IN_RELOAD) && GetEntityMoveType(client) != MOVETYPE_NONE && FindPlayerTarge(client) != -1 && hTimers[client][ChargeTimer] == INVALID_HANDLE && GetEntPropFloat(client, Prop_Send, "m_flMaxspeed") > 1.01 && (class != TFClass_DemoMan || (wep == GetPlayerWeaponSlot(client, TFWeaponSlot_Melee) && (idxslot2 == 265 || idxslot2 == 20 || idxslot2 == 207 || idxslot2 == 130))))
+			new targe = -1;
+			if ((buttons & IN_RELOAD) && GetEntityMoveType(client) != MOVETYPE_NONE && ((targe = FindPlayerTarge(client)) != -1) && hTimers[client][ChargeTimer] == INVALID_HANDLE && GetEntPropFloat(client, Prop_Send, "m_flMaxspeed") > 1.01 && (class != TFClass_DemoMan || (wep == GetPlayerWeaponSlot(client, TFWeaponSlot_Melee) && (idxslot2 == 265 || idxslot2 == 20 || idxslot2 == 207 || idxslot2 == 130))))
 			{
 				new Float:chargetime;
 				if (GetIndexOfWeaponSlot(client, TFWeaponSlot_Melee) == 327) chargetime = 2.0;
 				else chargetime = 1.5;
 				SetEntPropFloat(client, Prop_Send, "m_flChargeMeter", 100.0);
+				new bashoffs = FindSendPropInfo("CTFWearableDemoShield", "m_hWeaponAssociatedWith") + 28;
+				if (class != TFClass_DemoMan && bashoffs > 28) SetEntData(targe, bashoffs, 0);	//something to do with being able to shield bash. Broken on non-demo.
 				TF2_AddCondition(client, TFCond_Charging, chargetime);
 				if (class != TFClass_DemoMan)
 				{
@@ -3337,7 +3499,7 @@ public Action:OnPlayerRunCmd(client, &buttons, &impulse, Float:vel[3], Float:ang
 	}
 	if (buttons & IN_ATTACK && GetSpeshulAmmo(client, TFWeaponSlot_Secondary) > 0 && GetGameTime() >= GetEntPropFloat(client, Prop_Send, "m_flNextAttack"))
 	{
-		if (cvar_fixfood) buttons = CheckFood(client, buttons);
+		if (bCvarFixFood) buttons = CheckFood(client, buttons);
 		CheckJars(client);
 	}
 	if (buttons & IN_ATTACK2 && GetGameTime() >= GetEntPropFloat(client, Prop_Send, "m_flNextAttack")) CheckBall(client);
@@ -3396,7 +3558,10 @@ stock DoActivateMmmph(client)
 	SetEntProp(client, Prop_Send, "m_bRageDraining", 1);
 	TF2_AddCondition(client, TFCond_DefenseBuffMmmph, 2.7);
 	TF2_AddCondition(client, TFCond_CritMmmph, 10.0);
+	new bool:megaheal = TF2_IsPlayerInCondition(client, TFCond_MegaHeal);
+	TF2_RemoveCondition(client, TFCond_MegaHeal);
 	TF2_StunPlayer(client, 2.5, 0.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, client);
+	if (megaheal) TF2_AddCondition(client, TFCond_MegaHeal, 0.1);
 	if (GetClientHealth(client) < TF2_GetMaxHealth(client)) TF2_SetHealth(client, TF2_GetMaxHealth(client));
 	decl String:sound[PLATFORM_MAX_PATH];
 	new soundindex = GetRandomInt(1, 3);
@@ -3413,7 +3578,10 @@ stock DoEurekaTaunt(client)
 	vel[1] = 0.0;
 	vel[2] = 0.0;
 	TeleportEntity(client, NULL_VECTOR, NULL_VECTOR, vel);
+	new bool:megaheal = TF2_IsPlayerInCondition(client, TFCond_MegaHeal);
+	TF2_RemoveCondition(client, TFCond_MegaHeal);
 	TF2_StunPlayer(client, 2.1, 0.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, 0);
+	if (megaheal) TF2_AddCondition(client, TFCond_MegaHeal, 0.1);
 //	EmitSoundToAll("weapons/drg_wrench_teleport.wav", client);
 //	GetClientAbsOrigin(client, pos);
 	EmitSoundToAll(")weapons/drg_wrench_teleport.wav", client, SNDCHAN_STATIC, 150, _, _, _, _, pos);
@@ -3428,6 +3596,7 @@ public Action:Timer_EurekaRespawn(Handle:timer, any:userid)
 	new Handle:message = StartMessageAll("PlayerTeleportHomeEffect");
 	BfWriteByte(message, client);
 	EndMessage();
+	DoTeleportParticles(client);
 /*	new particle = CreateEntityByName("info_particle_system");
 	if (IsValidEdict(particle))
 	{
@@ -3458,7 +3627,7 @@ public Action:Timer_EurekaRespawn(Handle:timer, any:userid)
 		WritePackCell(pack, EntIndexToEntRef(particle));
 		WritePackCell(pack, EntIndexToEntRef(startpoint));
 	}*/
-	CreateTimer(0.1, Timer_EurekaRespawn2, userid, TIMER_FLAG_NO_MAPCHANGE);
+	CreateTimer(0.2, Timer_EurekaRespawn2, userid, TIMER_FLAG_NO_MAPCHANGE);
 	//TF2_RespawnPlayer(client);
 	return Plugin_Continue;
 }
@@ -3468,7 +3637,7 @@ public Action:Timer_EurekaRespawn2(Handle:timer, any:userid)
 	if (!IsValidClient(client) || !IsPlayerAlive(client)) return Plugin_Stop;
 //	EmitSoundToAll("weapons/teleporter_send.wav", client);
 	EmitSoundToAll(")weapons/teleporter_send.wav", client, SNDCHAN_STATIC, 74);
-	new particle = CreateEntityByName("info_particle_system");
+/*	new particle = CreateEntityByName("info_particle_system");
 	if (IsValidEdict(particle))
 	{
 		decl Float:pos[3];
@@ -3485,7 +3654,7 @@ public Action:Timer_EurekaRespawn2(Handle:timer, any:userid)
 		CreateDataTimer(4.0, Timer_DeleteEurekaParticle, pack);//, TIMER_FLAG_NO_MAPCHANGE);
 		WritePackCell(pack, EntIndexToEntRef(particle));
 		WritePackCell(pack, INVALID_ENT_REFERENCE);
-	}
+	}*/
 	TF2_RespawnPlayer(client);
 	return Plugin_Continue;
 }
@@ -3536,7 +3705,11 @@ public Action:Timer_TargeCharged(Handle:timer, any:userid)
 {
 	new client = GetClientOfUserId(userid);
 	DoResetChargeTimer(client, false);
-	if (IsValidClient(client)) EmitSoundToClient(client, "player/recharged.wav");
+	if (IsValidClient(client))
+	{
+		EmitSoundToClient(client, "player/recharged.wav");
+		SetEntPropFloat(client, Prop_Send, "m_flChargeMeter", 100.0);
+	}
 }
 public Action:Reload_Cooldown(Handle:timer, any:client)
 {
@@ -3553,10 +3726,14 @@ public CheckFood(client, buttons)
 		new idx = GetEntProp(sec, Prop_Send, "m_iItemDefinitionIndex");
 		if ((GetEntityFlags(client) & FL_ONGROUND) && StrEqual(weapon3, "tf_weapon_lunchbox") && TF2_GetPlayerClass(client) != TFClass_Heavy && !bCooldowns[client][EatCooldown] && !bCooldowns[client][LongEatCooldown])
 		{
+			new bool:megaheal = TF2_IsPlayerInCondition(client, TFCond_MegaHeal);
+			TF2_RemoveCondition(client, TFCond_MegaHeal);
 			TF2_StunPlayer(client, 3.8, 0.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, 0);
+			if (megaheal) TF2_AddCondition(client, TFCond_MegaHeal, 0.1);
 			if (idx == 42) SetSandvich(client);
-			if (idx == 159) SetDalokohs(client, false);
-			if (idx == 433) SetDalokohs(client, true);
+//			if (idx == 159) SetDalokohs(client, false);
+//			if (idx == 433) SetDalokohs(client, true);
+			if (idx == 159 || idx == 433) SetDalokohs(client);//, true);
 			if (idx == 311) SetSteak(client);
 		}
 		if (StrEqual(weapon3, "tf_weapon_lunchbox_drink") && TF2_GetPlayerClass(client) != TFClass_Scout)
@@ -3568,7 +3745,10 @@ public CheckFood(client, buttons)
 			}
 			bCooldowns[client][BonkCooldown] = true;
 			hTimers[client][BonkTimer] = CreateTimer(31.2, Bonk_Cooldown, GetClientUserId(client));
+			new bool:megaheal = TF2_IsPlayerInCondition(client, TFCond_MegaHeal);
+			TF2_RemoveCondition(client, TFCond_MegaHeal);
 			TF2_StunPlayer(client, 1.2, 0.0, TF_STUNFLAG_BONKSTUCK|TF_STUNFLAG_NOSOUNDOREFFECT, 0);
+			if (megaheal) TF2_AddCondition(client, TFCond_MegaHeal, 0.1);
 			EmitSoundToAll("player/pl_scout_dodge_can_drink.wav", client);
 			SetSpeshulAmmo(client, 1, 0);
 			if (idx == 46) TF2_AddCondition(client, TFCond_Bonked, 9.2);
@@ -3659,14 +3839,17 @@ public Action:SetSandvichTimer(Handle:timer, any:userid)
 	return Plugin_Continue;
 }
 
-SetDalokohs(client, bool:fishcake)
+SetDalokohs(client)//, bool:fishcake=false)
 {
 	CreateTimer(1.0, SetDalokohsTimer, GetClientUserId(client), TIMER_REPEAT);
 	bCooldowns[client][EatCooldown] = true;
-	if (!pDalokohsBuff[client])
+	if (!bDalokohsBuff[client])
 	{
-		GiveWeaponOfIndex(client, (fishcake ? 2433 : 2159));
-		pDalokohsBuff[client] = (fishcake ? 2 : 1);
+		new wep = GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
+		if (IsValidEntity(wep)) TF2Attrib_SetByName(wep, "hidden maxhealth non buffed", 50.0);
+		bDalokohsBuff[client] = true;
+//		GiveWeaponOfIndex(client, (fishcake ? 2433 : 2159));
+//		bDalokohsBuff[client] = (fishcake ? 2 : 1);
 	}
 	ClearTimer(hTimers[client][DalokohsTimer]);
 	hTimers[client][DalokohsTimer] = CreateTimer(30.1, DalokohsBuffTime, GetClientUserId(client));
@@ -3679,6 +3862,8 @@ SetDalokohs(client, bool:fishcake)
 	else*/ hTimers[client][EatTimer] = CreateTimer(4.3, Eat_CooldownTime, GetClientUserId(client));
 }
 
+//in case Valve changes it again? I guess?
+#define DALOKOHS_HEALING 25
 public Action:SetDalokohsTimer(Handle:timer, any:userid)
 {
 	static NumPrinted[MAXPLAYERS + 1] = 0;
@@ -3694,15 +3879,15 @@ public Action:SetDalokohsTimer(Handle:timer, any:userid)
 		NumPrinted[client] = 0;
 		return Plugin_Stop;
 	}
-	if (GetClientHealth(client) < TF2_GetMaxHealth(client) && (GetClientHealth(client) + 15 > TF2_GetMaxHealth(client)))
+	if (GetClientHealth(client) < TF2_GetMaxHealth(client) && (GetClientHealth(client) + DALOKOHS_HEALING > TF2_GetMaxHealth(client)))
 	{
 		TF2_SetHealth(client, TF2_GetMaxHealth(client));
 //		NumPrinted[client] = 0;
 		return Plugin_Continue; //Stop
 	}
-	else if (GetClientHealth(client) < TF2_GetMaxHealth(client) && (GetClientHealth(client) + 15) < TF2_GetMaxHealth(client))
+	else if (GetClientHealth(client) < TF2_GetMaxHealth(client) && (GetClientHealth(client) + DALOKOHS_HEALING) < TF2_GetMaxHealth(client))
 	{
-		TF2_SetHealth(client, (GetClientHealth(client) + 15));
+		TF2_SetHealth(client, (GetClientHealth(client) + DALOKOHS_HEALING));
 		return Plugin_Continue;
 	}
 	return Plugin_Continue;
@@ -3770,15 +3955,17 @@ public Action:Eat_CooldownTime(Handle:timer, any:userid)
 public Action:DalokohsBuffTime(Handle:timer, any:userid)
 {
 	new client = GetClientOfUserId(userid);
-	if (pDalokohsBuff[client])
+	if (bDalokohsBuff[client])
 	{
-		new bool:fishcake = (pDalokohsBuff[client] == 2);
-		pDalokohsBuff[client] = 0;
+//		new bool:fishcake = (bDalokohsBuff[client] == 2);
+		bDalokohsBuff[client] = false;
 		if (IsValidClient(client))
 		{
-			new active = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-			GiveWeaponOfIndex(client, (fishcake ? 433 : 159));
-			if (IsValidEntity(active)) SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", active);
+			new wep = GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
+			if (IsValidEntity(wep)) TF2Attrib_RemoveByName(wep, "hidden maxhealth non buffed");
+//			new active = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
+//			GiveWeaponOfIndex(client, (fishcake ? 433 : 159));
+//			if (IsValidEntity(active)) SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", active);
 		}
 	}
 	if (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1) SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1);
@@ -3820,16 +4007,17 @@ public Action:Ball_Cooldown(Handle:timer, any:userid)
 public Action:Jar_Cooldown(Handle:timer, any:userid)
 {
 	new client = GetClientOfUserId(userid);
+	new valid = IsValidClient(client);
 	if (bCooldowns[client][JarCooldown])
 	{
 		bCooldowns[client][JarCooldown] = false;
-		if (IsValidClient(client))
+		if (valid)
 		{
 			PrintHintText(client, "[TF2Items]Randomizer: Your Jar has Recharged");
 			EmitSoundToClient(client, "player/recharged.wav");
 		}
 	}
-	if (GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1) SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1);
+	if (valid && GetSpeshulAmmo(client, TFWeaponSlot_Secondary) < 1) SetSpeshulAmmo(client, TFWeaponSlot_Secondary, 1);
 	hTimers[client][JarTimer] = INVALID_HANDLE;
 }
 
@@ -3869,47 +4057,35 @@ stock TF2_MegaHealcharge(client, bool:enable) {
 
 stock SetSpeshulAmmo(client, wepslot, newAmmo)
 {
-	if (IsValidClient(client) && IsPlayerAlive(client))
-	{
-		new weapon = GetPlayerWeaponSlot(client, wepslot);
-		if (IsValidEntity(weapon))
-		{
-			new iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1)*4;
-			new iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
-			SetEntData(client, iAmmoTable+iOffset, newAmmo, 4, true);
-		}
-	}
+	new weapon = GetPlayerWeaponSlot(client, wepslot);
+	if (!IsValidEntity(weapon)) return;
+	new type = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
+	if (type < 0 || type > 31) return;
+	SetEntProp(client, Prop_Send, "m_iAmmo", newAmmo, _, type);
 }
 
 stock GetSpeshulAmmo(client, wepslot)
 {
 	if (!IsValidClient(client)) return 0;
 	new weapon = GetPlayerWeaponSlot(client, wepslot);
-	if (IsValidEntity(weapon))
-	{
-		new iOffset = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType", 1)*4;
-		new iAmmoTable = FindSendPropInfo("CTFPlayer", "m_iAmmo");
-		return GetEntData(client, iAmmoTable+iOffset);
-	}
-	return 0;
+	if (!IsValidEntity(weapon)) return 0;
+	new type = GetEntProp(weapon, Prop_Send, "m_iPrimaryAmmoType");
+	if (type < 0 || type > 31) return 0;
+	return GetEntProp(client, Prop_Send, "m_iAmmo", _, type);
 }
 
 stock TF2_GetMetal(client)
 {
-	if (IsValidClient(client) && IsPlayerAlive(client))
-	{
-		return GetEntData(client, FindDataMapOffs(client, "m_iAmmo") + (3 * 4), 4);
-	}
-	return 0;
+	if (!IsValidClient(client) || !IsPlayerAlive(client)) return 0;
+	return GetEntProp(client, Prop_Send, "m_iAmmo", _, 3);
 }
 
 stock TF2_SetMetal(client, metal)
 {
-	if (IsValidClient(client) && IsPlayerAlive(client))
-	{
-		SetEntData(client, FindDataMapOffs(client, "m_iAmmo") + (3 * 4), metal, 4);
-	}
+	if (!IsValidClient(client) || !IsPlayerAlive(client)) return;
+	SetEntProp(client, Prop_Send, "m_iAmmo", metal, _, 3);
 }
+
 //http://pastebin.com/U6vwXX57
 /********************
  * Mersenne Twister *
@@ -3947,10 +4123,26 @@ stock _mt_generate() {
 public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefinitionIndex, &Handle:hItem)		//STRANGE STUFF HAPPENS HERE
 {
 //	static Handle:hNewItem;
-	if (!cvar_enabled) return Plugin_Continue;
+	if (!bCvarEnabled) return Plugin_Continue;
+	decl String:formatBuffer[32];
+	new weaponSlot;
+	Format(formatBuffer, 32, "%d_%s", iItemDefinitionIndex, "slot");
+	if (!GetTrieValue(hItemInfoTrie, formatBuffer, weaponSlot))
+	{
+		return Plugin_Continue;
+	}
+	if (weaponSlot >= 3)
+	{
+		return Plugin_Continue;
+	}
+	if (iRndWeapon[client][0] != -2 && iRndWeapon[client][weaponSlot] > 0)
+	{
+		return Plugin_Handled;
+	}
+	//UNNECESSARY BUT OK
 	if (StrEqual(classname, "tf_weapon_wrench", false) || StrEqual(classname, "tf_weapon_robot_arm", false))
 	{
-		if (setwep[client][2] != 0)
+		if (iRndWeapon[client][2] != 0)
 		{
 //			if (hItem != INVALID_HANDLE) CloseHandle(hItem);
 			return Plugin_Handled;
@@ -4012,25 +4204,25 @@ stock Handle:PrepareItemHandle(weaponLookupIndex, TFClassType:classbased = TFCla
 	new String:weaponAttribs[256];
 
 	Format(formatBuffer, 32, "%d_%s", weaponLookupIndex, "classname");
-	GetTrieString(g_hItemInfoTrie, formatBuffer, weaponClassname, 64);
+	GetTrieString(hItemInfoTrie, formatBuffer, weaponClassname, 64);
 
 	Format(formatBuffer, 32, "%d_%s", weaponLookupIndex, "index");
-	GetTrieValue(g_hItemInfoTrie, formatBuffer, weaponIndex);
+	GetTrieValue(hItemInfoTrie, formatBuffer, weaponIndex);
 
 	Format(formatBuffer, 32, "%d_%s", weaponLookupIndex, "slot");
-	GetTrieValue(g_hItemInfoTrie, formatBuffer, weaponSlot);
+	GetTrieValue(hItemInfoTrie, formatBuffer, weaponSlot);
 
 	Format(formatBuffer, 32, "%d_%s", weaponLookupIndex, "quality");
-	GetTrieValue(g_hItemInfoTrie, formatBuffer, weaponQuality);
+	GetTrieValue(hItemInfoTrie, formatBuffer, weaponQuality);
 
 	Format(formatBuffer, 32, "%d_%s", weaponLookupIndex, "level");
-	if (!GetTrieValue(g_hItemInfoTrie, formatBuffer, weaponLevel))
+	if (!GetTrieValue(hItemInfoTrie, formatBuffer, weaponLevel))
 	{
 		weaponLevel = 1;
 	}
 
 	Format(formatBuffer, 32, "%d_%s", weaponLookupIndex, "attribs");
-	GetTrieString(g_hItemInfoTrie, formatBuffer, weaponAttribs, 256);
+	GetTrieString(hItemInfoTrie, formatBuffer, weaponAttribs, 256);
 
 	new String:weaponAttribsArray[32][32];
 	new attribCount = ExplodeString(weaponAttribs, " ; ", weaponAttribsArray, 32, 32);
@@ -4099,13 +4291,18 @@ stock Handle:PrepareItemHandle(weaponLookupIndex, TFClassType:classbased = TFCla
 	TF2Items_SetLevel(hWeapon, weaponLevel);
 	TF2Items_SetQuality(hWeapon, weaponQuality);
 
-	if (attribCount > 0) {
+	if (attribCount > 1) {
 		new attrIdx;
 		new Float:attrVal;
 		TF2Items_SetNumAttributes(hWeapon, attribCount/2);
 		new i2 = 0;
 		for (new i = 0; i < attribCount; i+=2) {
 			attrIdx = StringToInt(weaponAttribsArray[i]);
+			if (attrIdx <= 0)
+			{
+				LogError("Tried to set attribute index to %d on weapon of index %d, attrib string was '%s', count was %d", attrIdx, weaponLookupIndex, weaponAttribs, attribCount);
+				continue;
+			}
 			switch (attrIdx)
 			{
 				case 133, 143, 147, 152, 184, 185, 186, 192, 193, 194, 198, 211, 214, 227, 228, 229, 262, 294, 302, 372, 373, 374, 379, 381, 383, 403, 420:
@@ -4326,2028 +4523,2042 @@ stock Handle:MakeAmmotypeTrie(bool:remake = false)
 }
 CreateItemInfoTrie()
 {
-	if (g_hItemInfoTrie != INVALID_HANDLE)
+	if (hItemInfoTrie != INVALID_HANDLE)
 	{
-		CloseHandle(g_hItemInfoTrie);
+		CloseHandle(hItemInfoTrie);
 	}
-	g_hItemInfoTrie = CreateTrie();
-	AddCustomHardcodedToTrie(g_hItemInfoTrie);
+	hItemInfoTrie = CreateTrie();
+	AddCustomHardcodedToTrie(hItemInfoTrie);
 
-//bat
-	SetTrieString(g_hItemInfoTrie, "0_classname", "tf_weapon_bat", false);
-	SetTrieValue(g_hItemInfoTrie, "0_index", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "0_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "0_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "0_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "0_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "0_ammo", -1, false);
-
-//bottle
-	SetTrieString(g_hItemInfoTrie, "1_classname", "tf_weapon_bottle", false);
-	SetTrieValue(g_hItemInfoTrie, "1_index", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "1_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "1_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "1_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "1_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "1_ammo", -1, false);
-
-//fire axe
-	SetTrieString(g_hItemInfoTrie, "2_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "2_index", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "2_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "2_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "2_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "2_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "2_ammo", -1, false);
-
-//kukri
-	SetTrieString(g_hItemInfoTrie, "3_classname", "tf_weapon_club", false);
-	SetTrieValue(g_hItemInfoTrie, "3_index", 3, false);
-	SetTrieValue(g_hItemInfoTrie, "3_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "3_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "3_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "3_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "3_ammo", -1, false);
-
-//knife
-	SetTrieString(g_hItemInfoTrie, "4_classname", "tf_weapon_knife", false);
-	SetTrieValue(g_hItemInfoTrie, "4_index", 4, false);
-	SetTrieValue(g_hItemInfoTrie, "4_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "4_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "4_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "4_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "4_ammo", -1, false);
-
-//fists
-	SetTrieString(g_hItemInfoTrie, "5_classname", "tf_weapon_fists", false);
-	SetTrieValue(g_hItemInfoTrie, "5_index", 5, false);
-	SetTrieValue(g_hItemInfoTrie, "5_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "5_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "5_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "5_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "5_ammo", -1, false);
-
-//shovel
-	SetTrieString(g_hItemInfoTrie, "6_classname", "tf_weapon_shovel", false);
-	SetTrieValue(g_hItemInfoTrie, "6_index", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "6_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "6_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "6_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "6_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "6_ammo", -1, false);
-
-//wrench
-	SetTrieString(g_hItemInfoTrie, "7_classname", "tf_weapon_wrench", false);
-	SetTrieValue(g_hItemInfoTrie, "7_index", 7, false);
-	SetTrieValue(g_hItemInfoTrie, "7_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "7_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "7_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "7_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "7_ammo", -1, false);
-
-//bonesaw
-	SetTrieString(g_hItemInfoTrie, "8_classname", "tf_weapon_bonesaw", false);
-	SetTrieValue(g_hItemInfoTrie, "8_index", 8, false);
-	SetTrieValue(g_hItemInfoTrie, "8_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "8_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "8_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "8_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "8_ammo", -1, false);
-
-//shotgun engineer
-	SetTrieString(g_hItemInfoTrie, "9_classname", "tf_weapon_shotgun_primary");//, false);
-	SetTrieValue(g_hItemInfoTrie, "9_index", 9, false);
-	SetTrieValue(g_hItemInfoTrie, "9_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "9_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "9_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "9_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "9_ammo", 32, false);
-
-//shotgun soldier
-	SetTrieString(g_hItemInfoTrie, "10_classname", "tf_weapon_shotgun_soldier");//, false);
-	SetTrieValue(g_hItemInfoTrie, "10_index", 10, false);
-	SetTrieValue(g_hItemInfoTrie, "10_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "10_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "10_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "10_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "10_ammo", 32, false);
-
-//shotgun heavy
-	SetTrieString(g_hItemInfoTrie, "11_classname", "tf_weapon_shotgun_hwg");//, false);
-	SetTrieValue(g_hItemInfoTrie, "11_index", 11, false);
-	SetTrieValue(g_hItemInfoTrie, "11_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "11_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "11_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "11_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "11_ammo", 32, false);
-
-//shotgun pyro
-	SetTrieString(g_hItemInfoTrie, "12_classname", "tf_weapon_shotgun_pyro");//, false);
-	SetTrieValue(g_hItemInfoTrie, "12_index", 12, false);
-	SetTrieValue(g_hItemInfoTrie, "12_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "12_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "12_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "12_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "12_ammo", 32, false);
-
-//scattergun
-	SetTrieString(g_hItemInfoTrie, "13_classname", "tf_weapon_scattergun", false);
-	SetTrieValue(g_hItemInfoTrie, "13_index", 13, false);
-	SetTrieValue(g_hItemInfoTrie, "13_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "13_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "13_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "13_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "13_ammo", 32, false);
-
-//sniper rifle
-	SetTrieString(g_hItemInfoTrie, "14_classname", "tf_weapon_sniperrifle", false);
-	SetTrieValue(g_hItemInfoTrie, "14_index", 14, false);
-	SetTrieValue(g_hItemInfoTrie, "14_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "14_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "14_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "14_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "14_ammo", 25, false);
-
-//minigun
-	SetTrieString(g_hItemInfoTrie, "15_classname", "tf_weapon_minigun", false);
-	SetTrieValue(g_hItemInfoTrie, "15_index", 15, false);
-	SetTrieValue(g_hItemInfoTrie, "15_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "15_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "15_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "15_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "15_ammo", 200, false);
-
-//smg
-	SetTrieString(g_hItemInfoTrie, "16_classname", "tf_weapon_smg", false);
-	SetTrieValue(g_hItemInfoTrie, "16_index", 16, false);
-	SetTrieValue(g_hItemInfoTrie, "16_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "16_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "16_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "16_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "16_ammo", 75, false);
-
-//syringe gun
-	SetTrieString(g_hItemInfoTrie, "17_classname", "tf_weapon_syringegun_medic", false);
-	SetTrieValue(g_hItemInfoTrie, "17_index", 17, false);
-	SetTrieValue(g_hItemInfoTrie, "17_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "17_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "17_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "17_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "17_ammo", 150, false);
-
-//rocket launcher
-	SetTrieString(g_hItemInfoTrie, "18_classname", "tf_weapon_rocketlauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "18_index", 18, false);
-	SetTrieValue(g_hItemInfoTrie, "18_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "18_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "18_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "18_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "18_ammo", 20, false);
-
-//grenade launcher
-	SetTrieString(g_hItemInfoTrie, "19_classname", "tf_weapon_grenadelauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "19_index", 19, false);
-	SetTrieValue(g_hItemInfoTrie, "19_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "19_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "19_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "19_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "19_ammo", 16, false);
-
-//sticky launcher
-	SetTrieString(g_hItemInfoTrie, "20_classname", "tf_weapon_pipebomblauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "20_index", 20, false);
-	SetTrieValue(g_hItemInfoTrie, "20_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "20_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "20_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "20_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "20_ammo", 24, false);
-
-//flamethrower
-	SetTrieString(g_hItemInfoTrie, "21_classname", "tf_weapon_flamethrower", false);
-	SetTrieValue(g_hItemInfoTrie, "21_index", 21, false);
-	SetTrieValue(g_hItemInfoTrie, "21_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "21_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "21_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "21_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "21_ammo", 200, false);
-
-//pistol engineer
-	SetTrieString(g_hItemInfoTrie, "22_classname", "tf_weapon_pistol", false);
-	SetTrieValue(g_hItemInfoTrie, "22_index", 22, false);
-	SetTrieValue(g_hItemInfoTrie, "22_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "22_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "22_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "22_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "22_ammo", 200, false);
-
-//pistol scout
-	SetTrieString(g_hItemInfoTrie, "23_classname", "tf_weapon_pistol_scout", false);
-	SetTrieValue(g_hItemInfoTrie, "23_index", 23, false);
-	SetTrieValue(g_hItemInfoTrie, "23_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "23_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "23_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "23_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "23_ammo", 36, false);
-
-//revolver
-	SetTrieString(g_hItemInfoTrie, "24_classname", "tf_weapon_revolver", false);
-	SetTrieValue(g_hItemInfoTrie, "24_index", 24, false);
-	SetTrieValue(g_hItemInfoTrie, "24_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "24_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "24_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "24_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "24_ammo", 24, false);
-
-//build pda engineer
-	SetTrieString(g_hItemInfoTrie, "25_classname", "tf_weapon_pda_engineer_build", false);
-	SetTrieValue(g_hItemInfoTrie, "25_index", 25, false);
-	SetTrieValue(g_hItemInfoTrie, "25_slot", 3, false);
-	SetTrieValue(g_hItemInfoTrie, "25_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "25_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "25_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "25_ammo", -1, false);
-
-//destroy pda engineer
-	SetTrieString(g_hItemInfoTrie, "26_classname", "tf_weapon_pda_engineer_destroy", false);
-	SetTrieValue(g_hItemInfoTrie, "26_index", 26, false);
-	SetTrieValue(g_hItemInfoTrie, "26_slot", 4, false);
-	SetTrieValue(g_hItemInfoTrie, "26_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "26_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "26_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "26_ammo", -1, false);
-
-//disguise kit spy
-	SetTrieString(g_hItemInfoTrie, "27_classname", "tf_weapon_pda_spy", false);
-	SetTrieValue(g_hItemInfoTrie, "27_index", 27, false);
-	SetTrieValue(g_hItemInfoTrie, "27_slot", 3, false);
-	SetTrieValue(g_hItemInfoTrie, "27_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "27_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "27_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "27_ammo", -1, false);
-
-//builder
-	SetTrieString(g_hItemInfoTrie, "28_classname", "tf_weapon_builder", false);
-	SetTrieValue(g_hItemInfoTrie, "28_index", 28, false);
-	SetTrieValue(g_hItemInfoTrie, "28_slot", 5, false);
-	SetTrieValue(g_hItemInfoTrie, "28_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "28_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "28_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "28_ammo", -1, false);
-
-//medigun
-	SetTrieString(g_hItemInfoTrie, "29_classname", "tf_weapon_medigun", false);
-	SetTrieValue(g_hItemInfoTrie, "29_index", 29, false);
-	SetTrieValue(g_hItemInfoTrie, "29_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "29_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "29_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "29_attribs", "292 ; 1.0 ; 293 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "29_ammo", -1, false);
-
-//invis watch
-	SetTrieString(g_hItemInfoTrie, "30_classname", "tf_weapon_invis", false);
-	SetTrieValue(g_hItemInfoTrie, "30_index", 30, false);
-	SetTrieValue(g_hItemInfoTrie, "30_slot", 4, false);
-	SetTrieValue(g_hItemInfoTrie, "30_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "30_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "30_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "30_ammo", -1, false);
-
-/*flaregun engineerpistol
-	SetTrieString(g_hItemInfoTrie, "31_classname", "tf_weapon_flaregun", false);
-	SetTrieValue(g_hItemInfoTrie, "31_index", 31, false);
-	SetTrieValue(g_hItemInfoTrie, "31_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "31_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "31_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "31_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "31_ammo", 16);*/
-
-//Sapper
-	SetTrieString(g_hItemInfoTrie, "735_classname", "tf_weapon_builder", false);
-	SetTrieValue(g_hItemInfoTrie, "735_index", 735, false);
-	SetTrieValue(g_hItemInfoTrie, "735_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "735_quality", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "735_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "735_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "735_ammo", -1, false);
-
-//Upgradeable Sapper
-	SetTrieString(g_hItemInfoTrie, "736_classname", "tf_weapon_builder", false);
-	SetTrieValue(g_hItemInfoTrie, "736_index", 736, false);
-	SetTrieValue(g_hItemInfoTrie, "736_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "736_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "736_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "736_attribs", "292 ; 24", false);
-	SetTrieValue(g_hItemInfoTrie, "736_ammo", -1, false);
-
-//Upgradeable build pda engineer
-	SetTrieString(g_hItemInfoTrie, "737_classname", "tf_weapon_pda_engineer_build", false);
-	SetTrieValue(g_hItemInfoTrie, "737_index", 737, false);
-	SetTrieValue(g_hItemInfoTrie, "737_slot", 3, false);
-	SetTrieValue(g_hItemInfoTrie, "737_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "737_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "737_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "737_ammo", -1, false);
-
-//kritzkrieg
-	SetTrieString(g_hItemInfoTrie, "35_classname", "tf_weapon_medigun", false);
-	SetTrieValue(g_hItemInfoTrie, "35_index", 35, false);
-	SetTrieValue(g_hItemInfoTrie, "35_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "35_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "35_level", 8, false);
-	SetTrieString(g_hItemInfoTrie, "35_attribs", "18 ; 1.0 ; 10 ; 1.25 ; 292 ; 2.0 ; 293 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "35_ammo", -1, false);
-
-//blutsauger
-	SetTrieString(g_hItemInfoTrie, "36_classname", "tf_weapon_syringegun_medic", false);
-	SetTrieValue(g_hItemInfoTrie, "36_index", 36, false);
-	SetTrieValue(g_hItemInfoTrie, "36_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "36_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "36_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "36_attribs", "16 ; 3.0 ; 129 ; -2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "36_ammo", 150, false);
-
-//ubersaw
-	SetTrieString(g_hItemInfoTrie, "37_classname", "tf_weapon_bonesaw", false);
-	SetTrieValue(g_hItemInfoTrie, "37_index", 37, false);
-	SetTrieValue(g_hItemInfoTrie, "37_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "37_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "37_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "37_attribs", "17 ; 0.25 ; 5 ; 1.2 ; 144 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "37_ammo", -1, false);
-
-//axetinguisher
-	SetTrieString(g_hItemInfoTrie, "38_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "38_index", 38, false);
-	SetTrieValue(g_hItemInfoTrie, "38_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "38_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "38_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "38_attribs", "20 ; 1.0 ; 21 ; 0.5 ; 22 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "38_ammo", -1, false);
-
-//flaregun pyro
-	SetTrieString(g_hItemInfoTrie, "39_classname", "tf_weapon_flaregun", false);
-	SetTrieValue(g_hItemInfoTrie, "39_index", 39, false);
-	SetTrieValue(g_hItemInfoTrie, "39_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "39_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "39_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "39_attribs", "25 ; 0.5", false);
-	SetTrieValue(g_hItemInfoTrie, "39_ammo", 16, false);
-
-//backburner
-	SetTrieString(g_hItemInfoTrie, "40_classname", "tf_weapon_flamethrower", false);
-	SetTrieValue(g_hItemInfoTrie, "40_index", 40, false);
-	SetTrieValue(g_hItemInfoTrie, "40_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "40_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "40_level", 10, false);
-//	SetTrieString(g_hItemInfoTrie, "40_attribs", "23 ; 1.0 ; 24 ; 1.0 ; 28 ; 0.0 ; 2 ; 1.15");	//these are the old backburner attribs (before april 14th, 2011)
-//	SetTrieString(g_hItemInfoTrie, "40_attribs", "170 ; 2.5 ; 24 ; 1.0 ; 28 ; 0.0 ; 2 ; 1.10");	//old pyromania jun 27 2012
-	SetTrieString(g_hItemInfoTrie, "40_attribs", "170 ; 2.5 ; 24 ; 1.0 ; 28 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "40_ammo", 200, false);
-
-//natascha
-	SetTrieString(g_hItemInfoTrie, "41_classname", "tf_weapon_minigun", false);
-	SetTrieValue(g_hItemInfoTrie, "41_index", 41, false);
-	SetTrieValue(g_hItemInfoTrie, "41_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "41_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "41_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "41_attribs", "32 ; 1.0 ; 1 ; 0.75 ; 86 ; 1.3 ; 144 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "41_ammo", 200, false);
-
-//sandvich
-	SetTrieString(g_hItemInfoTrie, "42_classname", "tf_weapon_lunchbox", false);
-	SetTrieValue(g_hItemInfoTrie, "42_index", 42, false);
-	SetTrieValue(g_hItemInfoTrie, "42_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "42_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "42_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "42_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "42_ammo", 1, false);
-
-//killing gloves of boxing
-	SetTrieString(g_hItemInfoTrie, "43_classname", "tf_weapon_fists", false);
-	SetTrieValue(g_hItemInfoTrie, "43_index", 43, false);
-	SetTrieValue(g_hItemInfoTrie, "43_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "43_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "43_level", 7, false);
-	SetTrieString(g_hItemInfoTrie, "43_attribs", "31 ; 5.0 ; 5 ; 1.2", false);
-	SetTrieValue(g_hItemInfoTrie, "43_ammo", -1, false);
-
-//sandman
-	SetTrieString(g_hItemInfoTrie, "44_classname", "tf_weapon_bat_wood", false);
-	SetTrieValue(g_hItemInfoTrie, "44_index", 44, false);
-	SetTrieValue(g_hItemInfoTrie, "44_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "44_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "44_level", 15, false);
-	SetTrieString(g_hItemInfoTrie, "44_attribs", "38 ; 1.0 ; 125 ; -15.0", false);
-	SetTrieValue(g_hItemInfoTrie, "44_ammo", 1, false);
-
-//force a nature
-	SetTrieString(g_hItemInfoTrie, "45_classname", "tf_weapon_scattergun", false);
-	SetTrieValue(g_hItemInfoTrie, "45_index", 45, false);
-	SetTrieValue(g_hItemInfoTrie, "45_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "45_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "45_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "45_attribs", "44 ; 1.0 ; 6 ; 0.5 ; 45 ; 1.2 ; 1 ; 0.9 ; 3 ; 0.34 ; 43 ; 1.0 ; 328 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "45_ammo", 32, false);
-
-//bonk atomic punch
-	SetTrieString(g_hItemInfoTrie, "46_classname", "tf_weapon_lunchbox_drink", false);
-	SetTrieValue(g_hItemInfoTrie, "46_index", 46, false);
-	SetTrieValue(g_hItemInfoTrie, "46_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "46_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "46_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "46_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "46_ammo", 1, false);
-
-//huntsman
-	SetTrieString(g_hItemInfoTrie, "56_classname", "tf_weapon_compound_bow", false);
-	SetTrieValue(g_hItemInfoTrie, "56_index", 56, false);
-	SetTrieValue(g_hItemInfoTrie, "56_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "56_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "56_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "56_attribs", "37 ; 0.5 ; 328 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "56_ammo", 12, false);
-
-//razorback (broken NO LONGER)
-	SetTrieString(g_hItemInfoTrie, "57_classname", "tf_wearable", false);
-	SetTrieValue(g_hItemInfoTrie, "57_index", 57, false);
-	SetTrieValue(g_hItemInfoTrie, "57_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "57_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "57_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "57_attribs", "52 ; 1 ; 292 ; 5.0", false);
-
-//jarate
-	SetTrieString(g_hItemInfoTrie, "58_classname", "tf_weapon_jar", false);
-	SetTrieValue(g_hItemInfoTrie, "58_index", 58, false);
-	SetTrieValue(g_hItemInfoTrie, "58_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "58_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "58_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "58_attribs", "56 ; 1.0 ; 292 ; 4.0", false);
-	SetTrieValue(g_hItemInfoTrie, "58_ammo", 1, false);
-
-//dead ringer
-	SetTrieString(g_hItemInfoTrie, "59_classname", "tf_weapon_invis", false);
-	SetTrieValue(g_hItemInfoTrie, "59_index", 59, false);
-	SetTrieValue(g_hItemInfoTrie, "59_slot", 4, false);
-	SetTrieValue(g_hItemInfoTrie, "59_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "59_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "59_attribs", "33 ; 1.0 ; 34 ; 1.6 ; 35 ; 1.8", false);
-	SetTrieValue(g_hItemInfoTrie, "59_ammo", -1, false);
-
-//cloak and dagger
-	SetTrieString(g_hItemInfoTrie, "60_classname", "tf_weapon_invis", false);
-	SetTrieValue(g_hItemInfoTrie, "60_index", 60, false);
-	SetTrieValue(g_hItemInfoTrie, "60_slot", 4, false);
-	SetTrieValue(g_hItemInfoTrie, "60_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "60_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "60_attribs", "48 ; 2.0 ; 35 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "60_ammo", -1, false);
-
-//ambassador
-	SetTrieString(g_hItemInfoTrie, "61_classname", "tf_weapon_revolver", false);
-	SetTrieValue(g_hItemInfoTrie, "61_index", 61, false);
-	SetTrieValue(g_hItemInfoTrie, "61_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "61_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "61_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "61_attribs", "51 ; 1.0 ; 1 ; 0.85 ; 5 ; 1.2", false);
-	SetTrieValue(g_hItemInfoTrie, "61_ammo", 24, false);
-
-//direct hit
-	SetTrieString(g_hItemInfoTrie, "127_classname", "tf_weapon_rocketlauncher_directhit", false);
-	SetTrieValue(g_hItemInfoTrie, "127_index", 127, false);
-	SetTrieValue(g_hItemInfoTrie, "127_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "127_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "127_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "127_attribs", "100 ; 0.3 ; 103 ; 1.8 ; 2 ; 1.25 ; 114 ; 1.0 ; 328 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "127_ammo", 20, false);
-
-//equalizer
-	SetTrieString(g_hItemInfoTrie, "128_classname", "tf_weapon_shovel", false);
-	SetTrieValue(g_hItemInfoTrie, "128_index", 128, false);
-	SetTrieValue(g_hItemInfoTrie, "128_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "128_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "128_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "128_attribs", "115 ; 1.0 ; 236 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "128_ammo", -1, false);
-
-//buff banner
-	SetTrieString(g_hItemInfoTrie, "129_classname", "tf_weapon_buff_item", false);
-	SetTrieValue(g_hItemInfoTrie, "129_index", 129, false);
-	SetTrieValue(g_hItemInfoTrie, "129_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "129_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "129_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "129_attribs", "116 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "129_ammo", -1, false);
-
-//scottish resistance
-	SetTrieString(g_hItemInfoTrie, "130_classname", "tf_weapon_pipebomblauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "130_index", 130, false);
-	SetTrieValue(g_hItemInfoTrie, "130_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "130_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "130_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "130_attribs", "6 ; 0.75 ; 119 ; 1.0 ; 121 ; 1.0 ; 78 ; 1.5 ; 88 ; 6.0 ; 120 ; 0.8", false);
-	SetTrieValue(g_hItemInfoTrie, "130_ammo", 36, false);
-
-//chargin targe (broken NO LONGER)
-	SetTrieString(g_hItemInfoTrie, "131_classname", "tf_wearable_demoshield", false);
-	SetTrieValue(g_hItemInfoTrie, "131_index", 131, false);
-	SetTrieValue(g_hItemInfoTrie, "131_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "131_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "131_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "131_attribs", "60 ; 0.5 ; 64 ; 0.6", false);
-
-//eyelander
-	SetTrieString(g_hItemInfoTrie, "132_classname", "tf_weapon_sword", false);
-	SetTrieValue(g_hItemInfoTrie, "132_index", 132, false);
-	SetTrieValue(g_hItemInfoTrie, "132_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "132_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "132_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "132_attribs", "15 ; 0 ; 125 ; -25 ; 219 ; 1.0 ; 292 ; 6.0", false);
-	SetTrieValue(g_hItemInfoTrie, "132_ammo", -1, false);
-
-//gunboats (broken NO LONGER)
-	SetTrieString(g_hItemInfoTrie, "133_classname", "tf_wearable", false);
-	SetTrieValue(g_hItemInfoTrie, "133_index", 133, false);
-	SetTrieValue(g_hItemInfoTrie, "133_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "133_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "133_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "133_attribs", "135 ; 0.4", false);
-
-//wrangler
-	SetTrieString(g_hItemInfoTrie, "140_classname", "tf_weapon_laser_pointer", false);
-	SetTrieValue(g_hItemInfoTrie, "140_index", 140, false);
-	SetTrieValue(g_hItemInfoTrie, "140_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "140_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "140_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "140_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "140_ammo", -1, false);
-
-//frontier justice
-	SetTrieString(g_hItemInfoTrie, "141_classname", "tf_weapon_sentry_revenge", false);
-	SetTrieValue(g_hItemInfoTrie, "141_index", 141, false);
-	SetTrieValue(g_hItemInfoTrie, "141_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "141_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "141_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "141_attribs", "136 ; 1 ; 15 ; 0 ; 3 ; 0.5", false);
-	SetTrieValue(g_hItemInfoTrie, "141_ammo", 32, false);
-
-//gunslinger
-	SetTrieString(g_hItemInfoTrie, "142_classname", "tf_weapon_robot_arm", false);
-	SetTrieValue(g_hItemInfoTrie, "142_index", 142, false);
-	SetTrieValue(g_hItemInfoTrie, "142_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "142_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "142_level", 15, false);
-	SetTrieString(g_hItemInfoTrie, "142_attribs", "124 ; 1.0 ; 26 ; 25.0 ; 15 ; 0.0 ; 292 ; 3.0 ; 293 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "142_ammo", -1, false);
-
-//homewrecker
-	SetTrieString(g_hItemInfoTrie, "153_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "153_index", 153, false);
-	SetTrieValue(g_hItemInfoTrie, "153_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "153_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "153_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "153_attribs", "137 ; 2.0 ; 138 ; 0.75 ; 146 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "153_ammo", -1, false);
-
-//pain train
-	SetTrieString(g_hItemInfoTrie, "154_classname", "tf_weapon_shovel", false);
-	SetTrieValue(g_hItemInfoTrie, "154_index", 154, false);
-	SetTrieValue(g_hItemInfoTrie, "154_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "154_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "154_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "154_attribs", "68 ; 1 ; 67 ; 1.1", false);
-	SetTrieValue(g_hItemInfoTrie, "154_ammo", -1, false);
-
-//southern hospitality
-	SetTrieString(g_hItemInfoTrie, "155_classname", "tf_weapon_wrench", false);
-	SetTrieValue(g_hItemInfoTrie, "155_index", 155, false);
-	SetTrieValue(g_hItemInfoTrie, "155_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "155_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "155_level", 20, false);
-	SetTrieString(g_hItemInfoTrie, "155_attribs", "15 ; 0 ; 149 ; 5 ; 61 ; 1.20", false);
-	SetTrieValue(g_hItemInfoTrie, "155_ammo", -1, false);
-
-//dalokohs bar
-	SetTrieString(g_hItemInfoTrie, "159_classname", "tf_weapon_lunchbox", false);
-	SetTrieValue(g_hItemInfoTrie, "159_index", 159, false);
-	SetTrieValue(g_hItemInfoTrie, "159_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "159_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "159_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "159_attribs", "139 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "159_ammo", 1, false);
-
-//lugermorph
-	SetTrieString(g_hItemInfoTrie, "160_classname", "tf_weapon_pistol", false);
-	SetTrieValue(g_hItemInfoTrie, "160_index", 160, false);
-	SetTrieValue(g_hItemInfoTrie, "160_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "160_quality", 3, false);
-	SetTrieValue(g_hItemInfoTrie, "160_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "160_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "160_ammo", 36, false);
-
-//big kill
-	SetTrieString(g_hItemInfoTrie, "161_classname", "tf_weapon_revolver", false);
-	SetTrieValue(g_hItemInfoTrie, "161_index", 161, false);
-	SetTrieValue(g_hItemInfoTrie, "161_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "161_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "161_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "161_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "161_ammo", 24, false);
-
-//crit a cola
-	SetTrieString(g_hItemInfoTrie, "163_classname", "tf_weapon_lunchbox_drink", false);
-	SetTrieValue(g_hItemInfoTrie, "163_index", 163, false);
-	SetTrieValue(g_hItemInfoTrie, "163_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "163_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "163_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "163_attribs", "144 ; 2", false);
-	SetTrieValue(g_hItemInfoTrie, "163_ammo", 1, false);
-
-//golden wrench
-	SetTrieString(g_hItemInfoTrie, "169_classname", "tf_weapon_wrench", false);
-	SetTrieValue(g_hItemInfoTrie, "169_index", 169, false);
-	SetTrieValue(g_hItemInfoTrie, "169_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "169_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "169_level", 25, false);
-	SetTrieString(g_hItemInfoTrie, "169_attribs", "150 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "169_ammo", -1, false);
-
-//tribalmans shiv
-	SetTrieString(g_hItemInfoTrie, "171_classname", "tf_weapon_club", false);
-	SetTrieValue(g_hItemInfoTrie, "171_index", 171, false);
-	SetTrieValue(g_hItemInfoTrie, "171_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "171_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "171_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "171_attribs", "149 ; 6 ; 1 ; 0.5", false);
-	SetTrieValue(g_hItemInfoTrie, "171_ammo", -1, false);
-
-//scotsmans skullcutter
-	SetTrieString(g_hItemInfoTrie, "172_classname", "tf_weapon_sword", false);
-	SetTrieValue(g_hItemInfoTrie, "172_index", 172, false);
-	SetTrieValue(g_hItemInfoTrie, "172_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "172_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "172_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "172_attribs", "2 ; 1.2 ; 54 ; 0.85", false);
-	SetTrieValue(g_hItemInfoTrie, "172_ammo", -1, false);
-
-//The Vita-Saw
-	SetTrieString(g_hItemInfoTrie, "173_classname", "tf_weapon_bonesaw", false);
-	SetTrieValue(g_hItemInfoTrie, "173_index", 173, false);
-	SetTrieValue(g_hItemInfoTrie, "173_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "173_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "173_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "173_attribs", "188 ; 20 ; 125 ; -10 ; 144 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "173_ammo", -1, false);
-
-//Upgradeable bat
-	SetTrieString(g_hItemInfoTrie, "190_classname", "tf_weapon_bat", false);
-	SetTrieValue(g_hItemInfoTrie, "190_index", 190, false);
-	SetTrieValue(g_hItemInfoTrie, "190_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "190_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "190_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "190_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "190_ammo", -1, false);
-
-//Upgradeable bottle
-	SetTrieString(g_hItemInfoTrie, "191_classname", "tf_weapon_bottle", false);
-	SetTrieValue(g_hItemInfoTrie, "191_index", 191, false);
-	SetTrieValue(g_hItemInfoTrie, "191_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "191_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "191_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "191_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "191_ammo", -1, false);
-
-//Upgradeable fire axe
-	SetTrieString(g_hItemInfoTrie, "192_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "192_index", 192, false);
-	SetTrieValue(g_hItemInfoTrie, "192_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "192_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "192_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "192_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "192_ammo", -1, false);
-
-//Upgradeable kukri
-	SetTrieString(g_hItemInfoTrie, "193_classname", "tf_weapon_club", false);
-	SetTrieValue(g_hItemInfoTrie, "193_index", 193, false);
-	SetTrieValue(g_hItemInfoTrie, "193_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "193_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "193_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "193_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "193_ammo", -1, false);
-
-//Upgradeable knife
-	SetTrieString(g_hItemInfoTrie, "194_classname", "tf_weapon_knife", false);
-	SetTrieValue(g_hItemInfoTrie, "194_index", 194, false);
-	SetTrieValue(g_hItemInfoTrie, "194_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "194_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "194_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "194_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "194_ammo", -1, false);
-
-//Upgradeable fists
-	SetTrieString(g_hItemInfoTrie, "195_classname", "tf_weapon_fists", false);
-	SetTrieValue(g_hItemInfoTrie, "195_index", 195, false);
-	SetTrieValue(g_hItemInfoTrie, "195_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "195_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "195_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "195_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "195_ammo", -1, false);
-
-//Upgradeable shovel
-	SetTrieString(g_hItemInfoTrie, "196_classname", "tf_weapon_shovel", false);
-	SetTrieValue(g_hItemInfoTrie, "196_index", 196, false);
-	SetTrieValue(g_hItemInfoTrie, "196_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "196_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "196_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "196_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "196_ammo", -1, false);
-
-//Upgradeable wrench
-	SetTrieString(g_hItemInfoTrie, "197_classname", "tf_weapon_wrench", false);
-	SetTrieValue(g_hItemInfoTrie, "197_index", 197, false);
-	SetTrieValue(g_hItemInfoTrie, "197_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "197_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "197_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "197_attribs", "292 ; 3.0 ; 293 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "197_ammo", -1, false);
-
-//Upgradeable bonesaw
-	SetTrieString(g_hItemInfoTrie, "198_classname", "tf_weapon_bonesaw", false);
-	SetTrieValue(g_hItemInfoTrie, "198_index", 198, false);
-	SetTrieValue(g_hItemInfoTrie, "198_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "198_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "198_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "198_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "198_ammo", -1, false);
-
-//Upgradeable shotgun engineer
-	SetTrieString(g_hItemInfoTrie, "199_classname", "tf_weapon_shotgun_primary", false);
-	SetTrieValue(g_hItemInfoTrie, "199_index", 199, false);
-	SetTrieValue(g_hItemInfoTrie, "199_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "199_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "199_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "199_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "199_ammo", 32, false);
-
-/*Upgradeable shotgun other classes - appears in custom trie stuff below
-	SetTrieString(g_hItemInfoTrie, "4199_classname", "tf_weapon_shotgun_soldier", false);
-	SetTrieValue(g_hItemInfoTrie, "4199_index", 199, false);
-	SetTrieValue(g_hItemInfoTrie, "4199_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "4199_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "4199_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "4199_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "4199_ammo", 32, false);*/
-
-//Upgradeable scattergun
-	SetTrieString(g_hItemInfoTrie, "200_classname", "tf_weapon_scattergun", false);
-	SetTrieValue(g_hItemInfoTrie, "200_index", 200, false);
-	SetTrieValue(g_hItemInfoTrie, "200_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "200_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "200_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "200_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "200_ammo", 32, false);
-
-//Upgradeable sniper rifle
-	SetTrieString(g_hItemInfoTrie, "201_classname", "tf_weapon_sniperrifle", false);
-	SetTrieValue(g_hItemInfoTrie, "201_index", 201, false);
-	SetTrieValue(g_hItemInfoTrie, "201_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "201_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "201_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "201_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "201_ammo", 25, false);
-
-//Upgradeable minigun
-	SetTrieString(g_hItemInfoTrie, "202_classname", "tf_weapon_minigun", false);
-	SetTrieValue(g_hItemInfoTrie, "202_index", 202, false);
-	SetTrieValue(g_hItemInfoTrie, "202_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "202_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "202_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "202_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "202_ammo", 200, false);
-
-//Upgradeable smg
-	SetTrieString(g_hItemInfoTrie, "203_classname", "tf_weapon_smg", false);
-	SetTrieValue(g_hItemInfoTrie, "203_index", 203, false);
-	SetTrieValue(g_hItemInfoTrie, "203_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "203_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "203_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "203_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "203_ammo", 75, false);
-
-//Upgradeable syringe gun
-	SetTrieString(g_hItemInfoTrie, "204_classname", "tf_weapon_syringegun_medic", false);
-	SetTrieValue(g_hItemInfoTrie, "204_index", 204, false);
-	SetTrieValue(g_hItemInfoTrie, "204_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "204_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "204_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "204_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "204_ammo", 150, false);
-
-//Upgradeable rocket launcher
-	SetTrieString(g_hItemInfoTrie, "205_classname", "tf_weapon_rocketlauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "205_index", 205, false);
-	SetTrieValue(g_hItemInfoTrie, "205_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "205_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "205_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "205_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "205_ammo", 20, false);
-
-//Upgradeable grenade launcher
-	SetTrieString(g_hItemInfoTrie, "206_classname", "tf_weapon_grenadelauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "206_index", 206, false);
-	SetTrieValue(g_hItemInfoTrie, "206_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "206_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "206_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "206_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "206_ammo", 16, false);
-
-//Upgradeable sticky launcher
-	SetTrieString(g_hItemInfoTrie, "207_classname", "tf_weapon_pipebomblauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "207_index", 207, false);
-	SetTrieValue(g_hItemInfoTrie, "207_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "207_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "207_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "207_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "207_ammo", 24, false);
-
-//Upgradeable flamethrower
-	SetTrieString(g_hItemInfoTrie, "208_classname", "tf_weapon_flamethrower", false);
-	SetTrieValue(g_hItemInfoTrie, "208_index", 208, false);
-	SetTrieValue(g_hItemInfoTrie, "208_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "208_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "208_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "208_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "208_ammo", 200, false);
-
-//Upgradeable pistol
-	SetTrieString(g_hItemInfoTrie, "209_classname", "tf_weapon_pistol", false);
-	SetTrieValue(g_hItemInfoTrie, "209_index", 209, false);
-	SetTrieValue(g_hItemInfoTrie, "209_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "209_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "209_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "209_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "209_ammo", 100, false);
-	//36 for scout, 200 for engy, but idk what to use.
-
-//Upgradeable revolver
-	SetTrieString(g_hItemInfoTrie, "210_classname", "tf_weapon_revolver", false);
-	SetTrieValue(g_hItemInfoTrie, "210_index", 210, false);
-	SetTrieValue(g_hItemInfoTrie, "210_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "210_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "210_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "210_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "210_ammo", 24, false);
-
-//Upgradeable medigun
-	SetTrieString(g_hItemInfoTrie, "211_classname", "tf_weapon_medigun", false);
-	SetTrieValue(g_hItemInfoTrie, "211_index", 211, false);
-	SetTrieValue(g_hItemInfoTrie, "211_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "211_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "211_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "211_attribs", "292 ; 1.0 ; 293 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "211_ammo", -1, false);
-
-//Upgradeable invis watch
-	SetTrieString(g_hItemInfoTrie, "212_classname", "tf_weapon_invis", false);
-	SetTrieValue(g_hItemInfoTrie, "212_index", 212, false);
-	SetTrieValue(g_hItemInfoTrie, "212_slot", 4, false);
-	SetTrieValue(g_hItemInfoTrie, "212_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "212_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "212_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "212_ammo", -1, false);
-
-//The Powerjack
-	SetTrieString(g_hItemInfoTrie, "214_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "214_index", 214, false);
-	SetTrieValue(g_hItemInfoTrie, "214_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "214_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "214_level", 5, false);
-//	SetTrieString(g_hItemInfoTrie, "214_attribs", "180 ; 75 ; 2 ; 1.25 ; 15 ; 0");	//old attribs (before april 14, 2011)
-	SetTrieString(g_hItemInfoTrie, "214_attribs", "180 ; 75 ; 206 ; 1.2", false);
-	SetTrieValue(g_hItemInfoTrie, "214_ammo", -1, false);
-
-//The Degreaser
-	SetTrieString(g_hItemInfoTrie, "215_classname", "tf_weapon_flamethrower", false);
-	SetTrieValue(g_hItemInfoTrie, "215_index", 215, false);
-	SetTrieValue(g_hItemInfoTrie, "215_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "215_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "215_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "215_attribs", "178 ; 0.35 ; 1 ; 0.9 ; 72 ; 0.75", false);
-	SetTrieValue(g_hItemInfoTrie, "215_ammo", 200, false);
-
-//The Shortstop
-	SetTrieString(g_hItemInfoTrie, "220_classname", "tf_weapon_handgun_scout_primary", false);
-	SetTrieValue(g_hItemInfoTrie, "220_index", 220, false);
-	SetTrieValue(g_hItemInfoTrie, "220_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "220_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "220_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "220_attribs", "241 ; 1.5 ; 328 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "220_ammo", 36, false);
-
-//The Holy Mackerel
-	SetTrieString(g_hItemInfoTrie, "221_classname", "tf_weapon_bat_fish", false);
-	SetTrieValue(g_hItemInfoTrie, "221_index", 221, false);
-	SetTrieValue(g_hItemInfoTrie, "221_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "221_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "221_level", 42, false);
-	SetTrieString(g_hItemInfoTrie, "221_attribs", "292 ; 7.0 ; 388 ; 7.0", false);
-	SetTrieValue(g_hItemInfoTrie, "221_ammo", -1, false);
-
-//Mad Milk
-	SetTrieString(g_hItemInfoTrie, "222_classname", "tf_weapon_jar_milk", false);
-	SetTrieValue(g_hItemInfoTrie, "222_index", 222, false);
-	SetTrieValue(g_hItemInfoTrie, "222_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "222_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "222_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "222_attribs", "292 ; 4.0", false);
-	SetTrieValue(g_hItemInfoTrie, "222_ammo", 1, false);
-
-//L'Etranger
-	SetTrieString(g_hItemInfoTrie, "224_classname", "tf_weapon_revolver", false);
-	SetTrieValue(g_hItemInfoTrie, "224_index", 224, false);
-	SetTrieValue(g_hItemInfoTrie, "224_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "224_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "224_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "224_attribs", "166 ; 15.0 ; 1 ; 0.8", false);
-	SetTrieValue(g_hItemInfoTrie, "224_ammo", 24, false);
-
-//Your Eternal Reward
-	SetTrieString(g_hItemInfoTrie, "225_classname", "tf_weapon_knife", false);
-	SetTrieValue(g_hItemInfoTrie, "225_index", 225, false);
-	SetTrieValue(g_hItemInfoTrie, "225_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "225_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "225_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "225_attribs", "154 ; 1.0 ; 156 ; 1.0 ; 155 ; 1.0 ; 144 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "225_ammo", -1, false);
-
-//The Battalion's Backup
-	SetTrieString(g_hItemInfoTrie, "226_classname", "tf_weapon_buff_item", false);
-	SetTrieValue(g_hItemInfoTrie, "226_index", 226, false);
-	SetTrieValue(g_hItemInfoTrie, "226_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "226_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "226_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "226_attribs", "116 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "226_ammo", -1, false);
-
-//The Black Box
-	SetTrieString(g_hItemInfoTrie, "228_classname", "tf_weapon_rocketlauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "228_index", 228, false);
-	SetTrieValue(g_hItemInfoTrie, "228_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "228_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "228_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "228_attribs", "16 ; 15.0 ; 3 ; 0.75", false);
-	SetTrieValue(g_hItemInfoTrie, "228_ammo", 20, false);
-
-//The Sydney Sleeper
-	SetTrieString(g_hItemInfoTrie, "230_classname", "tf_weapon_sniperrifle", false);
-	SetTrieValue(g_hItemInfoTrie, "230_index", 230, false);
-	SetTrieValue(g_hItemInfoTrie, "230_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "230_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "230_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "230_attribs", "42 ; 1.0 ; 175 ; 8.0 ; 15 ; 0 ; 41 ; 1.25", false);
-	SetTrieValue(g_hItemInfoTrie, "230_ammo", 25, false);
-
-//darwin's danger shield (broken NO LONGER)
-	SetTrieString(g_hItemInfoTrie, "231_classname", "tf_wearable", false);
-	SetTrieValue(g_hItemInfoTrie, "231_index", 231, false);
-	SetTrieValue(g_hItemInfoTrie, "231_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "231_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "231_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "231_attribs", "26 ; 25", false);
-
-//The Bushwacka
-	SetTrieString(g_hItemInfoTrie, "232_classname", "tf_weapon_club", false);
-	SetTrieValue(g_hItemInfoTrie, "232_index", 232, false);
-	SetTrieValue(g_hItemInfoTrie, "232_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "232_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "232_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "232_attribs", "179 ; 1 ; 61 ; 1.2", false);
-	SetTrieValue(g_hItemInfoTrie, "232_ammo", -1, false);
-
-//Rocket Jumper
-	SetTrieString(g_hItemInfoTrie, "237_classname", "tf_weapon_rocketlauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "237_index", 237, false);
-	SetTrieValue(g_hItemInfoTrie, "237_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "237_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "237_level", 1, false);
-//	SetTrieString(g_hItemInfoTrie, "237_attribs", "1 ; 0.0 ; 181 ; 2.0 ; 76 ; 3.0 ; 65 ; 2.0 ; 67 ; 2.0 ; 61 ; 2.0");		//pre-may31 2012; before sep15, 2011, used to be 181 ; 1.0
-	SetTrieString(g_hItemInfoTrie, "237_attribs", "76 ; 3.0 ; 181 ; 2.0 ; 1 ; 0.0 ; 15 ; 0.0 ; 400 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "237_ammo", 60, false);
-
-//gloves of running urgently
-	SetTrieString(g_hItemInfoTrie, "239_classname", "tf_weapon_fists", false);
-	SetTrieValue(g_hItemInfoTrie, "239_index", 239, false);
-	SetTrieValue(g_hItemInfoTrie, "239_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "239_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "239_level", 10, false);
-//	SetTrieString(g_hItemInfoTrie, "239_attribs", "128 ; 1.0 ; 107 ; 1.3 ; 1 ; 0.5 ; 191 ; -6.0 ; 144 ; 2.0", false);
-	SetTrieString(g_hItemInfoTrie, "239_attribs", "128 ; 1.0 ; 107 ; 1.3 ; 414 ; 1.0 ; 1 ; 0.75 ; 144 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "239_ammo", -1, false);
-
-//Frying Pan (Now if only it had augment slots)
-//	SetTrieString(g_hItemInfoTrie, "264_classname", "tf_weapon_shovel", false);
-	SetTrieString(g_hItemInfoTrie, "264_classname", "saxxy", false);
-	SetTrieValue(g_hItemInfoTrie, "264_index", 264, false);
-	SetTrieValue(g_hItemInfoTrie, "264_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "264_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "264_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "264_attribs", "195 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "264_ammo", -1, false);
-
-//sticky jumper
-	SetTrieString(g_hItemInfoTrie, "265_classname", "tf_weapon_pipebomblauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "265_index", 265, false);
-	SetTrieValue(g_hItemInfoTrie, "265_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "265_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "265_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "265_attribs", "78 ; 3.0 ; 181 ; 1.0 ; 1 ; 0.0 ; 15 ; 0.0 ; 400 ; 1.0 ; 280 ; 14.0", false);
-//	SetTrieString(g_hItemInfoTrie, "265_attribs", "181 ; 1.0 ; 78 ; 3.0 ; 280 ; 14.0 ; 1 ; 0.0 ; 15 ; 0.0");	//pre-may31 2012
-//	SetTrieString(g_hItemInfoTrie, "265_attribs", "1 ; 0.0 ; 181 ; 1.0 ; 78 ; 3.0 ; 65 ; 2.0 ; 67 ; 2.0 ; 61 ; 2.0");	//old pre-sep15,2011 update
-	SetTrieValue(g_hItemInfoTrie, "265_ammo", 72, false);
-
-//horseless headless horsemann's headtaker
-	SetTrieString(g_hItemInfoTrie, "266_classname", "tf_weapon_sword", false);
-	SetTrieValue(g_hItemInfoTrie, "266_index", 266, false);
-	SetTrieValue(g_hItemInfoTrie, "266_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "266_quality", 5, false);
-	SetTrieValue(g_hItemInfoTrie, "266_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "266_attribs", "15 ; 0 ; 125 ; -25 ; 219 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "266_ammo", -1, false);
-
-//lugermorph from Poker Night
-	SetTrieString(g_hItemInfoTrie, "294_classname", "tf_weapon_pistol", false);
-	SetTrieValue(g_hItemInfoTrie, "294_index", 294, false);
-	SetTrieValue(g_hItemInfoTrie, "294_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "294_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "294_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "294_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "294_ammo", 36, false);
-
-//Enthusiast's Timepiece
-	SetTrieString(g_hItemInfoTrie, "297_classname", "tf_weapon_invis", false);
-	SetTrieValue(g_hItemInfoTrie, "297_index", 297, false);
-	SetTrieValue(g_hItemInfoTrie, "297_slot", 4, false);
-	SetTrieValue(g_hItemInfoTrie, "297_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "297_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "297_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "297_ammo", -1, false);
-
-//The Iron Curtain
-	SetTrieString(g_hItemInfoTrie, "298_classname", "tf_weapon_minigun", false);
-	SetTrieValue(g_hItemInfoTrie, "298_index", 298, false);
-	SetTrieValue(g_hItemInfoTrie, "298_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "298_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "298_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "298_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "298_ammo", 200, false);
-
-//Amputator
-	SetTrieString(g_hItemInfoTrie, "304_classname", "tf_weapon_bonesaw", false);
-	SetTrieValue(g_hItemInfoTrie, "304_index", 304, false);
-	SetTrieValue(g_hItemInfoTrie, "304_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "304_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "304_level", 15, false);
-	SetTrieString(g_hItemInfoTrie, "304_attribs", "200 ; 1 ; 144 ; 3.0", false);
-	SetTrieValue(g_hItemInfoTrie, "304_ammo", -1, false);
-
-//Crusader's Crossbow
-	SetTrieString(g_hItemInfoTrie, "305_classname", "tf_weapon_crossbow", false);
-	SetTrieValue(g_hItemInfoTrie, "305_index", 305, false);
-	SetTrieValue(g_hItemInfoTrie, "305_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "305_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "305_level", 15, false);
-	SetTrieString(g_hItemInfoTrie, "305_attribs", "97 ; 0.6 ; 199 ; 1.0 ; 42 ; 1.0 ; 77 ; 0.25", false);
-	SetTrieValue(g_hItemInfoTrie, "305_ammo", 38, false);
-
-//Ullapool Caber
-	SetTrieString(g_hItemInfoTrie, "307_classname", "tf_weapon_stickbomb", false);
-	SetTrieValue(g_hItemInfoTrie, "307_index", 307, false);
-	SetTrieValue(g_hItemInfoTrie, "307_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "307_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "307_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "307_attribs", "15 ; 0", false);
-	SetTrieValue(g_hItemInfoTrie, "307_ammo", -1, false);
-
-//Loch-n-Load
-	SetTrieString(g_hItemInfoTrie, "308_classname", "tf_weapon_grenadelauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "308_index", 308, false);
-	SetTrieValue(g_hItemInfoTrie, "308_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "308_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "308_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "308_attribs", "3 ; 0.5 ; 2 ; 1.2 ; 103 ; 1.25 ; 207 ; 1.25 ; 127 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "308_ammo", 16, false);
-
-//Warrior's Spirit
-	SetTrieString(g_hItemInfoTrie, "310_classname", "tf_weapon_fists", false);
-	SetTrieValue(g_hItemInfoTrie, "310_index", 310, false);
-	SetTrieValue(g_hItemInfoTrie, "310_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "310_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "310_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "310_attribs", "2 ; 1.3 ; 125 ; -20", false);
-	SetTrieValue(g_hItemInfoTrie, "310_ammo", -1, false);
-
-//Buffalo Steak Sandvich
-	SetTrieString(g_hItemInfoTrie, "311_classname", "tf_weapon_lunchbox", false);
-	SetTrieValue(g_hItemInfoTrie, "311_index", 311, false);
-	SetTrieValue(g_hItemInfoTrie, "311_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "311_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "311_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "311_attribs", "144 ; 2", false);
-	SetTrieValue(g_hItemInfoTrie, "311_ammo", 1, false);
-
-//Brass Beast
-	SetTrieString(g_hItemInfoTrie, "312_classname", "tf_weapon_minigun", false);
-	SetTrieValue(g_hItemInfoTrie, "312_index", 312, false);
-	SetTrieValue(g_hItemInfoTrie, "312_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "312_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "312_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "312_attribs", "2 ; 1.2 ; 86 ; 1.5 ; 183 ; 0.4", false);
-	SetTrieValue(g_hItemInfoTrie, "312_ammo", 200, false);
-
-//Candy Cane
-	SetTrieString(g_hItemInfoTrie, "317_classname", "tf_weapon_bat", false);
-	SetTrieValue(g_hItemInfoTrie, "317_index", 317, false);
-	SetTrieValue(g_hItemInfoTrie, "317_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "317_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "317_level", 25, false);
-	SetTrieString(g_hItemInfoTrie, "317_attribs", "203 ; 1.0 ; 65 ; 1.25", false);
-	SetTrieValue(g_hItemInfoTrie, "317_ammo", -1, false);
-
-//Boston Basher
-	SetTrieString(g_hItemInfoTrie, "325_classname", "tf_weapon_bat", false);
-	SetTrieValue(g_hItemInfoTrie, "325_index", 325, false);
-	SetTrieValue(g_hItemInfoTrie, "325_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "325_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "325_level", 25, false);
-	SetTrieString(g_hItemInfoTrie, "325_attribs", "149 ; 5.0 ; 204 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "325_ammo", -1, false);
-
-//Backscratcher
-	SetTrieString(g_hItemInfoTrie, "326_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "326_index", 326, false);
-	SetTrieValue(g_hItemInfoTrie, "326_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "326_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "326_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "326_attribs", "2 ; 1.25 ; 69 ; 0.25 ; 108 ; 1.5", false);
-	SetTrieValue(g_hItemInfoTrie, "326_ammo", -1, false);
-
-//Claidheamh Mòr
-	SetTrieString(g_hItemInfoTrie, "327_classname", "tf_weapon_sword", false);
-	SetTrieValue(g_hItemInfoTrie, "327_index", 327, false);
-	SetTrieValue(g_hItemInfoTrie, "327_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "327_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "327_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "327_attribs", "15 ; 0.0 ; 202 ; 0.5 ; 125 ; -15", false);
-	SetTrieValue(g_hItemInfoTrie, "327_ammo", -1, false);
-
-//Jag
-	SetTrieString(g_hItemInfoTrie, "329_classname", "tf_weapon_wrench", false);
-	SetTrieValue(g_hItemInfoTrie, "329_index", 329, false);
-	SetTrieValue(g_hItemInfoTrie, "329_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "329_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "329_level", 15, false);
-	SetTrieString(g_hItemInfoTrie, "329_attribs", "92 ; 1.3 ; 1 ; 0.75 ; 292 ; 3.0 ; 293 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "329_ammo", -1, false);
-
-//Fists of Steel
-	SetTrieString(g_hItemInfoTrie, "331_classname", "tf_weapon_fists", false);
-	SetTrieValue(g_hItemInfoTrie, "331_index", 331, false);
-	SetTrieValue(g_hItemInfoTrie, "331_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "331_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "331_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "331_attribs", "205 ; 0.6 ; 206 ; 2.0 ; 177 ; 1.2", false);
-	SetTrieValue(g_hItemInfoTrie, "331_ammo", -1, false);
-
-//Sharpened Volcano Fragment
-	SetTrieString(g_hItemInfoTrie, "348_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "348_index", 348, false);
-	SetTrieValue(g_hItemInfoTrie, "348_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "348_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "348_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "348_attribs", "208 ; 1.0 ; 1 ; 0.8", false);
-	SetTrieValue(g_hItemInfoTrie, "348_ammo", -1, false);
-
-//Sun on a Stick
-	SetTrieString(g_hItemInfoTrie, "349_classname", "tf_weapon_bat", false);
-	SetTrieValue(g_hItemInfoTrie, "349_index", 349, false);
-	SetTrieValue(g_hItemInfoTrie, "349_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "349_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "349_level", 10, false);
-//	SetTrieString(g_hItemInfoTrie, "349_attribs", "209 ; 1.0 ; 1 ; 0.85 ; 153 ; 1.0");	//old pre april 14, 2011 attribs
-	SetTrieString(g_hItemInfoTrie, "349_attribs", "20 ; 1.0 ; 1 ; 0.75", false);
-	SetTrieValue(g_hItemInfoTrie, "349_ammo", -1, false);
-
-//Detonator
-	SetTrieString(g_hItemInfoTrie, "351_classname", "tf_weapon_flaregun", false);
-	SetTrieValue(g_hItemInfoTrie, "351_index", 351, false);
-	SetTrieValue(g_hItemInfoTrie, "351_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "351_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "351_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "351_attribs", "25 ; 0.5 ; 207 ; 1.25 ; 144 ; 1.0");	//207 used to be 65
-	SetTrieValue(g_hItemInfoTrie, "351_ammo", 16, false);
-
-//Soldier's Sashimono - The Concheror
-	SetTrieString(g_hItemInfoTrie, "354_classname", "tf_weapon_buff_item", false);
-	SetTrieValue(g_hItemInfoTrie, "354_index", 354, false);
-	SetTrieValue(g_hItemInfoTrie, "354_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "354_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "354_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "354_attribs", "116 ; 3.0", false);
-	SetTrieValue(g_hItemInfoTrie, "354_ammo", -1, false);
-
-//Gunbai - Fan o'War
-	SetTrieString(g_hItemInfoTrie, "355_classname", "tf_weapon_bat", false);
-	SetTrieValue(g_hItemInfoTrie, "355_index", 355, false);
-	SetTrieValue(g_hItemInfoTrie, "355_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "355_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "355_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "355_attribs", "218 ; 1.0 ; 1 ; 0.1", false);
-	SetTrieValue(g_hItemInfoTrie, "355_ammo", -1, false);
-
-//Kunai - Conniver's Kunai
-	SetTrieString(g_hItemInfoTrie, "356_classname", "tf_weapon_knife", false);
-	SetTrieValue(g_hItemInfoTrie, "356_index", 356, false);
-	SetTrieValue(g_hItemInfoTrie, "356_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "356_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "356_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "356_attribs", "217 ; 1.0 ; 125 ; -65 ; 144 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "356_ammo", -1, false);
-
-//Soldier Katana - The Half-Zatoichi
-	SetTrieString(g_hItemInfoTrie, "357_classname", "tf_weapon_katana", false);
-	SetTrieValue(g_hItemInfoTrie, "357_index", 357, false);
-	SetTrieValue(g_hItemInfoTrie, "357_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "357_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "357_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "357_attribs", "219 ; 1.0 ; 220 ; 100.0 ; 226 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "357_ammo", -1, false);
-
-//Shahanshah
-	SetTrieString(g_hItemInfoTrie, "401_classname", "tf_weapon_club", false);
-	SetTrieValue(g_hItemInfoTrie, "401_index", 401, false);
-	SetTrieValue(g_hItemInfoTrie, "401_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "401_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "401_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "401_attribs", "224 ; 1.25 ; 225 ; 0.75", false);
-	SetTrieValue(g_hItemInfoTrie, "401_ammo", -1, false);
-
-//Bazaar Bargain
-	SetTrieString(g_hItemInfoTrie, "402_classname", "tf_weapon_sniperrifle_decap", false);
-	SetTrieValue(g_hItemInfoTrie, "402_index", 402, false);
-	SetTrieValue(g_hItemInfoTrie, "402_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "402_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "402_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "402_attribs", "268 ; 1.2", false);
-	SetTrieValue(g_hItemInfoTrie, "402_ammo", 25, false);
-
-//Persian Persuader
-	SetTrieString(g_hItemInfoTrie, "404_classname", "tf_weapon_sword", false);
-	SetTrieValue(g_hItemInfoTrie, "404_index", 404, false);
-	SetTrieValue(g_hItemInfoTrie, "404_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "404_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "404_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "404_attribs", "249 ; 2.0 ; 258 ; 1.0 ; 15 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "404_ammo", -1, false);
-
-//Ali Baba's Wee Booties
-	SetTrieString(g_hItemInfoTrie, "405_classname", "tf_wearable", false);
-	SetTrieValue(g_hItemInfoTrie, "405_index", 405, false);
-	SetTrieValue(g_hItemInfoTrie, "405_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "405_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "405_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "405_attribs", "246 ; 2.0 ; 26 ; 25.0", false);
-	SetTrieValue(g_hItemInfoTrie, "405_ammo", -1, false);
-
-//Splendid Screen
-	SetTrieString(g_hItemInfoTrie, "406_classname", "tf_wearable_demoshield", false);
-	SetTrieValue(g_hItemInfoTrie, "406_index", 406, false);
-	SetTrieValue(g_hItemInfoTrie, "406_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "406_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "406_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "406_attribs", "247 ; 1.0 ; 248 ; 1.7 ; 60 ; 0.8 ; 64 ; 0.85", false);
-	SetTrieValue(g_hItemInfoTrie, "406_ammo", -1, false);
-
-//Quick Fix
-	SetTrieString(g_hItemInfoTrie, "411_classname", "tf_weapon_medigun", false);
-	SetTrieValue(g_hItemInfoTrie, "411_index", 411, false);
-	SetTrieValue(g_hItemInfoTrie, "411_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "411_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "411_level", 8, false);
-	SetTrieString(g_hItemInfoTrie, "411_attribs", "231 ; 2.0 ; 8 ; 1.4 ; 10 ; 1.25 ; 144 ; 2.0 ; 292 ; 1.0 ; 293 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "411_ammo", -1, false);
-
-//Overdose
-	SetTrieString(g_hItemInfoTrie, "412_classname", "tf_weapon_syringegun_medic", false);
-	SetTrieValue(g_hItemInfoTrie, "412_index", 412, false);
-	SetTrieValue(g_hItemInfoTrie, "412_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "412_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "412_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "412_attribs", "144 ; 1.0 ; 1 ; 0.9", false);
-	SetTrieValue(g_hItemInfoTrie, "412_ammo", 150, false);
-
-//Solemn Vow (Also known as Hippocrates)
-	SetTrieString(g_hItemInfoTrie, "413_classname", "tf_weapon_bonesaw", false);
-	SetTrieValue(g_hItemInfoTrie, "413_index", 413, false);
-	SetTrieValue(g_hItemInfoTrie, "413_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "413_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "413_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "413_attribs", "269 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "413_ammo", -1, false);
-
-//Liberty Launcher
-	SetTrieString(g_hItemInfoTrie, "414_classname", "tf_weapon_rocketlauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "414_index", 414, false);
-	SetTrieValue(g_hItemInfoTrie, "414_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "414_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "414_level", 25, false);
-	SetTrieString(g_hItemInfoTrie, "414_attribs", "103 ; 1.4 ; 3 ; 0.75", false);
-	SetTrieValue(g_hItemInfoTrie, "414_ammo", 20, false);
-
-//Reserve Shooter
-	SetTrieString(g_hItemInfoTrie, "415_classname", "tf_weapon_shotgun_soldier");//, false);
-	SetTrieValue(g_hItemInfoTrie, "415_index", 415, false);
-	SetTrieValue(g_hItemInfoTrie, "415_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "415_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "415_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "415_attribs", "178 ; 0.85 ; 265 ; 3.0 ; 3 ; 0.5", false);
-	SetTrieValue(g_hItemInfoTrie, "415_ammo", 32, false);
-
-//Market Gardener
-	SetTrieString(g_hItemInfoTrie, "416_classname", "tf_weapon_shovel", false);
-	SetTrieValue(g_hItemInfoTrie, "416_index", 416, false);
-	SetTrieValue(g_hItemInfoTrie, "416_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "416_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "416_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "416_attribs", "267 ; 1.0 ; 15 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "416_ammo", -1, false);
-
-//Saxxy
-	SetTrieString(g_hItemInfoTrie, "423_classname", "saxxy", false);
-	SetTrieValue(g_hItemInfoTrie, "423_index", 423, false);
-	SetTrieValue(g_hItemInfoTrie, "423_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "423_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "423_level", 25, false);
-	SetTrieString(g_hItemInfoTrie, "423_attribs", "150 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "423_ammo", -1, false);
-
-//Tomislav
-	SetTrieString(g_hItemInfoTrie, "424_classname", "tf_weapon_minigun", false);
-	SetTrieValue(g_hItemInfoTrie, "424_index", 424, false);
-	SetTrieValue(g_hItemInfoTrie, "424_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "424_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "424_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "424_attribs", "87 ; 0.9 ; 238 ; 1.0 ; 5 ; 1.2", false);
-	SetTrieValue(g_hItemInfoTrie, "424_ammo", 200, false);
-
-//Family Business
-	SetTrieString(g_hItemInfoTrie, "425_classname", "tf_weapon_shotgun_hwg", false);
-	SetTrieValue(g_hItemInfoTrie, "425_index", 425, false);
-	SetTrieValue(g_hItemInfoTrie, "425_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "425_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "425_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "425_attribs", "4 ; 1.33 ; 1 ; 0.85", false);
-	SetTrieValue(g_hItemInfoTrie, "425_ammo", 32, false);
-
-//Eviction Notice
-	SetTrieString(g_hItemInfoTrie, "426_classname", "tf_weapon_fists", false);
-	SetTrieValue(g_hItemInfoTrie, "426_index", 426, false);
-	SetTrieValue(g_hItemInfoTrie, "426_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "426_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "426_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "426_attribs", "6 ; 0.5 ; 1 ; 0.4", false);
-	SetTrieValue(g_hItemInfoTrie, "426_ammo", -1, false);
-
-//Fishcake
-	SetTrieString(g_hItemInfoTrie, "433_classname", "tf_weapon_lunchbox", false);
-	SetTrieValue(g_hItemInfoTrie, "433_index", 433, false);
-	SetTrieValue(g_hItemInfoTrie, "433_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "433_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "433_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "433_attribs", "139 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "433_ammo", 1, false);
-
-//Cow Mangler 5000
-	SetTrieString(g_hItemInfoTrie, "441_classname", "tf_weapon_particle_cannon", false);
-	SetTrieValue(g_hItemInfoTrie, "441_index", 441, false);
-	SetTrieValue(g_hItemInfoTrie, "441_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "441_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "441_level", 30, false);
-	SetTrieString(g_hItemInfoTrie, "441_attribs", "281 ; 1.0 ; 282 ; 1.0 ; 15 ; 0.0 ; 284 ; 1.0 ; 1 ; 0.9 ; 288 ; 1.0 ; 96 ; 1.05", false);
-	SetTrieValue(g_hItemInfoTrie, "441_ammo", -1, false);
-
-//Righteous Bison
-	SetTrieString(g_hItemInfoTrie, "442_classname", "tf_weapon_raygun", false);
-	SetTrieValue(g_hItemInfoTrie, "442_index", 442, false);
-	SetTrieValue(g_hItemInfoTrie, "442_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "442_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "442_level", 30, false);
-	SetTrieString(g_hItemInfoTrie, "442_attribs", "281 ; 1.0 ; 283 ; 1.0 ; 285 ; 0.0 ; 284 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "442_ammo", -1, false);
-
-//Mantreads
-	SetTrieString(g_hItemInfoTrie, "444_classname", "tf_wearable", false);
-	SetTrieValue(g_hItemInfoTrie, "444_index", 444, false);
-	SetTrieValue(g_hItemInfoTrie, "444_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "444_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "444_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "444_attribs", "252 ; 0.25 ; 259 ; 1.0 ; 292 ; 26.0 ; 388 ; 26.0", false);
-	SetTrieValue(g_hItemInfoTrie, "444_ammo", -1, false);
-
-//Disciplinary Action
-	SetTrieString(g_hItemInfoTrie, "447_classname", "tf_weapon_shovel", false);
-	SetTrieValue(g_hItemInfoTrie, "447_index", 447, false);
-	SetTrieValue(g_hItemInfoTrie, "447_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "447_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "447_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "447_attribs", "251 ; 1.0 ; 1 ; 0.75 ; 264 ; 1.7 ; 263 ; 1.55", false);
-	SetTrieValue(g_hItemInfoTrie, "447_ammo", -1, false);
-
-//Soda Popper
-	SetTrieString(g_hItemInfoTrie, "448_classname", "tf_weapon_soda_popper", false);
-	SetTrieValue(g_hItemInfoTrie, "448_index", 448, false);
-	SetTrieValue(g_hItemInfoTrie, "448_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "448_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "448_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "448_attribs", "6 ; 0.5 ; 97 ; 0.75 ; 3 ; 0.34 ; 15 ; 0.0 ; 43 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "448_ammo", 32, false);
-
-//Winger
-	SetTrieString(g_hItemInfoTrie, "449_classname", "tf_weapon_handgun_scout_secondary", false);
-	SetTrieValue(g_hItemInfoTrie, "449_index", 449, false);
-	SetTrieValue(g_hItemInfoTrie, "449_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "449_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "449_level", 15, false);
-	SetTrieString(g_hItemInfoTrie, "449_attribs", "2 ; 1.15 ; 3 ; 0.4", false);
-	SetTrieValue(g_hItemInfoTrie, "449_ammo", 36, false);
-
-//Atomizer
-	SetTrieString(g_hItemInfoTrie, "450_classname", "tf_weapon_bat", false);
-	SetTrieValue(g_hItemInfoTrie, "450_index", 450, false);
-	SetTrieValue(g_hItemInfoTrie, "450_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "450_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "450_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "450_attribs", "250 ; 1.0 ; 5 ; 1.3 ; 138 ; 0.8", false);
-	SetTrieValue(g_hItemInfoTrie, "450_ammo", -1, false);
-
-//Three-Rune Blade
-	SetTrieString(g_hItemInfoTrie, "452_classname", "tf_weapon_bat", false);
-	SetTrieValue(g_hItemInfoTrie, "452_index", 452, false);
-	SetTrieValue(g_hItemInfoTrie, "452_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "452_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "452_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "452_attribs", "149 ; 5.0 ; 204 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "452_ammo", -1, false);
-
-//Postal Pummeler
-	SetTrieString(g_hItemInfoTrie, "457_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "457_index", 457, false);
-	SetTrieValue(g_hItemInfoTrie, "457_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "457_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "457_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "457_attribs", "20 ; 1.0 ; 21 ; 0.5 ; 22 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "457_ammo", -1, false);
-
-//Enforcer
-	SetTrieString(g_hItemInfoTrie, "460_classname", "tf_weapon_revolver", false);
-	SetTrieValue(g_hItemInfoTrie, "460_index", 460, false);
-	SetTrieValue(g_hItemInfoTrie, "460_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "460_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "460_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "460_attribs", "410 ; 1.2 ; 5 ; 1.2 ; 15 ; 0.0", false);
-//	SetTrieString(g_hItemInfoTrie, "460_attribs", "2 ; 1.2 ; 253 ; 0.5");	//pre-may31 2012
-	SetTrieValue(g_hItemInfoTrie, "460_ammo", 24, false);
-
-//Big Earner
-	SetTrieString(g_hItemInfoTrie, "461_classname", "tf_weapon_knife", false);
-	SetTrieValue(g_hItemInfoTrie, "461_index", 461, false);
-	SetTrieValue(g_hItemInfoTrie, "461_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "461_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "461_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "461_attribs", "158 ; 30 ; 125 ; -25", false);
-	SetTrieValue(g_hItemInfoTrie, "461_ammo", -1, false);
-
-//Maul
-	SetTrieString(g_hItemInfoTrie, "466_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "466_index", 466, false);
-	SetTrieValue(g_hItemInfoTrie, "466_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "466_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "466_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "466_attribs", "137 ; 2.0 ; 138 ; 0.75 ; 146 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "466_ammo", -1, false);
-
-//Conscientious Objector
-	SetTrieString(g_hItemInfoTrie, "474_classname", "saxxy", false);
-	SetTrieValue(g_hItemInfoTrie, "474_index", 474, false);
-	SetTrieValue(g_hItemInfoTrie, "474_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "474_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "474_level", 25, false);
-	SetTrieString(g_hItemInfoTrie, "474_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "474_ammo", -1, false);
-
-//Nessie's Nine Iron
-	SetTrieString(g_hItemInfoTrie, "482_classname", "tf_weapon_sword", false);
-	SetTrieValue(g_hItemInfoTrie, "482_index", 482, false);
-	SetTrieValue(g_hItemInfoTrie, "482_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "482_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "482_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "482_attribs", "15 ; 0 ; 125 ; -25 ; 219 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "482_ammo", -1, false);
-
-//The Original
-	SetTrieString(g_hItemInfoTrie, "513_classname", "tf_weapon_rocketlauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "513_index", 513, false);
-	SetTrieValue(g_hItemInfoTrie, "513_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "513_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "513_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "513_attribs", "289 ; 1", false);
-	SetTrieValue(g_hItemInfoTrie, "513_ammo", 20, false);
-
-//The Diamondback
-	SetTrieString(g_hItemInfoTrie, "525_classname", "tf_weapon_revolver", false);
-	SetTrieValue(g_hItemInfoTrie, "525_index", 525, false);
-	SetTrieValue(g_hItemInfoTrie, "525_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "525_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "525_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "525_attribs", "296 ; 1.0 ; 1 ; 0.85 ; 15 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "525_ammo", 24, false);
-
-//The Machina
-	SetTrieString(g_hItemInfoTrie, "526_classname", "tf_weapon_sniperrifle", false);
-	SetTrieValue(g_hItemInfoTrie, "526_index", 526, false);
-	SetTrieValue(g_hItemInfoTrie, "526_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "526_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "526_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "526_attribs", "304 ; 1.15 ; 308 ; 1.0 ; 297 ; 1.0 ; 305 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "526_ammo", 25, false);
-
-//The Widowmaker
-	SetTrieString(g_hItemInfoTrie, "527_classname", "tf_weapon_shotgun_primary", false);
-	SetTrieValue(g_hItemInfoTrie, "527_index", 527, false);
-	SetTrieValue(g_hItemInfoTrie, "527_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "527_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "527_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "527_attribs", "299 ; 100.0 ; 307 ; 1.0 ; 303 ; -1.0 ; 298 ; 30.0 ; 301 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "527_ammo", 200, false);
-
-//The Short Circuit
-	SetTrieString(g_hItemInfoTrie, "528_classname", "tf_weapon_mechanical_arm", false);
-	SetTrieValue(g_hItemInfoTrie, "528_index", 528, false);
-	SetTrieValue(g_hItemInfoTrie, "528_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "528_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "528_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "528_attribs", "300 ; 1.0 ; 307 ; 1.0 ; 303 ; -1.0 ; 15 ; 0.0 ; 298 ; 35.0 ; 301 ; 1.0 ; 312 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "528_ammo", 200, false);
-
-//Unarmed Combat
-	SetTrieString(g_hItemInfoTrie, "572_classname", "tf_weapon_bat_fish", false);
-	SetTrieValue(g_hItemInfoTrie, "572_index", 572, false);
-	SetTrieValue(g_hItemInfoTrie, "572_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "572_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "572_level", 13, false);
-	SetTrieString(g_hItemInfoTrie, "572_attribs", "332 ; 1.0 ; 292 ; 7.0 ; 388 ; 7.0", false);
-	SetTrieValue(g_hItemInfoTrie, "572_ammo", -1, false);
-
-//Wanga Prick
-	SetTrieString(g_hItemInfoTrie, "574_classname", "tf_weapon_knife", false);
-	SetTrieValue(g_hItemInfoTrie, "574_index", 574, false);
-	SetTrieValue(g_hItemInfoTrie, "574_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "574_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "574_level", 54, false);
-	SetTrieString(g_hItemInfoTrie, "574_attribs", "154 ; 1.0 ; 156 ; 1.0 ; 155 ; 1.0 ; 144 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "574_ammo", -1, false);
-
-//Apoco-Fists
-	SetTrieString(g_hItemInfoTrie, "587_classname", "tf_weapon_fists", false);
-	SetTrieValue(g_hItemInfoTrie, "587_index", 587, false);
-	SetTrieValue(g_hItemInfoTrie, "587_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "587_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "587_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "587_attribs", "309 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "587_ammo", -1, false);
-
-//Pomson 6000
-	SetTrieString(g_hItemInfoTrie, "588_classname", "tf_weapon_drg_pomson", false);
-	SetTrieValue(g_hItemInfoTrie, "588_index", 588, false);
-	SetTrieValue(g_hItemInfoTrie, "588_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "588_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "588_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "588_attribs", "281 ; 1.0 ; 285 ; 1.0 ; 337 ; 10.0 ; 338 ; 20.0", false);
-	SetTrieValue(g_hItemInfoTrie, "588_ammo", -1, false);
-
-//Eureka Effect
-	SetTrieString(g_hItemInfoTrie, "589_classname", "tf_weapon_wrench", false);
-	SetTrieValue(g_hItemInfoTrie, "589_index", 589, false);
-	SetTrieValue(g_hItemInfoTrie, "589_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "589_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "589_level", 20, false);
-	SetTrieString(g_hItemInfoTrie, "589_attribs", "352 ; 1.0 ; 353 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "589_ammo", -1, false);
-
-//Third Degree
-	SetTrieString(g_hItemInfoTrie, "593_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "593_index", 593, false);
-	SetTrieValue(g_hItemInfoTrie, "593_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "593_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "593_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "593_attribs", "360 ; 1.0 ; 350 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "593_ammo", -1, false);
-
-//Phlogistinator
-	SetTrieString(g_hItemInfoTrie, "594_classname", "tf_weapon_flamethrower", false);
-	SetTrieValue(g_hItemInfoTrie, "594_index", 594, false);
-	SetTrieValue(g_hItemInfoTrie, "594_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "594_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "594_level", 10, false);
-//	SetTrieString(g_hItemInfoTrie, "594_attribs", "368 ; 1.0 ; 116 ; 5.0 ; 356 ; 1.0 ; 357 ; 1.2 ; 350 ; 1.0 ; 144 ; 1.0 ; 15 ; 0.0", false);
-	SetTrieString(g_hItemInfoTrie, "594_attribs", "1 ; 0.9 ; 368 ; 1.0 ; 116 ; 5.0 ; 356 ; 1.0 ; 350 ; 1.0 ; 144 ; 1.0 ; 15 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "594_ammo", 200, false);
-
-//Manmelter
-	SetTrieString(g_hItemInfoTrie, "595_classname", "tf_weapon_flaregun_revenge", false);
-	SetTrieValue(g_hItemInfoTrie, "595_index", 595, false);
-	SetTrieValue(g_hItemInfoTrie, "595_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "595_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "595_level", 30, false);
-	SetTrieString(g_hItemInfoTrie, "595_attribs", "281 ; 1.0 ; 283 ; 1.0 ; 348 ; 1.2 ; 103 ; 1.5 ; 367 ; 1.0 ; 15 ; 0.0 ; 350 ; 1.0 ; 144 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "595_ammo", -1, false);
-
-//Bootlegger
-	SetTrieString(g_hItemInfoTrie, "608_classname", "tf_wearable", false);
-	SetTrieValue(g_hItemInfoTrie, "608_index", 608, false);
-	SetTrieValue(g_hItemInfoTrie, "608_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "608_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "608_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "608_attribs", "246 ; 2.0 ; 26 ; 25.0", false);
-	SetTrieValue(g_hItemInfoTrie, "608_ammo", -1, false);
-
-//Scottish Handshake
-	SetTrieString(g_hItemInfoTrie, "609_classname", "tf_weapon_bottle", false);
-	SetTrieValue(g_hItemInfoTrie, "609_index", 609, false);
-	SetTrieValue(g_hItemInfoTrie, "609_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "609_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "609_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "609_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "609_ammo", -1, false);
-
-//Sharp Dresser
-	SetTrieString(g_hItemInfoTrie, "638_classname", "tf_weapon_knife", false);
-	SetTrieValue(g_hItemInfoTrie, "638_index", 638, false);
-	SetTrieValue(g_hItemInfoTrie, "638_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "638_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "638_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "638_attribs", "328 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "638_ammo", -1, false);
-
-//Cozy Camper
-	SetTrieString(g_hItemInfoTrie, "642_classname", "tf_wearable", false);
-	SetTrieValue(g_hItemInfoTrie, "642_index", 642, false);
-	SetTrieValue(g_hItemInfoTrie, "642_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "642_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "642_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "642_attribs", "57 ; 1.0 ; 376 ; 1.0 ; 377 ; 0.80 ; 378 ; 0.2", false);
-
-//Wrap Assassin
-	SetTrieString(g_hItemInfoTrie, "648_classname", "tf_weapon_bat_giftwrap", false);
-	SetTrieValue(g_hItemInfoTrie, "648_index", 648, false);
-	SetTrieValue(g_hItemInfoTrie, "648_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "648_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "648_level", 15, false);
-	SetTrieString(g_hItemInfoTrie, "648_attribs", "346 ; 1.0 ; 1 ; 0.3", false);
-	SetTrieValue(g_hItemInfoTrie, "648_ammo", 1, false);
-
-//Spy-cicle
-	SetTrieString(g_hItemInfoTrie, "649_classname", "tf_weapon_knife", false);
-	SetTrieValue(g_hItemInfoTrie, "649_index", 649, false);
-	SetTrieValue(g_hItemInfoTrie, "649_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "649_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "649_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "649_attribs", "347 ; 1.0 ; 156 ; 1.0 ; 359 ; 15.0 ; 361 ; 2.0 ; 365 ; 3.0", false);
-	SetTrieValue(g_hItemInfoTrie, "649_ammo", 1, false);
-
-//Festive Minigun 2011
-	SetTrieString(g_hItemInfoTrie, "654_classname", "tf_weapon_minigun", false);
-	SetTrieValue(g_hItemInfoTrie, "654_index", 654, false);
-	SetTrieValue(g_hItemInfoTrie, "654_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "654_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "654_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "654_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "654_ammo", 200, false);
-
-//Holiday Punch
-	SetTrieString(g_hItemInfoTrie, "656_classname", "tf_weapon_fists", false);
-	SetTrieValue(g_hItemInfoTrie, "656_index", 656, false);
-	SetTrieValue(g_hItemInfoTrie, "656_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "656_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "656_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "656_attribs", "358 ; 1.0 ; 362 ; 1.0 ; 363 ; 1.0 ; 369 ; 1.0 ; 292 ; 25.0 ; 293 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "656_ammo", -1, false);
-
-//Festive Rocket Launcher 2011
-	SetTrieString(g_hItemInfoTrie, "658_classname", "tf_weapon_rocketlauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "658_index", 658, false);
-	SetTrieValue(g_hItemInfoTrie, "658_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "658_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "658_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "658_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "658_ammo", 20, false);
-
-//Festive Flamethrower 2011
-	SetTrieString(g_hItemInfoTrie, "659_classname", "tf_weapon_flamethrower", false);
-	SetTrieValue(g_hItemInfoTrie, "659_index", 659, false);
-	SetTrieValue(g_hItemInfoTrie, "659_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "659_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "659_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "659_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "659_ammo", 200, false);
-
-//Festive Bat 2011
-	SetTrieString(g_hItemInfoTrie, "660_classname", "tf_weapon_bat", false);
-	SetTrieValue(g_hItemInfoTrie, "660_index", 660, false);
-	SetTrieValue(g_hItemInfoTrie, "660_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "660_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "660_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "660_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "660_ammo", -1, false);
-
-//Festive Sticky Launcher 2011
-	SetTrieString(g_hItemInfoTrie, "661_classname", "tf_weapon_pipebomblauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "661_index", 661, false);
-	SetTrieValue(g_hItemInfoTrie, "661_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "661_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "661_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "661_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "661_ammo", 24, false);
-
-//Festive Wrench 2011
-	SetTrieString(g_hItemInfoTrie, "662_classname", "tf_weapon_wrench", false);
-	SetTrieValue(g_hItemInfoTrie, "662_index", 662, false);
-	SetTrieValue(g_hItemInfoTrie, "662_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "662_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "662_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "662_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "662_ammo", -1, false);
-
-//Festive Medigun 2011
-	SetTrieString(g_hItemInfoTrie, "663_classname", "tf_weapon_medigun", false);
-	SetTrieValue(g_hItemInfoTrie, "663_index", 663, false);
-	SetTrieValue(g_hItemInfoTrie, "663_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "663_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "663_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "663_attribs", "292 ; 1.0 ; 293 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "663_ammo", -1, false);
-
-//Festive Sniper Rifle 2011
-	SetTrieString(g_hItemInfoTrie, "664_classname", "tf_weapon_sniperrifle", false);
-	SetTrieValue(g_hItemInfoTrie, "664_index", 664, false);
-	SetTrieValue(g_hItemInfoTrie, "664_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "664_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "664_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "664_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "664_ammo", 25, false);
-
-//Festive Knife 2011
-	SetTrieString(g_hItemInfoTrie, "665_classname", "tf_weapon_knife", false);
-	SetTrieValue(g_hItemInfoTrie, "665_index", 665, false);
-	SetTrieValue(g_hItemInfoTrie, "665_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "665_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "665_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "665_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "665_ammo", -1, false);
-
-//Festive Scattergun 2011
-	SetTrieString(g_hItemInfoTrie, "669_classname", "tf_weapon_scattergun", false);
-	SetTrieValue(g_hItemInfoTrie, "669_index", 669, false);
-	SetTrieValue(g_hItemInfoTrie, "669_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "669_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "669_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "669_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "669_ammo", 32, false);
-
-//Black Rose
-	SetTrieString(g_hItemInfoTrie, "727_classname", "tf_weapon_knife", false);
-	SetTrieValue(g_hItemInfoTrie, "727_index", 727, false);
-	SetTrieValue(g_hItemInfoTrie, "727_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "727_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "727_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "727_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "727_ammo", -1, false);
-
-//Beggar's Bazooka
-	SetTrieString(g_hItemInfoTrie, "730_classname", "tf_weapon_rocketlauncher", false);
-	SetTrieValue(g_hItemInfoTrie, "730_index", 730, false);
-	SetTrieValue(g_hItemInfoTrie, "730_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "730_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "730_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "730_attribs", "394 ; 0.3 ; 413 ; 1.0 ; 411 ; 3.0 ; 417 ; 1.0 ; 421 ; 1.0 ; 241 ; 1.3 ; 424 ; 0.75", false);
-	SetTrieValue(g_hItemInfoTrie, "730_ammo", 20, false);
-
-//Lollichop
-	SetTrieString(g_hItemInfoTrie, "739_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "739_index", 739, false);
-	SetTrieValue(g_hItemInfoTrie, "739_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "739_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "739_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "739_attribs", "406 ; 1.0 ; 422 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "739_ammo", -1, false);
-
-//Scorch Shot
-	SetTrieString(g_hItemInfoTrie, "740_classname", "tf_weapon_flaregun", false);
-	SetTrieValue(g_hItemInfoTrie, "740_index", 740, false);
-	SetTrieValue(g_hItemInfoTrie, "740_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "740_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "740_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "740_attribs", "25 ; 0.5 ; 416 ; 3.0 ; 1 ; 0.5", false);
-	SetTrieValue(g_hItemInfoTrie, "740_ammo", 16, false);
-
-//Rainblower
-	SetTrieString(g_hItemInfoTrie, "741_classname", "tf_weapon_flamethrower", false);
-	SetTrieValue(g_hItemInfoTrie, "741_index", 741, false);
-	SetTrieValue(g_hItemInfoTrie, "741_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "741_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "741_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "741_attribs", "406 ; 1.0 ; 144 ; 3.0 ; 422 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "741_ammo", 200, false);
-
-//Cleaner's Carbine
-	SetTrieString(g_hItemInfoTrie, "751_classname", "tf_weapon_smg", false);
-	SetTrieValue(g_hItemInfoTrie, "751_index", 751, false);
-	SetTrieValue(g_hItemInfoTrie, "751_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "751_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "751_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "751_attribs", "31 ; 3.0 ; 3 ; 0.8 ; 5 ; 1.35 ; 15 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "751_ammo", 75, false);
-
-//Hitman's Heatmaker
-	SetTrieString(g_hItemInfoTrie, "752_classname", "tf_weapon_sniperrifle", false);
-	SetTrieValue(g_hItemInfoTrie, "752_index", 752, false);
-	SetTrieValue(g_hItemInfoTrie, "752_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "752_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "752_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "752_attribs", "387 ; 35.0 ; 398 ; 15.0 ; 393 ; 0.0 ; 219 ; 1.0 ; 392 ; 0.8 ; 116 ; 6.0", false);
-	SetTrieValue(g_hItemInfoTrie, "752_ammo", 25, false);
-
-//Baby Face's Blaster
-	SetTrieString(g_hItemInfoTrie, "772_classname", "tf_weapon_pep_brawler_blaster", false);
-	SetTrieValue(g_hItemInfoTrie, "772_index", 772, false);
-	SetTrieValue(g_hItemInfoTrie, "772_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "772_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "772_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "772_attribs", "106 ; 0.6 ; 418 ; 1.0 ; 1 ; 0.7 ; 54 ; 0.65 ; 419 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "772_ammo", 32, false);
-
-//Pretty Boy's Pocket Pistol
-	SetTrieString(g_hItemInfoTrie, "773_classname", "tf_weapon_handgun_scout_secondary", false);
-	SetTrieValue(g_hItemInfoTrie, "773_index", 773, false);
-	SetTrieValue(g_hItemInfoTrie, "773_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "773_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "773_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "773_attribs", "26 ; 15.0 ; 275 ; 1.0 ; 5 ; 1.25 ; 61 ; 1.5", false);
-	SetTrieValue(g_hItemInfoTrie, "773_ammo", 36, false);
-
-//Escape Plan
-	SetTrieString(g_hItemInfoTrie, "775_classname", "tf_weapon_shovel", false);
-	SetTrieValue(g_hItemInfoTrie, "775_index", 775, false);
-	SetTrieValue(g_hItemInfoTrie, "775_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "775_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "775_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "775_attribs", "235 ; 2.0 ; 236 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "775_ammo", -1, false);
-
-//Red-Tape Recorder
-	SetTrieString(g_hItemInfoTrie, "810_classname", "tf_weapon_sapper", false);
-	SetTrieValue(g_hItemInfoTrie, "810_index", 810, false);
-	SetTrieValue(g_hItemInfoTrie, "810_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "810_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "810_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "810_attribs", "433 ; 0.5 ; 426 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "810_ammo", -1, false);
-
-//Huo Long Heater
-	SetTrieString(g_hItemInfoTrie, "811_classname", "tf_weapon_minigun", false);
-	SetTrieValue(g_hItemInfoTrie, "811_index", 811, false);
-	SetTrieValue(g_hItemInfoTrie, "811_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "811_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "811_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "811_attribs", "430 ; 15.0 ; 431 ; 6.0", false);
-	SetTrieValue(g_hItemInfoTrie, "811_ammo", 200, false);
-
-//Flying Guillotine
-	SetTrieString(g_hItemInfoTrie, "812_classname", "tf_weapon_cleaver", false);
-	SetTrieValue(g_hItemInfoTrie, "812_index", 812, false);
-	SetTrieValue(g_hItemInfoTrie, "812_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "812_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "812_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "812_attribs", "435 ; 1.0 ; 437 ; 65536.0 ; 15 ; 0.0", false);
-	SetTrieValue(g_hItemInfoTrie, "812_ammo", 1, false);
-
-//Neon Annihilator
-	SetTrieString(g_hItemInfoTrie, "813_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "813_index", 813, false);
-	SetTrieValue(g_hItemInfoTrie, "813_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "813_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "813_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "813_attribs", "146 ; 1.0 ; 438 ; 1.0 ; 15 ; 0.0 ; 138 ; 0.8 ; 436 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "813_ammo", -1, false);
-
-//Promo Red-Tape Recorder
-	SetTrieString(g_hItemInfoTrie, "831_classname", "tf_weapon_sapper", false);
-	SetTrieValue(g_hItemInfoTrie, "831_index", 831, false);
-	SetTrieValue(g_hItemInfoTrie, "831_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "831_quality", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "831_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "831_attribs", "433 ; 0.5 ; 426 ; 0.0 ; 153 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "831_ammo", -1, false);
-
-//Promo Huo Long Heater
-	SetTrieString(g_hItemInfoTrie, "832_classname", "tf_weapon_minigun", false);
-	SetTrieValue(g_hItemInfoTrie, "832_index", 832, false);
-	SetTrieValue(g_hItemInfoTrie, "832_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "832_quality", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "832_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "832_attribs", "430 ; 15.0 ; 431 ; 6.0 ; 153 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "832_ammo", 200, false);
-
-//Promo Flying Guillotine
-	SetTrieString(g_hItemInfoTrie, "833_classname", "tf_weapon_cleaver", false);
-	SetTrieValue(g_hItemInfoTrie, "833_index", 833, false);
-	SetTrieValue(g_hItemInfoTrie, "833_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "833_quality", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "833_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "833_attribs", "435 ; 1.0 ; 437 ; 65536.0 ; 15 ; 0.0 ; 153 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "833_ammo", 1, false);
-
-//Promo Neon Annihilator
-	SetTrieString(g_hItemInfoTrie, "834_classname", "tf_weapon_fireaxe", false);
-	SetTrieValue(g_hItemInfoTrie, "834_index", 834, false);
-	SetTrieValue(g_hItemInfoTrie, "834_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "834_quality", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "834_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "834_attribs", "146 ; 1.0 ; 438 ; 1.0 ; 15 ; 0.0 ; 138 ; 0.8 ; 436 ; 1.0 ; 153 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "834_ammo", -1, false);
-
-//Bat Outta Hell
-	SetTrieString(g_hItemInfoTrie, "939_classname", "saxxy", false);
-	SetTrieValue(g_hItemInfoTrie, "939_index", 939, false);
-	SetTrieValue(g_hItemInfoTrie, "939_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "939_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "939_level", 5, false);
-	SetTrieString(g_hItemInfoTrie, "939_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "939_ammo", -1, false);
-
-//Quackenbirdt
-	SetTrieString(g_hItemInfoTrie, "947_classname", "tf_weapon_invis", false);
-	SetTrieValue(g_hItemInfoTrie, "947_index", 947, false);
-	SetTrieValue(g_hItemInfoTrie, "947_slot", 4, false);
-	SetTrieValue(g_hItemInfoTrie, "947_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "947_level", 30, false);
-	SetTrieString(g_hItemInfoTrie, "947_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "947_ammo", -1, false);
-
-//Memory Maker
-	SetTrieString(g_hItemInfoTrie, "954_classname", "saxxy", false);
-	SetTrieValue(g_hItemInfoTrie, "954_index", 954, false);
-	SetTrieValue(g_hItemInfoTrie, "954_slot", 2, false);
-	SetTrieValue(g_hItemInfoTrie, "954_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "954_level", 50, false);
-	SetTrieString(g_hItemInfoTrie, "954_attribs", "", false);
-	SetTrieValue(g_hItemInfoTrie, "954_ammo", -1, false);
-
-//Loose Cannon
-	SetTrieString(g_hItemInfoTrie, "996_classname", "tf_weapon_cannon", false);
-	SetTrieValue(g_hItemInfoTrie, "996_index", 996, false);
-	SetTrieValue(g_hItemInfoTrie, "996_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "996_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "996_level", 10, false);
-	SetTrieString(g_hItemInfoTrie, "996_attribs", "280 ; 17.0 ; 466 ; 2.0 ; 476 ; 1.5 ; 475 ; 1.5 ; 477 ; 1.0 ; 467 ; 1.0 ; 470 ; 0.5", false);
-	SetTrieValue(g_hItemInfoTrie, "996_ammo", 16, false);
-
-//Rescue Ranger
-	SetTrieString(g_hItemInfoTrie, "997_classname", "tf_weapon_shotgun_building_rescue", false);
-	SetTrieValue(g_hItemInfoTrie, "997_index", 997, false);
-	SetTrieValue(g_hItemInfoTrie, "997_slot", 0, false);
-	SetTrieValue(g_hItemInfoTrie, "997_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "997_level", 1, false);
-	SetTrieString(g_hItemInfoTrie, "997_attribs", "280 ; 18.0 ; 469 ; 130.0 ; 474 ; 50.0 ; 3 ; 0.66 ; 77 ; 0.5 ; 472 ; 1.0", false);
-	SetTrieValue(g_hItemInfoTrie, "997_ammo", 16, false);
-
-//Vaccinator
-	SetTrieString(g_hItemInfoTrie, "998_classname", "tf_weapon_medigun", false);
-	SetTrieValue(g_hItemInfoTrie, "998_index", 998, false);
-	SetTrieValue(g_hItemInfoTrie, "998_slot", 1, false);
-	SetTrieValue(g_hItemInfoTrie, "998_quality", 6, false);
-	SetTrieValue(g_hItemInfoTrie, "998_level", 8, false);
-	SetTrieString(g_hItemInfoTrie, "998_attribs", "144 ; 3.0 ; 473 ; 3.0 ; 10 ; 1.5 ; 479 ; 0.34 ; 292 ; 1.0 ; 293 ; 2.0", false);
-	SetTrieValue(g_hItemInfoTrie, "998_ammo", -1, false);
 
 }
 stock AddCustomHardcodedToTrie(Handle:trie)
 {
+//bat
+	SetTrieString(trie, "0_classname", "tf_weapon_bat"); 
+	SetTrieValue(trie, "0_index", 0); 
+	SetTrieValue(trie, "0_slot", 2); 
+	SetTrieValue(trie, "0_quality", 0); 
+	SetTrieValue(trie, "0_level", 1); 
+	//SetTrieString(trie, "0_attribs", ""); 
+	SetTrieValue(trie, "0_ammo", -1); 
+
+//fire axe
+	SetTrieString(trie, "2_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "2_index", 2); 
+	SetTrieValue(trie, "2_slot", 2); 
+	SetTrieValue(trie, "2_quality", 0); 
+	SetTrieValue(trie, "2_level", 1); 
+	//SetTrieString(trie, "2_attribs", "178 ; .5 ; 2 ; 1.5 ; 267 ; 1"); 
+	SetTrieValue(trie, "2_ammo", -1); 
+
+//kukri
+	SetTrieString(trie, "3_classname", "tf_weapon_club"); 
+	SetTrieValue(trie, "3_index", 3); 
+	SetTrieValue(trie, "3_slot", 2); 
+	SetTrieValue(trie, "3_quality", 0); 
+	SetTrieValue(trie, "3_level", 1); 
+	//SetTrieString(trie, "3_attribs", ""); 
+	SetTrieValue(trie, "3_ammo", -1); 
+
+//knife
+	SetTrieString(trie, "4_classname", "tf_weapon_knife"); 
+	SetTrieValue(trie, "4_index", 4); 
+	SetTrieValue(trie, "4_slot", 2); 
+	SetTrieValue(trie, "4_quality", 0); 
+	SetTrieValue(trie, "4_level", 1); 
+	//SetTrieString(trie, "4_attribs", "31 ; 3"); 
+	SetTrieValue(trie, "4_ammo", -1); 
+
+//fists
+	SetTrieString(trie, "5_classname", "tf_weapon_fists"); 
+	SetTrieValue(trie, "5_index", 5); 
+	SetTrieValue(trie, "5_slot", 2); 
+	SetTrieValue(trie, "5_quality", 0); 
+	SetTrieValue(trie, "5_level", 1); 
+	//SetTrieString(trie, "5_attribs", ""); 
+	SetTrieValue(trie, "5_ammo", -1); 
+
+//shovel
+	SetTrieString(trie, "6_classname", "tf_weapon_shovel"); 
+	SetTrieValue(trie, "6_index", 6); 
+	SetTrieValue(trie, "6_slot", 2); 
+	SetTrieValue(trie, "6_quality", 0); 
+	SetTrieValue(trie, "6_level", 1); 
+	//SetTrieString(trie, "6_attribs", ""); 
+	SetTrieValue(trie, "6_ammo", -1); 
+
+//wrench
+	SetTrieString(trie, "7_classname", "tf_weapon_wrench"); 
+	SetTrieValue(trie, "7_index", 7); 
+	SetTrieValue(trie, "7_slot", 2); 
+	SetTrieValue(trie, "7_quality", 0); 
+	SetTrieValue(trie, "7_level", 1); 
+	//SetTrieString(trie, "7_attribs", "6 ; 0.35 ; 286 ; 3"); 
+	SetTrieValue(trie, "7_ammo", -1); 
+
+//bonesaw
+	SetTrieString(trie, "8_classname", "tf_weapon_bonesaw"); 
+	SetTrieValue(trie, "8_index", 8); 
+	SetTrieValue(trie, "8_slot", 2); 
+	SetTrieValue(trie, "8_quality", 0); 
+	SetTrieValue(trie, "8_level", 1); 
+	//SetTrieString(trie, "8_attribs", "6 ; 0.8 ; 149 ; 30"); 
+	SetTrieValue(trie, "8_ammo", -1); 
+
+//shotgun engineer
+	SetTrieString(trie, "9_classname", "tf_weapon_shotgun_primary"); //); 
+	SetTrieValue(trie, "9_index", 9); 
+	SetTrieValue(trie, "9_slot", 0); 
+	SetTrieValue(trie, "9_quality", 0); 
+	SetTrieValue(trie, "9_level", 1); 
+	//SetTrieString(trie, "9_attribs", "4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5"); 
+	SetTrieValue(trie, "9_ammo", 32); 
+
+//shotgun soldier
+	SetTrieString(trie, "10_classname", "tf_weapon_shotgun_soldier"); //); 
+	SetTrieValue(trie, "10_index", 10); 
+	SetTrieValue(trie, "10_slot", 1); 
+	SetTrieValue(trie, "10_quality", 0); 
+	SetTrieValue(trie, "10_level", 1); 
+	//SetTrieString(trie, "10_attribs", "4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5"); 
+	SetTrieValue(trie, "10_ammo", 32); 
+
+//shotgun heavy
+	SetTrieString(trie, "11_classname", "tf_weapon_shotgun_hwg"); //); 
+	SetTrieValue(trie, "11_index", 11); 
+	SetTrieValue(trie, "11_slot", 1); 
+	SetTrieValue(trie, "11_quality", 0); 
+	SetTrieValue(trie, "11_level", 1); 
+	//SetTrieString(trie, "11_attribs", "4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5"); 
+	SetTrieValue(trie, "11_ammo", 32); 
+
+//shotgun pyro
+	SetTrieString(trie, "12_classname", "tf_weapon_shotgun_pyro"); //); 
+	SetTrieValue(trie, "12_index", 12); 
+	SetTrieValue(trie, "12_slot", 1); 
+	SetTrieValue(trie, "12_quality", 0); 
+	SetTrieValue(trie, "12_level", 1); 
+	//SetTrieString(trie, "12_attribs", "4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5"); 
+	SetTrieValue(trie, "12_ammo", 32); 
+
+//scattergun
+	SetTrieString(trie, "13_classname", "tf_weapon_scattergun"); 
+	SetTrieValue(trie, "13_index", 13); 
+	SetTrieValue(trie, "13_slot", 0); 
+	SetTrieValue(trie, "13_quality", 0); 
+	SetTrieValue(trie, "13_level", 1); 
+	//SetTrieString(trie, "13_attribs", "97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8"); 
+	SetTrieValue(trie, "13_ammo", 32); 
+
+//sniper rifle
+	SetTrieString(trie, "14_classname", "tf_weapon_sniperrifle"); 
+	SetTrieValue(trie, "14_index", 14); 
+	SetTrieValue(trie, "14_slot", 0); 
+	SetTrieValue(trie, "14_quality", 0); 
+	SetTrieValue(trie, "14_level", 1); 
+	//SetTrieString(trie, "14_attribs", "41 ; 5"); 
+	SetTrieValue(trie, "14_ammo", 25); 
+
+//minigun
+	SetTrieString(trie, "15_classname", "tf_weapon_minigun"); 
+	SetTrieValue(trie, "15_index", 15); 
+	SetTrieValue(trie, "15_slot", 0); 
+	SetTrieValue(trie, "15_quality", 0); 
+	//SetTrieValue(trie, "15_level", 1); 
+	SetTrieString(trie, "15_attribs","76;5 ; 6;.9 ; 16;20" );
+
+//smg
+	SetTrieString(trie, "16_classname", "tf_weapon_smg"); 
+	SetTrieValue(trie, "16_index", 16); 
+	SetTrieValue(trie, "16_slot", 1); 
+	SetTrieValue(trie, "16_quality", 0); 
+	SetTrieValue(trie, "16_level", 1); 
+	//SetTrieString(trie, "16_attribs","6;0.3 ; 1;0.6 ; 78;8 ; 4;3" );
+	SetTrieValue(trie, "16_ammo", 75); 
+
+//syringe gun
+	SetTrieString(trie, "17_classname", "tf_weapon_syringegun_medic"); 
+	SetTrieValue(trie, "17_index", 17); 
+	SetTrieValue(trie, "17_slot", 0); 
+	SetTrieValue(trie, "17_quality", 0); 
+	SetTrieValue(trie, "17_level", 1); 
+	//SetTrieString(trie, "17_attribs", "6 ; 0.7 ; 17 ; 0.05 ; 76 ; 3"); 
+	SetTrieValue(trie, "17_ammo", 150); 
+
+//rocket launcher
+	SetTrieString(trie, "18_classname", "tf_weapon_rocketlauncher"); 
+	SetTrieValue(trie, "18_index", 18); 
+	SetTrieValue(trie, "18_slot", 0); 
+	SetTrieValue(trie, "18_quality", 0); 
+	SetTrieValue(trie, "18_level", 1); 
+	//SetTrieString(trie, "18_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
+	SetTrieValue(trie, "18_ammo", 20); 
+
+//grenade launcher
+	SetTrieString(trie, "19_classname", "tf_weapon_grenadelauncher"); 
+	SetTrieValue(trie, "19_index", 19); 
+	SetTrieValue(trie, "19_slot", 0); 
+	SetTrieValue(trie, "19_quality", 0); 
+	SetTrieValue(trie, "19_level", 1); 
+	//SetTrieString(trie, "19_attribs","411;10 ; 4;4 ; 76;10 ; 413;1 ; 417;1 ; 394;0.08 ; 241;0.5 ; 15;1 ; 470;0.5" );
+	SetTrieValue(trie, "19_ammo", 150); 
+	
+//sticky launcher
+	SetTrieString(trie, "20_classname", "tf_weapon_pipebomblauncher"); 
+	SetTrieValue(trie, "20_index", 20); 
+	SetTrieValue(trie, "20_slot", 1); 
+	SetTrieValue(trie, "20_quality", 0); 
+	SetTrieValue(trie, "20_level", 1); 
+	//SetTrieString(trie, "20_attribs","96;0.5 ; 78;10 ; 6;0.3" );
+	SetTrieValue(trie, "20_ammo", 100); 
+
+//flamethrower
+	SetTrieString(trie, "21_classname", "tf_weapon_flamethrower"); 
+	SetTrieValue(trie, "21_index", 21); 
+	SetTrieValue(trie, "21_slot", 0); 
+	SetTrieValue(trie, "21_quality", 0); 
+	SetTrieValue(trie, "21_level", 1); 
+	//SetTrieString(trie, "21_attribs","171;0.25 ; 256;0.1 ; 254;4" ); 
+	SetTrieValue(trie, "21_ammo", 200); 
+
+//pistol engineer
+	SetTrieString(trie, "22_classname", "tf_weapon_pistol"); 
+	SetTrieValue(trie, "22_index", 22); 
+	SetTrieValue(trie, "22_slot", 1); 
+	SetTrieValue(trie, "22_quality", 0); 
+	SetTrieValue(trie, "22_level", 1); 
+	//SetTrieString(trie, "22_attribs", "97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05"); 
+	SetTrieValue(trie, "22_ammo", 200); 
+
+//pistol scout
+	SetTrieString(trie, "23_classname", "tf_weapon_pistol_scout"); 
+	SetTrieValue(trie, "23_index", 23); 
+	SetTrieValue(trie, "23_slot", 1); 
+	SetTrieValue(trie, "23_quality", 0); 
+	SetTrieValue(trie, "23_level", 1); 
+	//SetTrieString(trie, "23_attribs", "97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05"); 
+
+//revolver
+	SetTrieString(trie, "24_classname", "tf_weapon_revolver"); 
+	SetTrieValue(trie, "24_index", 24); 
+	SetTrieValue(trie, "24_slot", 0); 
+	SetTrieValue(trie, "24_quality", 0); 
+	SetTrieValue(trie, "24_level", 1); 
+	//SetTrieString(trie, "24_attribs", "6 ; 0.3 ; 78 ; 5"); 
+	SetTrieValue(trie, "24_ammo", 24); 
+
+//build pda engineer
+	SetTrieString(trie, "25_classname", "tf_weapon_pda_engineer_build"); 
+	SetTrieValue(trie, "25_index", 25); 
+	SetTrieValue(trie, "25_slot", 3); 
+	SetTrieValue(trie, "25_quality", 0); 
+	SetTrieValue(trie, "25_level", 1); 
+	//SetTrieString(trie, "25_attribs", ""); 
+	SetTrieValue(trie, "25_ammo", -1); 
+
+//destroy pda engineer
+	SetTrieString(trie, "26_classname", "tf_weapon_pda_engineer_destroy"); 
+	SetTrieValue(trie, "26_index", 26); 
+	SetTrieValue(trie, "26_slot", 4); 
+	SetTrieValue(trie, "26_quality", 0); 
+	SetTrieValue(trie, "26_level", 1); 
+	//SetTrieString(trie, "26_attribs", ""); 
+	SetTrieValue(trie, "26_ammo", -1); 
+
+//disguise kit spy
+	SetTrieString(trie, "27_classname", "tf_weapon_pda_spy"); 
+	SetTrieValue(trie, "27_index", 27); 
+	SetTrieValue(trie, "27_slot", 3); 
+	SetTrieValue(trie, "27_quality", 0); 
+	SetTrieValue(trie, "27_level", 1); 
+	//SetTrieString(trie, "27_attribs", ""); 
+	SetTrieValue(trie, "27_ammo", -1); 
+
+//builder
+	SetTrieString(trie, "28_classname", "tf_weapon_builder"); 
+	SetTrieValue(trie, "28_index", 28); 
+	SetTrieValue(trie, "28_slot", 5); 
+	SetTrieValue(trie, "28_quality", 0); 
+	SetTrieValue(trie, "28_level", 1); 
+	//SetTrieString(trie, "28_attribs", ""); 
+	SetTrieValue(trie, "28_ammo", -1); 
+
+//medigun
+	SetTrieString(trie, "29_classname", "tf_weapon_medigun"); 
+	SetTrieValue(trie, "29_index", 29); 
+	SetTrieValue(trie, "29_slot", 1); 
+	SetTrieValue(trie, "29_quality", 0); 
+	SetTrieValue(trie, "29_level", 1); 
+	//SetTrieString(trie, "29_attribs","314;2 ; 11;3 ; 26;100" );
+	SetTrieValue(trie, "29_ammo", -1); 
+
+//invis watch
+	SetTrieString(trie, "30_classname", "tf_weapon_invis"); 
+	SetTrieValue(trie, "30_index", 30); 
+	SetTrieValue(trie, "30_slot", 4); 
+	SetTrieValue(trie, "30_quality", 0); 
+	SetTrieValue(trie, "30_level", 1); 
+	//SetTrieString(trie, "30_attribs", "128 ; 1 ; 107 ; 3 ; 35 ; 5 ; 34 ; 0.5"); 
+	SetTrieValue(trie, "30_ammo", -1); 
+
+/*flaregun engineerpistol
+	SetTrieString(trie, "31_classname", "tf_weapon_flaregun"); 
+	SetTrieValue(trie, "31_index", 31); 
+	SetTrieValue(trie, "31_slot", 1); 
+	SetTrieValue(trie, "31_quality", 0); 
+	SetTrieValue(trie, "31_level", 1); 
+	SetTrieString(trie, "31_attribs", ""); 
+	SetTrieValue(trie, "31_ammo", 16); */
+
+//Sapper
+	SetTrieString(trie, "735_classname", "tf_weapon_builder"); 
+	SetTrieValue(trie, "735_index", 735); 
+	SetTrieValue(trie, "735_slot", 1); 
+	SetTrieValue(trie, "735_quality", 0); 
+	SetTrieValue(trie, "735_level", 1); 
+	//SetTrieString(trie, "735_attribs", ""); 
+	SetTrieValue(trie, "735_ammo", -1); 
+
+//Upgradeable Sapper
+	SetTrieString(trie, "736_classname", "tf_weapon_builder"); 
+	SetTrieValue(trie, "736_index", 736); 
+	SetTrieValue(trie, "736_slot", 1); 
+	SetTrieValue(trie, "736_quality", 6); 
+	SetTrieValue(trie, "736_level", 1); 
+	//SetTrieString(trie, "736_attribs", "292 ;24"); 
+	SetTrieValue(trie, "736_ammo", -1); 
+
+//Upgradeable build pda engineer
+	SetTrieString(trie, "737_classname", "tf_weapon_pda_engineer_build"); 
+	SetTrieValue(trie, "737_index", 737); 
+	SetTrieValue(trie, "737_slot", 3); 
+	SetTrieValue(trie, "737_quality", 6); 
+	SetTrieValue(trie, "737_level", 1); 
+	//SetTrieString(trie, "737_attribs", ""); 
+	SetTrieValue(trie, "737_ammo", -1); 
+
+//kritzkrieg
+	SetTrieString(trie, "35_classname", "tf_weapon_medigun"); 
+	SetTrieValue(trie, "35_index", 35); 
+	SetTrieValue(trie, "35_slot", 1); 
+	SetTrieValue(trie, "35_quality", 6); 
+	SetTrieValue(trie, "35_level", 8); 
+	//SetTrieString(trie, "35_attribs","18;1 ; 10;3 ; 26;100" ); 
+	SetTrieValue(trie, "35_ammo", -1); 
+
+//blutsauger
+	SetTrieString(trie, "36_classname", "tf_weapon_syringegun_medic"); 
+	SetTrieValue(trie, "36_index", 36); 
+	SetTrieValue(trie, "36_slot", 0); 
+	SetTrieValue(trie, "36_quality", 6); 
+	SetTrieValue(trie, "36_level", 5); 
+	//SetTrieString(trie, "36_attribs", "16 ; 30 ; 180 ; 150"); 
+	SetTrieValue(trie, "36_ammo", 150); 
+
+//ubersaw
+	SetTrieString(trie, "37_classname", "tf_weapon_bonesaw"); 
+	SetTrieValue(trie, "37_index", 37); 
+	SetTrieValue(trie, "37_slot", 2); 
+	SetTrieValue(trie, "37_quality", 6); 
+	SetTrieValue(trie, "37_level", 10); 
+	//SetTrieString(trie, "37_attribs", "5 ; 2 ; 17 ; 1"); 
+	SetTrieValue(trie, "37_ammo", -1); 
+
+//axetinguisher
+	SetTrieString(trie, "38_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "38_index", 38); 
+	SetTrieValue(trie, "38_slot", 2); 
+	SetTrieValue(trie, "38_quality", 6); 
+	SetTrieValue(trie, "38_level", 10); 
+	//SetTrieString(trie, "38_attribs", "20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5"); 
+	SetTrieValue(trie, "38_ammo", -1); 
+
+//flaregun pyro
+	SetTrieString(trie, "39_classname", "tf_weapon_flaregun"); 
+	SetTrieValue(trie, "39_index", 39); 
+	SetTrieValue(trie, "39_slot", 1); 
+	SetTrieValue(trie, "39_quality", 6); 
+	SetTrieValue(trie, "39_level", 10); 
+	//SetTrieString(trie, "39_attribs", "6 ; 0.25 ; 78 ; 3");
+	SetTrieValue(trie, "39_ammo", 16); 
+
+//backburner
+	SetTrieString(trie, "40_classname", "tf_weapon_flamethrower"); 
+	SetTrieValue(trie, "40_index", 40); 
+	SetTrieValue(trie, "40_slot", 0); 
+	SetTrieValue(trie, "40_quality", 6); 
+//	SetTrieString(trie, "40_attribs", "23 ;1.0 ;24 ;1.0 ;28 ;0.0 ;2 ;1.15"); 	//these are the old backburner attribs (before april 14th, 2011)
+//	SetTrieString(trie, "40_attribs", "170 ;2.5 ;24 ;1.0 ;28 ;0.0 ;2 ;1.10"); 	//old pyromania jun 27 2012
+	//SetTrieString(trie, "40_attribs","255;2 ; 256;2 ; 24;1 ; 162;1.5 ; 164;1.5" );
+	SetTrieValue(trie, "40_ammo", 200); 
+
+//natascha
+	SetTrieString(trie, "41_classname", "tf_weapon_minigun"); 
+	SetTrieValue(trie, "41_index", 41); 
+	SetTrieValue(trie, "41_slot", 0); 
+	SetTrieValue(trie, "41_quality", 6); 
+	SetTrieValue(trie, "41_level", 5); 
+	//SetTrieString(trie, "41_attribs","32;2 ; 1;0.66 ; 76;10 ; 6;.1 ; 106;5" );
+	SetTrieValue(trie, "41_ammo", 200); 
+
+//sandvich
+	SetTrieString(trie, "42_classname", "tf_weapon_lunchbox"); 
+	SetTrieValue(trie, "42_index", 42); 
+	SetTrieValue(trie, "42_slot", 1); 
+	SetTrieValue(trie, "42_quality", 6); 
+	SetTrieValue(trie, "42_level", 1); 
+	//SetTrieString(trie, "42_attribs", "200 ; 1 ; 144 ; 3"); 
+	SetTrieValue(trie, "42_ammo", 1); 
+
+//killing gloves of boxing
+	SetTrieString(trie, "43_classname", "tf_weapon_fists"); 
+	SetTrieValue(trie, "43_index", 43); 
+	SetTrieValue(trie, "43_slot", 2); 
+	SetTrieValue(trie, "43_quality", 6); 
+	SetTrieValue(trie, "43_level", 7); 
+	//SetTrieString(trie, "43_attribs", "31 ; 30 ; 107 ; 1.3 ; 128 ; 1 ; 2 ; 2 ; 5 ; 1.5"); 
+	SetTrieValue(trie, "43_ammo", -1); 
+
+//sandman
+	SetTrieString(trie, "44_classname", "tf_weapon_bat_wood"); 
+	SetTrieValue(trie, "44_index", 44); 
+	SetTrieValue(trie, "44_slot", 2); 
+	SetTrieValue(trie, "44_quality", 6); 
+	SetTrieValue(trie, "44_level", 15); 
+	//SetTrieString(trie, "44_attribs","278;.25 ; 279;3 ; 38;1" );
+	SetTrieValue(trie, "44_ammo", 1); 
+
+//bonk atomic punch
+	SetTrieString(trie, "46_classname", "tf_weapon_lunchbox_drink"); 
+	SetTrieValue(trie, "46_index", 46); 
+	SetTrieValue(trie, "46_slot", 1); 
+	SetTrieValue(trie, "46_quality", 6); 
+	SetTrieValue(trie, "46_level", 5); 
+	//SetTrieString(trie, "46_attribs", ""); 
+	SetTrieValue(trie, "46_ammo", 1); 
+
+//huntsman
+	SetTrieString(trie, "56_classname", "tf_weapon_compound_bow"); 
+	SetTrieValue(trie, "56_index", 56); 
+	SetTrieValue(trie, "56_slot", 0); 
+	SetTrieValue(trie, "56_quality", 6); 
+	SetTrieValue(trie, "56_level", 10); 
+	//SetTrieString(trie, "56_attribs", "76 ; 3 ; 318 ; 0.5 ; 1 ; 0.8"); 
+	SetTrieValue(trie, "56_ammo", 12); 
+
+//razorback (broken NO LONGER)
+	SetTrieString(trie, "57_classname", "tf_wearable"); 
+	SetTrieValue(trie, "57_index", 57); 
+	SetTrieValue(trie, "57_slot", 1); 
+	SetTrieValue(trie, "57_quality", 6); 
+	SetTrieValue(trie, "57_level", 10); 
+	//SetTrieString(trie, "57_attribs", "52 ;1 ;292 ;5.0"); 
+
+//jarate
+	SetTrieString(trie, "58_classname", "tf_weapon_jar"); 
+	SetTrieValue(trie, "58_index", 58); 
+	SetTrieValue(trie, "58_slot", 1); 
+	SetTrieValue(trie, "58_quality", 6); 
+	SetTrieValue(trie, "58_level", 5); 
+	//SetTrieString(trie, "58_attribs","278;.40 ; 279;3 ; 99;3" );
+	SetTrieValue(trie, "58_ammo", 1); 
+
+//dead ringer
+	SetTrieString(trie, "59_classname", "tf_weapon_invis"); 
+	SetTrieValue(trie, "59_index", 59); 
+	SetTrieValue(trie, "59_slot", 4); 
+	SetTrieValue(trie, "59_quality", 6); 
+	SetTrieValue(trie, "59_level", 5); 
+	//SetTrieString(trie, "59_attribs", "33 ; 1 ; 34 ; .9 ; 35 ; 5 ; 292 ; 9"); 
+	SetTrieValue(trie, "59_ammo", -1); 
+
+//cloak and dagger
+	SetTrieString(trie, "60_classname", "tf_weapon_invis"); 
+	SetTrieValue(trie, "60_index", 60); 
+	SetTrieValue(trie, "60_slot", 4); 
+	SetTrieValue(trie, "60_quality", 6); 
+	SetTrieValue(trie, "60_level", 5); 
+	//SetTrieString(trie, "60_attribs", "48 ; 2 ; 35 ; 5"); 
+	SetTrieValue(trie, "60_ammo", -1); 
+
+//ambassador
+	SetTrieString(trie, "61_classname", "tf_weapon_revolver"); 
+	SetTrieValue(trie, "61_index", 61); 
+	SetTrieValue(trie, "61_slot", 0); 
+	SetTrieValue(trie, "61_quality", 6); 
+	SetTrieValue(trie, "61_level", 5); 
+	//SetTrieString(trie, "61_attribs","51;1 ; 5;2 ; 2;2 ; 392;0.05" );
+	SetTrieValue(trie, "61_ammo", 24); 
+
+//direct hit
+	SetTrieString(trie, "127_classname", "tf_weapon_rocketlauncher_directhit"); 
+	SetTrieValue(trie, "127_index", 127); 
+	SetTrieValue(trie, "127_slot", 0); 
+	SetTrieValue(trie, "127_quality", 6); 
+	SetTrieValue(trie, "127_level", 1); 
+	//SetTrieString(trie, "127_attribs", "103 ; 3.5 ; 100 ; 0.01 ; 2 ; 3 ; 114 ; 1"); 
+	SetTrieValue(trie, "127_ammo", 20); 
+
+//equalizer
+	SetTrieString(trie, "128_classname", "tf_weapon_shovel"); 
+	SetTrieValue(trie, "128_index", 128); 
+	SetTrieValue(trie, "128_slot", 2); 
+	SetTrieValue(trie, "128_quality", 6); 
+	SetTrieValue(trie, "128_level", 10); 
+	//SetTrieString(trie, "128_attribs", "2 ; 3.5 ; 128 ; 1"); 
+	SetTrieValue(trie, "128_ammo", -1); 
+
+//buff banner
+	SetTrieString(trie, "129_classname", "tf_weapon_buff_item"); 
+	SetTrieValue(trie, "129_index", 129); 
+	SetTrieValue(trie, "129_slot", 1); 
+	SetTrieValue(trie, "129_quality", 6); 
+	SetTrieValue(trie, "129_level", 5); 
+	//SetTrieString(trie, "129_attribs","116;1 ; 357;3" );
+	SetTrieValue(trie, "129_ammo", -1); 
+
+//scottish resistance
+	SetTrieString(trie, "130_classname", "tf_weapon_pipebomblauncher"); 
+	SetTrieValue(trie, "130_index", 130); 
+	SetTrieValue(trie, "130_slot", 1); 
+	SetTrieValue(trie, "130_quality", 6); 
+	SetTrieValue(trie, "130_level", 5); 
+	//SetTrieString(trie, "130_attribs", "119 ; 1 ; 4 ; 4 ; 76 ; 10 ; 121 ; 1 ; 78 ; 3 ; 88 ; 60 ; 120 ; .6 ; 96 ; 0.5 ; 6 ; 0.5"); 
+	SetTrieValue(trie, "130_ammo", 36); 
+
+//chargin targe (broken NO LONGER)
+	SetTrieString(trie, "131_classname", "tf_wearable_demoshield"); 
+	SetTrieValue(trie, "131_index", 131); 
+	SetTrieValue(trie, "131_slot", 1); 
+	SetTrieValue(trie, "131_quality", 6); 
+	SetTrieValue(trie, "131_level", 10); 
+	//SetTrieString(trie, "131_attribs","60;0.1 ; 64;0.1 ; 527;1" );
+
+//eyelander
+	SetTrieString(trie, "132_classname", "tf_weapon_sword"); 
+	SetTrieValue(trie, "132_index", 132); 
+	SetTrieValue(trie, "132_slot", 2); 
+	SetTrieValue(trie, "132_quality", 6); 
+	SetTrieValue(trie, "132_level", 5); 
+	//SetTrieString(trie, "132_attribs","26;75 ; 107;1.1 ; 292;6 ; 388;6 ; 219;1" );
+	SetTrieValue(trie, "132_ammo", -1); 
+
+//gunboats (broken NO LONGER)
+	SetTrieString(trie, "133_classname", "tf_wearable"); 
+	SetTrieValue(trie, "133_index", 133); 
+	SetTrieValue(trie, "133_slot", 1); 
+	SetTrieValue(trie, "133_quality", 6); 
+	SetTrieValue(trie, "133_level", 10); 
+	//SetTrieString(trie, "133_attribs","135;0 ; 275;1 ; 112;0.05 ; 107;1.25" );
+
+//wrangler
+	SetTrieString(trie, "140_classname", "tf_weapon_laser_pointer"); 
+	SetTrieValue(trie, "140_index", 140); 
+	SetTrieValue(trie, "140_slot", 1); 
+	SetTrieValue(trie, "140_quality", 6); 
+	SetTrieValue(trie, "140_level", 5); 
+	//SetTrieString(trie, "140_attribs", ""); 
+	SetTrieValue(trie, "140_ammo", -1); 
+
+//frontier justice
+	SetTrieString(trie, "141_classname", "tf_weapon_sentry_revenge"); 
+	SetTrieValue(trie, "141_index", 141); 
+	SetTrieValue(trie, "141_slot", 0); 
+	SetTrieValue(trie, "141_quality", 6); 
+	SetTrieValue(trie, "141_level", 5); 
+	//SetTrieString(trie, "141_attribs", "136 ; 1 ; 15 ; 1 ; 3 ; 0.75"); 
+	SetTrieValue(trie, "141_ammo", 32); 
+
+//gunslinger
+	SetTrieString(trie, "142_classname", "tf_weapon_robot_arm"); 
+	SetTrieValue(trie, "142_index", 142); 
+	SetTrieValue(trie, "142_slot", 2); 
+	SetTrieValue(trie, "142_quality", 6); 
+	SetTrieValue(trie, "142_level", 15); 
+	//SetTrieString(trie, "142_attribs", "124 ; 1 ; 125 ; 250"); 
+	SetTrieValue(trie, "142_ammo", -1); 
+
+//homewrecker
+	SetTrieString(trie, "153_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "153_index", 153); 
+	SetTrieValue(trie, "153_slot", 2); 
+	SetTrieValue(trie, "153_quality", 6); 
+	SetTrieValue(trie, "153_level", 5); 
+	//SetTrieString(trie, "153_attribs","137;10 ; 146;1 ; 169;0.1 ; 2;2 ; 252;0.01" );
+	SetTrieValue(trie, "153_ammo", -1); 
+
+//pain train
+	SetTrieString(trie, "154_classname", "tf_weapon_shovel"); 
+	SetTrieValue(trie, "154_index", 154); 
+	SetTrieValue(trie, "154_slot", 2); 
+	SetTrieValue(trie, "154_quality", 6); 
+	SetTrieValue(trie, "154_level", 5); 
+	//SetTrieString(trie, "154_attribs", "68 ; 10 ; 67 ; 2"); 
+	SetTrieValue(trie, "154_ammo", -1); 
+
+//southern hospitality
+	SetTrieString(trie, "155_classname", "tf_weapon_wrench"); 
+	SetTrieValue(trie, "155_index", 155); 
+	SetTrieValue(trie, "155_slot", 2); 
+	SetTrieValue(trie, "155_quality", 6); 
+	SetTrieValue(trie, "155_level", 20); 
+	//SetTrieString(trie, "155_attribs", "149 ; 30 ; 276 ; 1"); 
+	SetTrieValue(trie, "155_ammo", -1); 
+
+//dalokohs bar
+	SetTrieString(trie, "159_classname", "tf_weapon_lunchbox"); 
+	SetTrieValue(trie, "159_index", 159); 
+	SetTrieValue(trie, "159_slot", 1); 
+	SetTrieValue(trie, "159_quality", 6); 
+	SetTrieValue(trie, "159_level", 1); 
+	//SetTrieString(trie, "159_attribs", "139 ; 1"); 
+	SetTrieValue(trie, "159_ammo", 1); 
+
+//lugermorph
+	SetTrieString(trie, "160_classname", "tf_weapon_pistol"); 
+	SetTrieValue(trie, "160_index", 160); 
+	SetTrieValue(trie, "160_slot", 1); 
+	SetTrieValue(trie, "160_quality", 3); 
+	SetTrieValue(trie, "160_level", 5); 
+	//SetTrieString(trie, "160_attribs", "97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05"); 
+	SetTrieValue(trie, "160_ammo", 36); 
+
+//big kill
+	SetTrieString(trie, "161_classname", "tf_weapon_revolver"); 
+	SetTrieValue(trie, "161_index", 161); 
+	SetTrieValue(trie, "161_slot", 0); 
+	SetTrieValue(trie, "161_quality", 6); 
+	SetTrieValue(trie, "161_level", 5); 
+	//SetTrieString(trie, "161_attribs", "6 ; 0.3 ; 78 ; 5"); 
+	SetTrieValue(trie, "161_ammo", 24); 
+
+//crit a cola
+	SetTrieString(trie, "163_classname", "tf_weapon_lunchbox_drink"); 
+	SetTrieValue(trie, "163_index", 163); 
+	SetTrieValue(trie, "163_slot", 1); 
+	SetTrieValue(trie, "163_quality", 6); 
+	SetTrieValue(trie, "163_level", 5); 
+	//SetTrieString(trie, "163_attribs","278;.25 ; 144;2" );
+	SetTrieValue(trie, "163_ammo", 1); 
+
+//golden wrench
+	SetTrieString(trie, "169_classname", "tf_weapon_wrench"); 
+	SetTrieValue(trie, "169_index", 169); 
+	SetTrieValue(trie, "169_slot", 2); 
+	SetTrieValue(trie, "169_quality", 6); 
+	SetTrieValue(trie, "169_level", 25); 
+	//SetTrieString(trie, "169_attribs", "6 ; 0.35 ; 286 ; 3 ; 150 ; 1"); 
+	SetTrieValue(trie, "169_ammo", -1); 
+
+//tribalmans shiv
+	SetTrieString(trie, "171_classname", "tf_weapon_club"); 
+	SetTrieValue(trie, "171_index", 171); 
+	SetTrieValue(trie, "171_slot", 2); 
+	SetTrieValue(trie, "171_quality", 6); 
+	SetTrieValue(trie, "171_level", 5); 
+	//SetTrieString(trie, "171_attribs", "149 ; 10 ; 208 ; 1"); 
+	SetTrieValue(trie, "171_ammo", -1); 
+
+//scotsmans skullcutter
+	SetTrieString(trie, "172_classname", "tf_weapon_sword"); 
+	SetTrieValue(trie, "172_index", 172); 
+	SetTrieValue(trie, "172_slot", 2); 
+	SetTrieValue(trie, "172_quality", 6); 
+	SetTrieValue(trie, "172_level", 5); 
+	//SetTrieString(trie, "172_attribs", "2 ;1.2 ;54 ;0.85"); 
+	SetTrieValue(trie, "172_ammo", -1); 
+
+//The Vita-Saw
+	SetTrieString(trie, "173_classname", "tf_weapon_bonesaw"); 
+	SetTrieValue(trie, "173_index", 173); 
+	SetTrieValue(trie, "173_slot", 2); 
+	SetTrieValue(trie, "173_quality", 6); 
+	SetTrieValue(trie, "173_level", 5); 
+	//SetTrieString(trie, "173_attribs","188;100 ; 125;100 ; 144;2" );
+	SetTrieValue(trie, "173_ammo", -1); 
+
+//Upgradeable bat
+	SetTrieString(trie, "190_classname", "tf_weapon_bat"); 
+	SetTrieValue(trie, "190_index", 190); 
+	SetTrieValue(trie, "190_slot", 2); 
+	SetTrieValue(trie, "190_quality", 6); 
+	SetTrieValue(trie, "190_level", 1); 
+	//SetTrieString(trie, "190_attribs", ""); 
+	SetTrieValue(trie, "190_ammo", -1); 
+
+//Upgradeable bottle
+	SetTrieString(trie, "191_classname", "tf_weapon_bottle"); 
+	SetTrieValue(trie, "191_index", 191); 
+	SetTrieValue(trie, "191_slot", 2); 
+	SetTrieValue(trie, "191_quality", 6); 
+	SetTrieValue(trie, "191_level", 1); 
+	//SetTrieString(trie, "191_attribs", "394 ; 0.35"); 
+	SetTrieValue(trie, "191_ammo", -1); 
+
+//Upgradeable fire axe
+	SetTrieString(trie, "192_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "192_index", 192); 
+	SetTrieValue(trie, "192_slot", 2); 
+	SetTrieValue(trie, "192_quality", 6); 
+	SetTrieValue(trie, "192_level", 1); 
+	//SetTrieString(trie, "192_attribs", "178 ; .5 ; 2 ; 1.5 ; 267 ; 1"); 
+	SetTrieValue(trie, "192_ammo", -1); 
+
+//Upgradeable kukri
+	SetTrieString(trie, "193_classname", "tf_weapon_club"); 
+	SetTrieValue(trie, "193_index", 193); 
+	SetTrieValue(trie, "193_slot", 2); 
+	SetTrieValue(trie, "193_quality", 6); 
+	SetTrieValue(trie, "193_level", 1); 
+	//SetTrieString(trie, "193_attribs", ""); 
+	SetTrieValue(trie, "193_ammo", -1); 
+
+//Upgradeable knife
+	SetTrieString(trie, "194_classname", "tf_weapon_knife"); 
+	SetTrieValue(trie, "194_index", 194); 
+	SetTrieValue(trie, "194_slot", 2); 
+	SetTrieValue(trie, "194_quality", 6); 
+	SetTrieValue(trie, "194_level", 1); 
+	//SetTrieString(trie, "194_attribs", "31 ; 3"); 
+	SetTrieValue(trie, "194_ammo", -1); 
+
+//Upgradeable fists
+	SetTrieString(trie, "195_classname", "tf_weapon_fists"); 
+	SetTrieValue(trie, "195_index", 195); 
+	SetTrieValue(trie, "195_slot", 2); 
+	SetTrieValue(trie, "195_quality", 6); 
+	SetTrieValue(trie, "195_level", 1); 
+	//SetTrieString(trie, "195_attribs", ""); 
+	SetTrieValue(trie, "195_ammo", -1); 
+
+//Upgradeable shovel
+	SetTrieString(trie, "196_classname", "tf_weapon_shovel"); 
+	SetTrieValue(trie, "196_index", 196); 
+	SetTrieValue(trie, "196_slot", 2); 
+	SetTrieValue(trie, "196_quality", 6); 
+	SetTrieValue(trie, "196_level", 1); 
+	//SetTrieString(trie, "196_attribs", ""); 
+	SetTrieValue(trie, "196_ammo", -1); 
+
+//Upgradeable wrench
+	SetTrieString(trie, "197_classname", "tf_weapon_wrench"); 
+	SetTrieValue(trie, "197_index", 197); 
+	SetTrieValue(trie, "197_slot", 2); 
+	SetTrieValue(trie, "197_quality", 6); 
+	SetTrieValue(trie, "197_level", 1); 
+	//SetTrieString(trie, "197_attribs", "6 ; 0.35 ; 286 ; 3"); 
+	SetTrieValue(trie, "197_ammo", -1); 
+
+//Upgradeable bonesaw
+	SetTrieString(trie, "198_classname", "tf_weapon_bonesaw"); 
+	SetTrieValue(trie, "198_index", 198); 
+	SetTrieValue(trie, "198_slot", 2); 
+	SetTrieValue(trie, "198_quality", 6); 
+	SetTrieValue(trie, "198_level", 1); 
+	//SetTrieString(trie, "198_attribs", "6 ; 0.8 ; 149 ; 30"); 
+	SetTrieValue(trie, "198_ammo", -1); 
+
+//Upgradeable shotgun engineer
+	SetTrieString(trie, "199_classname", "tf_weapon_shotgun_primary"); 
+	SetTrieValue(trie, "199_index", 199); 
+	SetTrieValue(trie, "199_slot", 0); 
+	SetTrieValue(trie, "199_quality", 6); 
+	SetTrieValue(trie, "199_level", 1); 
+	//SetTrieString(trie, "199_attribs", "4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5"); 
+	SetTrieValue(trie, "199_ammo", 32); 
+
+/*Upgradeable shotgun other classes - appears in custom trie stuff below
+	SetTrieString(trie, "4199_classname", "tf_weapon_shotgun_soldier"); 
+	SetTrieValue(trie, "4199_index", 199); 
+	SetTrieValue(trie, "4199_slot", 1); 
+	SetTrieValue(trie, "4199_quality", 6); 
+	SetTrieValue(trie, "4199_level", 1); 
+	//SetTrieString(trie, "4199_attribs", ""); 
+	SetTrieValue(trie, "4199_ammo", 32); */
+
+//Upgradeable scattergun
+	SetTrieString(trie, "200_classname", "tf_weapon_scattergun"); 
+	SetTrieValue(trie, "200_index", 200); 
+	SetTrieValue(trie, "200_slot", 0); 
+	SetTrieValue(trie, "200_quality", 6); 
+	SetTrieValue(trie, "200_level", 1); 
+	//SetTrieString(trie, "200_attribs", "97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8"); 
+	SetTrieValue(trie, "200_ammo", 32); 
+
+//Upgradeable sniper rifle
+	SetTrieString(trie, "201_classname", "tf_weapon_sniperrifle"); 
+	SetTrieValue(trie, "201_index", 201); 
+	SetTrieValue(trie, "201_slot", 0); 
+	SetTrieValue(trie, "201_quality", 6); 
+	SetTrieValue(trie, "201_level", 1); 
+	//SetTrieString(trie, "201_attribs", "41 ; 5"); 
+	SetTrieValue(trie, "201_ammo", 25); 
+
+//Upgradeable minigun
+	SetTrieString(trie, "202_classname", "tf_weapon_minigun"); 
+	SetTrieValue(trie, "202_index", 202); 
+	SetTrieValue(trie, "202_slot", 0); 
+	SetTrieValue(trie, "202_quality", 6); 
+	SetTrieValue(trie, "202_level", 1); 
+	//SetTrieString(trie, "202_attribs", "76 ; 5 ; 6 ; .9 ; 16 ; 20"); 
+	SetTrieValue(trie, "202_ammo", 200); 
+
+//Upgradeable smg
+	SetTrieString(trie, "203_classname", "tf_weapon_smg"); 
+	SetTrieValue(trie, "203_index", 203); 
+	SetTrieValue(trie, "203_slot", 1); 
+	SetTrieValue(trie, "203_quality", 6); 
+	SetTrieValue(trie, "203_level", 1); 
+	//SetTrieString(trie, "203_attribs", "6 ; 0.3 ; 1 ; 0.4 ; 78 ; 8 ; 4 ; 3"); 
+	SetTrieValue(trie, "203_ammo", 250); 
+
+//Upgradeable syringe gun
+	SetTrieString(trie, "204_classname", "tf_weapon_syringegun_medic"); 
+	SetTrieValue(trie, "204_index", 204); 
+	SetTrieValue(trie, "204_slot", 0); 
+	SetTrieValue(trie, "204_quality", 6); 
+	SetTrieValue(trie, "204_level", 1); 
+	//SetTrieString(trie, "204_attribs", "6 ; 0.7 ; 17 ; 0.05 ; 76 ; 3"); 
+	SetTrieValue(trie, "204_ammo", 150); 
+
+//Upgradeable rocket launcher
+	SetTrieString(trie, "205_classname", "tf_weapon_rocketlauncher"); 
+	SetTrieValue(trie, "205_index", 205); 
+	SetTrieValue(trie, "205_slot", 0); 
+	SetTrieValue(trie, "205_quality", 6); 
+	SetTrieValue(trie, "205_level", 1); 
+	//SetTrieString(trie, "205_attribs", "104 ; 0.32 ; 99 ; 1.3 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1"); 
+	SetTrieValue(trie, "205_ammo", 20); 
+
+//Upgradeable grenade launcher
+	SetTrieString(trie, "206_classname", "tf_weapon_grenadelauncher"); 
+	SetTrieValue(trie, "206_index", 206); 
+	SetTrieValue(trie, "206_slot", 0); 
+	SetTrieValue(trie, "206_quality", 6); 
+	SetTrieValue(trie, "206_level", 1); 
+	//SetTrieString(trie, "206_attribs", "411 ; 20 ; 4 ; 5 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.4 ; 15 ; 1"); 
+
+//Upgradeable sticky launcher
+	SetTrieString(trie, "207_classname", "tf_weapon_pipebomblauncher"); 
+	SetTrieValue(trie, "207_index", 207); 
+	SetTrieValue(trie, "207_slot", 1); 
+	SetTrieValue(trie, "207_quality", 6); 
+	SetTrieValue(trie, "207_level", 1); 
+	//SetTrieString(trie, "207_attribs", "96 ; 0.3 ; 78 ; 10 ; 6 ; 0.3"); 
+	SetTrieValue(trie, "207_ammo", 24); 
+
+//Upgradeable flamethrower
+	SetTrieString(trie, "208_classname", "tf_weapon_flamethrower"); 
+	SetTrieValue(trie, "208_index", 208); 
+	SetTrieValue(trie, "208_slot", 0); 
+	SetTrieValue(trie, "208_quality", 6); 
+	SetTrieValue(trie, "208_level", 1); 
+	//SetTrieString(trie, "208_attribs", "171 ; 0.25 ; 256 ; 0.1 ; 255 ; .5 ; 257 ; .05"); 
+	SetTrieValue(trie, "208_ammo", 200); 
+
+//Upgradeable pistol
+	SetTrieString(trie, "209_classname", "tf_weapon_pistol"); 
+	SetTrieValue(trie, "209_index", 209); 
+	SetTrieValue(trie, "209_slot", 1); 
+	SetTrieValue(trie, "209_quality", 6); 
+	SetTrieValue(trie, "209_level", 1); 
+	//SetTrieString(trie, "209_attribs", "97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05"); 
+	SetTrieValue(trie, "209_ammo", 100); 
+	//36 for scout, 200 for engy, but idk what to use.
+
+//Upgradeable revolver
+	SetTrieString(trie, "210_classname", "tf_weapon_revolver"); 
+	SetTrieValue(trie, "210_index", 210); 
+	SetTrieValue(trie, "210_slot", 0); 
+	SetTrieValue(trie, "210_quality", 6); 
+	SetTrieValue(trie, "210_level", 1); 
+	//SetTrieString(trie, "210_attribs", "6 ; 0.3 ; 78 ; 5"); 
+	SetTrieValue(trie, "210_ammo", 24); 
+
+//Upgradeable medigun
+	SetTrieString(trie, "211_classname", "tf_weapon_medigun"); 
+	SetTrieValue(trie, "211_index", 211); 
+	SetTrieValue(trie, "211_slot", 1); 
+	SetTrieValue(trie, "211_quality", 6); 
+	SetTrieValue(trie, "211_level", 1); 
+	//SetTrieString(trie, "211_attribs", "314 ; 2 ; 11 ; 3"); 
+	SetTrieValue(trie, "211_ammo", -1); 
+
+//Upgradeable invis watch
+	SetTrieString(trie, "212_classname", "tf_weapon_invis"); 
+	SetTrieValue(trie, "212_index", 212); 
+	SetTrieValue(trie, "212_slot", 4); 
+	SetTrieValue(trie, "212_quality", 6); 
+	SetTrieValue(trie, "212_level", 1); 
+	//SetTrieString(trie, "212_attribs", "128 ; 1 ; 107 ; 3 ; 35 ; 5 ; 34 ; 0.5"); 
+	SetTrieValue(trie, "212_ammo", -1); 
+
+//The Powerjack
+	SetTrieString(trie, "214_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "214_index", 214); 
+	SetTrieValue(trie, "214_slot", 2); 
+	SetTrieValue(trie, "214_quality", 6); 
+	SetTrieValue(trie, "214_level", 5); 
+//	SetTrieString(trie, "214_attribs", "180 ;75 ;2 ;1.25 ;15 ;0"); 	//old attribs (before april 14, 2011)
+	//SetTrieString(trie, "214_attribs","26;100 ; 180;150 ; 107;1.17 ; 128;0 ; 412;1 ; 62;1" );
+	SetTrieValue(trie, "214_ammo", -1); 
+
+//The Degreaser
+	SetTrieString(trie, "215_classname", "tf_weapon_flamethrower"); 
+	SetTrieValue(trie, "215_index", 215); 
+	SetTrieValue(trie, "215_slot", 0); 
+	SetTrieValue(trie, "215_quality", 6); 
+	SetTrieValue(trie, "215_level", 10); 
+	//SetTrieString(trie, "215_attribs", "178 ; .05 ; 66 ; 0.5"); 
+	SetTrieValue(trie, "215_ammo", 200); 
+
+//The Shortstop
+	SetTrieString(trie, "220_classname", "tf_weapon_handgun_scout_primary"); 
+	SetTrieValue(trie, "220_index", 220); 
+	SetTrieValue(trie, "220_slot", 0); 
+	SetTrieValue(trie, "220_quality", 6); 
+	SetTrieValue(trie, "220_level", 1); 
+	//SetTrieString(trie, "220_attribs", "26 ; 250 ; 16 ; 15 ; 78 ; 3 ; 2 ; 1.2"); 
+	SetTrieValue(trie, "220_ammo", 36); 
+
+//The Holy Mackerel
+	SetTrieString(trie, "221_classname", "tf_weapon_bat_fish"); 
+	SetTrieValue(trie, "221_index", 221); 
+	SetTrieValue(trie, "221_slot", 2); 
+	SetTrieValue(trie, "221_quality", 6); 
+	SetTrieValue(trie, "221_level", 42); 
+	//SetTrieString(trie, "221_attribs", "292 ;7.0 ;388 ;7.0"); 
+	SetTrieValue(trie, "221_ammo", -1); 
+
+//Mad Milk
+	SetTrieString(trie, "222_classname", "tf_weapon_jar_milk"); 
+	SetTrieValue(trie, "222_index", 222); 
+	SetTrieValue(trie, "222_slot", 1); 
+	SetTrieValue(trie, "222_quality", 6); 
+	SetTrieValue(trie, "222_level", 5); 
+	//SetTrieString(trie, "222_attribs", "292 ;4.0"); 
+	SetTrieValue(trie, "222_ammo", 1); 
+
+//L'Etranger
+	SetTrieString(trie, "224_classname", "tf_weapon_revolver"); 
+	SetTrieValue(trie, "224_index", 224); 
+	SetTrieValue(trie, "224_slot", 0); 
+	SetTrieValue(trie, "224_quality", 6); 
+	SetTrieValue(trie, "224_level", 5); 
+	//SetTrieString(trie, "224_attribs", "6 ; 0.3 ; 1 ; 0.15 ; 166 ; 150 ; 78 ; 5"); 
+	SetTrieValue(trie, "224_ammo", 24); 
+
+//Your Eternal Reward
+	SetTrieString(trie, "225_classname", "tf_weapon_knife"); 
+	SetTrieValue(trie, "225_index", 225); 
+	SetTrieValue(trie, "225_slot", 2); 
+	SetTrieValue(trie, "225_quality", 6); 
+	SetTrieValue(trie, "225_level", 1); 
+	//SetTrieString(trie, "225_attribs", "154 ; 1 ; 144 ; 1 ; 155 ; 0"); 
+	SetTrieValue(trie, "225_ammo", -1); 
+
+//The Battalion's Backup
+	SetTrieString(trie, "226_classname", "tf_weapon_buff_item"); 
+	SetTrieValue(trie, "226_index", 226); 
+	SetTrieValue(trie, "226_slot", 1); 
+	SetTrieValue(trie, "226_quality", 6); 
+	SetTrieValue(trie, "226_level", 10); 
+	//SetTrieString(trie, "226_attribs","116;2 ; 357;5 ; 26;100" );
+	SetTrieValue(trie, "226_ammo", -1); 
+
+//The Black Box
+	SetTrieString(trie, "228_classname", "tf_weapon_rocketlauncher"); 
+	SetTrieValue(trie, "228_index", 228); 
+	SetTrieValue(trie, "228_slot", 0); 
+	SetTrieValue(trie, "228_quality", 6); 
+	SetTrieValue(trie, "228_level", 5); 
+	//SetTrieString(trie, "228_attribs","16;150 ; 5;1 ; 180;150 ; 3;0.75" );
+	SetTrieValue(trie, "228_ammo", 20); 
+
+//The Sydney Sleeper
+	SetTrieString(trie, "230_classname", "tf_weapon_sniperrifle"); 
+	SetTrieValue(trie, "230_index", 230); 
+	SetTrieValue(trie, "230_slot", 0); 
+	SetTrieValue(trie, "230_quality", 6); 
+	SetTrieValue(trie, "230_level", 1); 
+	//SetTrieString(trie, "230_attribs", "41 ; 2 ; 42 ; 1 ; 175 ; 15"); 
+	SetTrieValue(trie, "230_ammo", 25); 
+
+//darwin's danger shield (broken NO LONGER)
+	SetTrieString(trie, "231_classname", "tf_wearable"); 
+	SetTrieValue(trie, "231_index", 231); 
+	SetTrieValue(trie, "231_slot", 1); 
+	SetTrieValue(trie, "231_quality", 6); 
+	SetTrieValue(trie, "231_level", 10); 
+	//SetTrieString(trie, "231_attribs", "26 ; 250"); 
+
+//The Bushwacka
+	SetTrieString(trie, "232_classname", "tf_weapon_club"); 
+	SetTrieValue(trie, "232_index", 232); 
+	SetTrieValue(trie, "232_slot", 2); 
+	SetTrieValue(trie, "232_quality", 6); 
+	SetTrieValue(trie, "232_level", 5); 
+	//SetTrieString(trie, "232_attribs","6;1 ; 107;1.2 ; 128;1 ; 179;1 ; 2;2 ; 28;1" );
+	SetTrieValue(trie, "232_ammo", -1); 
+
+//Rocket Jumper
+	SetTrieString(trie, "237_classname", "tf_weapon_rocketlauncher"); 
+	SetTrieValue(trie, "237_index", 237); 
+	SetTrieValue(trie, "237_slot", 0); 
+	SetTrieValue(trie, "237_quality", 6); 
+	SetTrieValue(trie, "237_level", 1); 
+//	//SetTrieString(trie, "237_attribs", "1 ;0.0 ;181 ;2.0 ;76 ;3.0 ;65 ;2.0 ;67 ;2.0 ;61 ;2.0"); 		//pre-may31 2012;before sep15, 2011, used to be 181 ;1.0
+	SetTrieString(trie, "237_attribs", "134 ; 2 ; 181 ; 2 ; 476 ; -1 ; 318 ; 0.1 ; 4 ; 10 ; 76 ; 10 ; 128 ; 1 ; 275 ; 1"); 
+	SetTrieValue(trie, "237_ammo", 60); 
+
+//gloves of running urgently
+	//SetTrieString(trie, "239_classname", "tf_weapon_fists"); 
+	SetTrieValue(trie, "239_index", 239); 
+	SetTrieValue(trie, "239_slot", 2); 
+	SetTrieValue(trie, "239_quality", 6); 
+	SetTrieValue(trie, "239_level", 10); 
+//	SetTrieString(trie, "239_attribs", "128 ; 1.0 ; 107 ; 1.3 ; 1 ; 0.5 ; 191 ; -6.0 ; 144 ; 2.0"); 
+	//SetTrieString(trie, "239_attribs", "107 ; 1.83 ; 128 ; 1"); 
+	SetTrieValue(trie, "239_ammo", -1); 
+
+//Frying Pan (Now if only it had augment slots)
+//	SetTrieString(trie, "264_classname", "tf_weapon_shovel"); 
+	SetTrieString(trie, "264_classname", "saxxy"); 
+	SetTrieValue(trie, "264_index", 264); 
+	SetTrieValue(trie, "264_slot", 2); 
+	SetTrieValue(trie, "264_quality", 6); 
+	SetTrieValue(trie, "264_level", 5); 
+	//SetTrieString(trie, "264_attribs", "6 ; 0.5 ; 208 ; 1 ; 1 ; 0.5 ; 134 ; 1"); 
+	SetTrieValue(trie, "264_ammo", -1); 
+
+//sticky jumper
+	SetTrieString(trie, "265_classname", "tf_weapon_pipebomblauncher"); 
+	SetTrieValue(trie, "265_index", 265); 
+	SetTrieValue(trie, "265_slot", 1); 
+	SetTrieValue(trie, "265_quality", 6); 
+	SetTrieValue(trie, "265_level", 1); 
+	//SetTrieString(trie, "265_attribs", "78 ;3.0 ;181 ;1.0 ;1 ;0.0 ;15 ;0.0 ;400 ;1.0 ;280 ;14.0"); 
+//	SetTrieString(trie, "265_attribs", "181 ;1.0 ;78 ;3.0 ;280 ;14.0 ;1 ;0.0 ;15 ;0.0"); 	//pre-may31 2012
+//	SetTrieString(trie, "265_attribs", "1 ;0.0 ;181 ;1.0 ;78 ;3.0 ;65 ;2.0 ;67 ;2.0 ;61 ;2.0"); 	//old pre-sep15,2011 update
+	//SetTrieString(trie, "265_attribs", "134 ; 2 ; 181 ; 2 ; 476 ; -1 ; 318 ; 0.1 ; 4 ; 10 ; 275 ; 1 ; 78 ; 10"); 
+
+//horseless headless horsemann's headtaker
+	SetTrieString(trie, "266_classname", "tf_weapon_sword"); 
+	SetTrieValue(trie, "266_index", 266); 
+	SetTrieValue(trie, "266_slot", 2); 
+	SetTrieValue(trie, "266_quality", 5); 
+	SetTrieValue(trie, "266_level", 5); 
+	//SetTrieString(trie, "266_attribs","26;75 ; 107;1.1 ; 292;6 ; 388;6 ; 219;1" );
+	SetTrieValue(trie, "266_ammo", -1); 
+
+//lugermorph from Poker Night
+	SetTrieString(trie, "294_classname", "tf_weapon_pistol"); 
+	SetTrieValue(trie, "294_index", 294); 
+	SetTrieValue(trie, "294_slot", 1); 
+	SetTrieValue(trie, "294_quality", 6); 
+	SetTrieValue(trie, "294_level", 5); 
+	//SetTrieString(trie, "294_attribs", "97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05"); 
+	SetTrieValue(trie, "294_ammo", 36); 
+
+//Enthusiast's Timepiece
+	SetTrieString(trie, "297_classname", "tf_weapon_invis"); 
+	SetTrieValue(trie, "297_index", 297); 
+	SetTrieValue(trie, "297_slot", 4); 
+	SetTrieValue(trie, "297_quality", 6); 
+	SetTrieValue(trie, "297_level", 5); 
+	//SetTrieString(trie, "297_attribs", ""); 
+	SetTrieValue(trie, "297_ammo", -1); 
+
+//The Iron Curtain
+	SetTrieString(trie, "298_classname", "tf_weapon_minigun"); 
+	SetTrieValue(trie, "298_index", 298); 
+	SetTrieValue(trie, "298_slot", 0); 
+	SetTrieValue(trie, "298_quality", 6); 
+	SetTrieValue(trie, "298_level", 5); 
+	//SetTrieString(trie, "298_attribs", "76 ; 5 ; 6 ; .9 ; 16 ; 20"); 
+	SetTrieValue(trie, "298_ammo", 200); 
+
+//Amputator
+	SetTrieString(trie, "304_classname", "tf_weapon_bonesaw"); 
+	SetTrieValue(trie, "304_index", 304); 
+	SetTrieValue(trie, "304_slot", 2); 
+	SetTrieValue(trie, "304_quality", 6); 
+	SetTrieValue(trie, "304_level", 15); 
+	//SetTrieString(trie, "304_attribs", "129 ; 10"); 
+	SetTrieValue(trie, "304_ammo", -1); 
+
+//Crusader's Crossbow
+	SetTrieString(trie, "305_classname", "tf_weapon_crossbow"); 
+	SetTrieValue(trie, "305_index", 305); 
+	SetTrieValue(trie, "305_slot", 0); 
+	SetTrieValue(trie, "305_quality", 6); 
+	SetTrieValue(trie, "305_level", 15); 
+	//SetTrieString(trie, "305_attribs","199;1 ; 97;.25 ; 76;2.6" );
+	SetTrieValue(trie, "305_ammo", 38); 
+
+//Ullapool Caber
+	SetTrieString(trie, "307_classname", "tf_weapon_stickbomb"); 
+	SetTrieValue(trie, "307_index", 307); 
+	SetTrieValue(trie, "307_slot", 2); 
+	SetTrieValue(trie, "307_quality", 6); 
+	SetTrieValue(trie, "307_level", 10); 
+	//SetTrieString(trie, "307_attribs", "15 ;0"); 
+	SetTrieValue(trie, "307_ammo", -1); 
+
+//Loch-n-Load
+	SetTrieString(trie, "308_classname", "tf_weapon_grenadelauncher"); 
+	SetTrieValue(trie, "308_index", 308); 
+	SetTrieValue(trie, "308_slot", 0); 
+	SetTrieValue(trie, "308_quality", 6); 
+	SetTrieValue(trie, "308_level", 10); 
+	//SetTrieString(trie, "308_attribs","103;2.7 ; 2;2.5 ; 3;0.25 ; 127;2 ; 207;1.50 ; 15;1 ; 99;1.1" ); 
+	SetTrieValue(trie, "308_ammo", 16); 
+
+//Warrior's Spirit
+	SetTrieString(trie, "310_classname", "tf_weapon_fists"); 
+	SetTrieValue(trie, "310_index", 310); 
+	SetTrieValue(trie, "310_slot", 2); 
+	SetTrieValue(trie, "310_quality", 6); 
+	SetTrieValue(trie, "310_level", 10); 
+	//SetTrieString(trie, "310_attribs", "26 ; 200 ; 180 ; 100 ; 2 ; 10"); 
+	SetTrieValue(trie, "310_ammo", -1); 
+
+//Buffalo Steak Sandvich
+	SetTrieString(trie, "311_classname", "tf_weapon_lunchbox"); 
+	SetTrieValue(trie, "311_index", 311); 
+	SetTrieValue(trie, "311_slot", 1); 
+	SetTrieValue(trie, "311_quality", 6); 
+	SetTrieValue(trie, "311_level", 1); 
+	//SetTrieString(trie, "311_attribs", "144 ;2"); 
+	SetTrieValue(trie, "311_ammo", 1); 
+
+//Brass Beast
+	SetTrieString(trie, "312_classname", "tf_weapon_minigun"); 
+	SetTrieValue(trie, "312_index", 312); 
+	SetTrieValue(trie, "312_slot", 0); 
+	SetTrieValue(trie, "312_quality", 6); 
+	SetTrieValue(trie, "312_level", 5); 
+	//SetTrieString(trie, "312_attribs","2;2 ; 86;2 ; 183;0.005 ; 266;1 ; 106;0.1" );
+	SetTrieValue(trie, "312_ammo", 200); 
+
+//Candy Cane
+	SetTrieString(trie, "317_classname", "tf_weapon_bat"); 
+	SetTrieValue(trie, "317_index", 317); 
+	SetTrieValue(trie, "317_slot", 2); 
+	SetTrieValue(trie, "317_quality", 6); 
+	SetTrieValue(trie, "317_level", 25); 
+	//SetTrieString(trie, "317_attribs", "203 ; 1"); 
+	SetTrieValue(trie, "317_ammo", -1); 
+
+//Boston Basher
+	SetTrieString(trie, "325_classname", "tf_weapon_bat"); 
+	SetTrieValue(trie, "325_index", 325); 
+	SetTrieValue(trie, "325_slot", 2); 
+	SetTrieValue(trie, "325_quality", 6); 
+	SetTrieValue(trie, "325_level", 25); 
+	//SetTrieString(trie, "325_attribs", "149 ; 30 ; 204 ; 0"); 
+	SetTrieValue(trie, "325_ammo", -1); 
+
+//Backscratcher
+	SetTrieString(trie, "326_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "326_index", 326); 
+	SetTrieValue(trie, "326_slot", 2); 
+	SetTrieValue(trie, "326_quality", 6); 
+	SetTrieValue(trie, "326_level", 10); 
+	//SetTrieString(trie, "326_attribs", "69 ; 0 ; 2 ; 4 ; 108 ; 3"); 
+	SetTrieValue(trie, "326_ammo", -1); 
+
+//Claidheamh Mòr
+	SetTrieString(trie, "327_classname", "tf_weapon_sword"); 
+	SetTrieValue(trie, "327_index", 327); 
+	SetTrieValue(trie, "327_slot", 2); 
+	SetTrieValue(trie, "327_quality", 6); 
+	SetTrieValue(trie, "327_level", 5); 
+	//SetTrieString(trie, "327_attribs", "202 ; 10"); 
+	SetTrieValue(trie, "327_ammo", -1); 
+
+//Jag
+	SetTrieString(trie, "329_classname", "tf_weapon_wrench"); 
+	SetTrieValue(trie, "329_index", 329); 
+	SetTrieValue(trie, "329_slot", 2); 
+	SetTrieValue(trie, "329_quality", 6); 
+	SetTrieValue(trie, "329_level", 15); 
+	//SetTrieString(trie, "329_attribs", "286 ; 3 ; 1 ; 0 ; 327 ; 1 ; 92 ; 10"); 
+	SetTrieValue(trie, "329_ammo", -1); 
+
+//Fists of Steel
+	SetTrieString(trie, "331_classname", "tf_weapon_fists"); 
+	SetTrieValue(trie, "331_index", 331); 
+	SetTrieValue(trie, "331_slot", 2); 
+	SetTrieValue(trie, "331_quality", 6); 
+	SetTrieValue(trie, "331_level", 10); 
+	//SetTrieString(trie, "331_attribs","177;2 ; 128;1 ; 205;0 ; 206;5 ; 107;1.3 ; 2;2" ); 
+	SetTrieValue(trie, "331_ammo", -1); 
+
+//Sharpened Volcano Fragment
+	SetTrieString(trie, "348_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "348_index", 348); 
+	SetTrieValue(trie, "348_slot", 2); 
+	SetTrieValue(trie, "348_quality", 6); 
+	SetTrieValue(trie, "348_level", 10); 
+	//SetTrieString(trie, "348_attribs", "208 ; 1 ; 20 ; 1 ; 6 ; 0.3 ; 1 ; 0.5"); 
+	SetTrieValue(trie, "348_ammo", -1); 
+
+//Sun on a Stick
+	SetTrieString(trie, "349_classname", "tf_weapon_bat"); 
+	SetTrieValue(trie, "349_index", 349); 
+	SetTrieValue(trie, "349_slot", 2); 
+	SetTrieValue(trie, "349_quality", 6); 
+	SetTrieValue(trie, "349_level", 10); 
+//	SetTrieString(trie, "349_attribs", "209 ;1.0 ;1 ;0.85 ;153 ;1.0"); 	//old pre april 14, 2011 attribs
+	//SetTrieString(trie, "349_attribs", "20 ;1.0 ;1 ;0.75"); 
+	SetTrieValue(trie, "349_ammo", -1); 
+
+//Detonator
+	SetTrieString(trie, "351_classname", "tf_weapon_flaregun"); 
+	SetTrieValue(trie, "351_index", 351); 
+	SetTrieValue(trie, "351_slot", 1); 
+	SetTrieValue(trie, "351_quality", 6); 
+	SetTrieValue(trie, "351_level", 10); 
+	//SetTrieString(trie, "351_attribs","58;2.5 ; 144;1 ; 275;1 ; 135;0 ; 318;0.5 ; 78;3" );
+	SetTrieValue(trie, "351_ammo", 16); 
+
+//Soldier's Sashimono - The Concheror
+	SetTrieString(trie, "354_classname", "tf_weapon_buff_item"); 
+	SetTrieValue(trie, "354_index", 354); 
+	SetTrieValue(trie, "354_slot", 1); 
+	SetTrieValue(trie, "354_quality", 6); 
+	SetTrieValue(trie, "354_level", 5); 
+	//SetTrieString(trie, "354_attribs","116;3 ; 57;15" );
+	SetTrieValue(trie, "354_ammo", -1); 
+
+//Gunbai - Fan o'War
+	SetTrieString(trie, "355_classname", "tf_weapon_bat"); 
+	SetTrieValue(trie, "355_index", 355); 
+	SetTrieValue(trie, "355_slot", 2); 
+	SetTrieValue(trie, "355_quality", 6); 
+	SetTrieValue(trie, "355_level", 5); 
+	//SetTrieString(trie, "355_attribs", "218 ; 1 ; 149 ; 10 ; 337 ; 1 ; 1 ; 0.1 ; 6 ; 0.75 ; 340 ; 1"); 
+	SetTrieValue(trie, "355_ammo", -1); 
+
+//Kunai - Conniver's Kunai
+	SetTrieString(trie, "356_classname", "tf_weapon_knife"); 
+	SetTrieValue(trie, "356_index", 356); 
+	SetTrieValue(trie, "356_slot", 2); 
+	SetTrieValue(trie, "356_quality", 6); 
+	SetTrieValue(trie, "356_level", 1); 
+	//SetTrieString(trie, "356_attribs", "125 ; -100 ; 140 ; -150 ; 220 ; 99900"); 
+	SetTrieValue(trie, "356_ammo", -1); 
+
+//Soldier Katana - The Half-Zatoichi
+	SetTrieString(trie, "357_classname", "tf_weapon_katana"); 
+	SetTrieValue(trie, "357_index", 357); 
+	SetTrieValue(trie, "357_slot", 2); 
+	SetTrieValue(trie, "357_quality", 6); 
+	SetTrieValue(trie, "357_level", 5); 
+	//SetTrieString(trie, "357_attribs", "220 ; 100 ; 226 ; 1 ; 180 ; 500 ; 14 ; 1"); 
+	SetTrieValue(trie, "357_ammo", -1); 
+
+//Shahanshah
+	SetTrieString(trie, "401_classname", "tf_weapon_club"); 
+	SetTrieValue(trie, "401_index", 401); 
+	SetTrieValue(trie, "401_slot", 2); 
+	SetTrieValue(trie, "401_quality", 6); 
+	SetTrieValue(trie, "401_level", 5); 
+	//SetTrieString(trie, "401_attribs", "224 ; 5 ; 225 ; 0.1"); 
+	SetTrieValue(trie, "401_ammo", -1); 
+
+//Bazaar Bargain
+	SetTrieString(trie, "402_classname", "tf_weapon_sniperrifle_decap"); 
+	SetTrieValue(trie, "402_index", 402); 
+	SetTrieValue(trie, "402_slot", 0); 
+	SetTrieValue(trie, "402_quality", 6); 
+	SetTrieValue(trie, "402_level", 10); 
+	//SetTrieString(trie, "402_attribs", "237 ; 1 ; 222 ; 1 ; 223 ; 1"); 
+	SetTrieValue(trie, "402_ammo", 25); 
+
+//Persian Persuader
+	SetTrieString(trie, "404_classname", "tf_weapon_sword"); 
+	SetTrieValue(trie, "404_index", 404); 
+	SetTrieValue(trie, "404_slot", 2); 
+	SetTrieValue(trie, "404_quality", 6); 
+	SetTrieValue(trie, "404_level", 10); 
+	//SetTrieString(trie, "404_attribs", "249 ;2.0 ;258 ;1.0 ;15 ;0.0"); 
+	SetTrieValue(trie, "404_ammo", -1); 
+
+//Ali Baba's Wee Booties
+	SetTrieString(trie, "405_classname", "tf_wearable"); 
+	SetTrieValue(trie, "405_index", 405); 
+	SetTrieValue(trie, "405_slot", 0); 
+	SetTrieValue(trie, "405_quality", 6); 
+	SetTrieValue(trie, "405_level", 10); 
+	//SetTrieString(trie, "405_attribs", "246 ; 10 ; 26 ; 250"); 
+	SetTrieValue(trie, "405_ammo", -1); 
+
+//Splendid Screen
+	SetTrieString(trie, "406_classname", "tf_wearable_demoshield"); 
+	SetTrieValue(trie, "406_index", 406); 
+	SetTrieValue(trie, "406_slot", 1); 
+	SetTrieValue(trie, "406_quality", 6); 
+	SetTrieValue(trie, "406_level", 10); 
+	//SetTrieString(trie, "406_attribs", "247 ; 1 ; 248 ; 700 ; 60 ; 0.8 ; 64 ; 0.85"); 
+	SetTrieValue(trie, "406_ammo", -1); 
+
+//Quick Fix
+	SetTrieString(trie, "411_classname", "tf_weapon_medigun"); 
+	SetTrieValue(trie, "411_index", 411); 
+	SetTrieValue(trie, "411_slot", 1); 
+	SetTrieValue(trie, "411_quality", 6); 
+	SetTrieValue(trie, "411_level", 8); 
+	//SetTrieString(trie, "411_attribs","8;3 ; 10;2 ; 231;2 ; 144;2 ; 57;15" );
+	SetTrieValue(trie, "411_ammo", -1); 
+
+//Overdose
+	SetTrieString(trie, "412_classname", "tf_weapon_syringegun_medic"); 
+	SetTrieValue(trie, "412_index", 412); 
+	SetTrieValue(trie, "412_slot", 0); 
+	SetTrieValue(trie, "412_quality", 6); 
+	SetTrieValue(trie, "412_level", 5); 
+	//SetTrieString(trie, "412_attribs","144;1 ; 6;0.001 ; 1;0.5 ; 96;0.3 ; 3;0.4 ; 107;1.25 ; 76;2" ); 
+	SetTrieValue(trie, "412_ammo", 150); 
+
+//Solemn Vow (Also known as Hippocrates)
+	SetTrieString(trie, "413_classname", "tf_weapon_bonesaw"); 
+	SetTrieValue(trie, "413_index", 413); 
+	SetTrieValue(trie, "413_slot", 2); 
+	SetTrieValue(trie, "413_quality", 6); 
+	SetTrieValue(trie, "413_level", 10); 
+	//SetTrieString(trie, "413_attribs", "269 ;1.0"); 
+	SetTrieValue(trie, "413_ammo", -1); 
+
+//Liberty Launcher
+	SetTrieString(trie, "414_classname", "tf_weapon_rocketlauncher"); 
+	SetTrieValue(trie, "414_index", 414); 
+	SetTrieValue(trie, "414_slot", 0); 
+	SetTrieValue(trie, "414_quality", 6); 
+	SetTrieValue(trie, "414_level", 25); 
+	//SetTrieString(trie, "414_attribs","103;2.7 ; 6;0.5 ; 1;1 ; 4;1.5 ; 318;0.9 ; 76;2 ; 135;.5 ; 275;1" );
+	SetTrieValue(trie, "414_ammo", 40); 
+
+//Reserve Shooter
+	SetTrieString(trie, "415_classname", "tf_weapon_shotgun_soldier"); //); 
+	SetTrieValue(trie, "415_index", 415); 
+	SetTrieValue(trie, "415_slot", 1); 
+	SetTrieValue(trie, "415_quality", 6); 
+	SetTrieValue(trie, "415_level", 10); 
+	//SetTrieString(trie, "415_attribs", "178 ;0.85 ;265 ;3.0 ;3 ;0.5"); 
+	SetTrieValue(trie, "415_ammo", 32); 
+
+//Market Gardener
+	SetTrieString(trie, "416_classname", "tf_weapon_shovel"); 
+	SetTrieValue(trie, "416_index", 416); 
+	SetTrieValue(trie, "416_slot", 2); 
+	SetTrieValue(trie, "416_quality", 6); 
+	SetTrieValue(trie, "416_level", 10); 
+	//SetTrieString(trie, "416_attribs", "178 ; .5 ; 2 ; 2 ; 267 ; 1 ; 15 ; 0 ; 5 ; 1.75"); 
+	SetTrieValue(trie, "416_ammo", -1); 
+
+//Saxxy
+	SetTrieString(trie, "423_classname", "saxxy"); 
+	SetTrieValue(trie, "423_index", 423); 
+	SetTrieValue(trie, "423_slot", 2); 
+	SetTrieValue(trie, "423_quality", 6); 
+	SetTrieValue(trie, "423_level", 25); 
+	//SetTrieString(trie, "423_attribs", "150 ;1.0"); 
+	SetTrieValue(trie, "423_ammo", -1); 
+
+//Tomislav
+	SetTrieString(trie, "424_classname", "tf_weapon_minigun"); 
+	SetTrieValue(trie, "424_index", 424); 
+	SetTrieValue(trie, "424_slot", 0); 
+	SetTrieValue(trie, "424_quality", 6); 
+	SetTrieValue(trie, "424_level", 5); 
+	//SetTrieString(trie, "424_attribs", "107 ; 1.3 ; 1 ; 0.6 ; 75 ; 2.13 ; 238 ; 1 ; 87 ; 0.1 ; 128 ; 1"); 
+	SetTrieValue(trie, "424_ammo", 200); 
+
+//Family Business
+	SetTrieString(trie, "425_classname", "tf_weapon_shotgun_hwg"); 
+	SetTrieValue(trie, "425_index", 425); 
+	SetTrieValue(trie, "425_slot", 1); 
+	SetTrieValue(trie, "425_quality", 6); 
+	SetTrieValue(trie, "425_level", 10); 
+	//SetTrieString(trie, "425_attribs", "4 ; 3.3 ; 6 ; 0.5 ; 25 ; 3.3 ; 1 ; 0.85"); 
+	SetTrieValue(trie, "425_ammo", 32); 
+
+//Eviction Notice
+	SetTrieString(trie, "426_classname", "tf_weapon_fists"); 
+	SetTrieValue(trie, "426_index", 426); 
+	SetTrieValue(trie, "426_slot", 2); 
+	SetTrieValue(trie, "426_quality", 6); 
+	SetTrieValue(trie, "426_level", 10); 
+	//SetTrieString(trie, "426_attribs", "1 ; 0.7 ; 6 ; 0.25 ; 107 ; 1.4 ; 128 ; 1"); 
+	SetTrieValue(trie, "426_ammo", -1); 
+
+//Fishcake
+	SetTrieString(trie, "433_classname", "tf_weapon_lunchbox"); 
+	SetTrieValue(trie, "433_index", 433); 
+	SetTrieValue(trie, "433_slot", 1); 
+	SetTrieValue(trie, "433_quality", 6); 
+	SetTrieValue(trie, "433_level", 1); 
+	//SetTrieString(trie, "433_attribs", "139 ;1"); 
+	SetTrieValue(trie, "433_ammo", 1); 
+
+//Cow Mangler 5000
+	SetTrieString(trie, "441_classname", "tf_weapon_particle_cannon"); 
+	SetTrieValue(trie, "441_index", 441); 
+	SetTrieValue(trie, "441_slot", 0); 
+	SetTrieValue(trie, "441_quality", 6); 
+	SetTrieValue(trie, "441_level", 30); 
+	//SetTrieString(trie, "441_attribs", "281 ;1.0 ;282 ;1.0 ;15 ;0.0 ;284 ;1.0 ;288 ;1.0"); 
+	SetTrieValue(trie, "441_ammo", -1); 
+
+//Righteous Bison
+	SetTrieString(trie, "442_classname", "tf_weapon_raygun"); 
+	SetTrieValue(trie, "442_index", 442); 
+	SetTrieValue(trie, "442_slot", 1); 
+	SetTrieValue(trie, "442_quality", 6); 
+	SetTrieValue(trie, "442_level", 30); 
+	//SetTrieString(trie, "442_attribs", "281 ;1.0 ;283 ;1.0 ;285 ;0.0 ;284 ;1.0"); 
+	SetTrieValue(trie, "442_ammo", -1); 
+
+//Mantreads
+	SetTrieString(trie, "444_classname", "tf_wearable"); 
+	SetTrieValue(trie, "444_index", 444); 
+	SetTrieValue(trie, "444_slot", 1); 
+	SetTrieValue(trie, "444_quality", 6); 
+	SetTrieValue(trie, "444_level", 10); 
+	//SetTrieString(trie, "444_attribs","259;1 ; 252;0.01 ; 2;100 ; 129;10" );
+	SetTrieValue(trie, "444_ammo", -1); 
+
+//Disciplinary Action
+	SetTrieString(trie, "447_classname", "tf_weapon_shovel"); 
+	SetTrieValue(trie, "447_index", 447); 
+	SetTrieValue(trie, "447_slot", 2); 
+	SetTrieValue(trie, "447_quality", 6); 
+	SetTrieValue(trie, "447_level", 10); 
+	//SetTrieString(trie, "447_attribs","251;1 ; 1;0 ; 264;20 ; 263;10 ; 394;0.25 ; 107;1.25 ; 128;1" );
+	SetTrieValue(trie, "447_ammo", -1); 
+
+//Soda Popper
+	SetTrieString(trie, "448_classname", "tf_weapon_soda_popper"); 
+	SetTrieValue(trie, "448_index", 448); 
+	SetTrieValue(trie, "448_slot", 0); 
+	SetTrieValue(trie, "448_quality", 6); 
+	SetTrieValue(trie, "448_level", 10); 
+	//SetTrieString(trie, "448_attribs", "97 ; 0.5 ; 6 ; 0.25 ; 418 ; 1 ; 43 ; 1 ; 37 ; 3 ; 107 ; 1.1 ; 128 ; 1 ; 3 ; 0.5"); 
+	SetTrieValue(trie, "448_ammo", 32); 
+
+//Winger
+	SetTrieString(trie, "449_classname", "tf_weapon_handgun_scout_secondary"); 
+	SetTrieValue(trie, "449_index", 449); 
+	SetTrieValue(trie, "449_slot", 1); 
+	SetTrieValue(trie, "449_quality", 6); 
+	SetTrieValue(trie, "449_level", 15); 
+	//SetTrieString(trie, "449_attribs", "2 ; 2.5 ; 78 ; 1.5 ; 5 ; 1.5 ; 326 ; 2.5"); 
+	SetTrieValue(trie, "449_ammo", 36); 
+
+//Atomizer
+	SetTrieString(trie, "450_classname", "tf_weapon_bat"); 
+	SetTrieValue(trie, "450_index", 450); 
+	SetTrieValue(trie, "450_slot", 2); 
+	SetTrieValue(trie, "450_quality", 6); 
+	SetTrieValue(trie, "450_level", 10); 
+	//SetTrieString(trie, "450_attribs", "250 ; 10"); 
+	SetTrieValue(trie, "450_ammo", -1); 
+
+//Three-Rune Blade
+	SetTrieString(trie, "452_classname", "tf_weapon_bat"); 
+	SetTrieValue(trie, "452_index", 452); 
+	SetTrieValue(trie, "452_slot", 2); 
+	SetTrieValue(trie, "452_quality", 6); 
+	SetTrieValue(trie, "452_level", 10); 
+	//SetTrieString(trie, "452_attribs", "149 ; 30 ; 204 ; 0"); 
+	SetTrieValue(trie, "452_ammo", -1); 
+
+//Postal Pummeler
+	SetTrieString(trie, "457_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "457_index", 457); 
+	SetTrieValue(trie, "457_slot", 2); 
+	SetTrieValue(trie, "457_quality", 6); 
+	SetTrieValue(trie, "457_level", 10); 
+	//SetTrieString(trie, "457_attribs", "20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5");
+	SetTrieValue(trie, "457_ammo", -1); 
+
+//Enforcer
+	SetTrieString(trie, "460_classname", "tf_weapon_revolver"); 
+	SetTrieValue(trie, "460_index", 460); 
+	SetTrieValue(trie, "460_slot", 0); 
+	SetTrieValue(trie, "460_quality", 6); 
+	SetTrieValue(trie, "460_level", 5); 
+	//SetTrieString(trie, "460_attribs","2;3.1 ; 5;4 ; 3;0.16 ; 299;1 ; 78;0.25" );
+//	SetTrieString(trie, "460_attribs", "2 ;1.2 ;253 ;0.5"); 	//pre-may31 2012
+	SetTrieValue(trie, "460_ammo", 24); 
+
+//Big Earner
+	//SetTrieString(trie, "461_classname", "tf_weapon_knife"); 
+	SetTrieValue(trie, "461_index", 461); 
+	SetTrieValue(trie, "461_slot", 2); 
+	SetTrieValue(trie, "461_quality", 6); 
+	SetTrieValue(trie, "461_level", 1); 
+	SetTrieString(trie, "461_attribs", "166 ; 150"); 
+	SetTrieValue(trie, "461_ammo", -1); 
+
+//Maul
+	//SetTrieString(trie, "466_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "466_index", 466); 
+	SetTrieValue(trie, "466_slot", 2); 
+	SetTrieValue(trie, "466_quality", 6); 
+	SetTrieValue(trie, "466_level", 5); 
+	SetTrieString(trie, "466_attribs", "137 ; 10 ; 146 ; 1 ; 169 ; 99 ; 128 ; 1"); 
+	SetTrieValue(trie, "466_ammo", -1); 
+
+//Conscientious Objector
+	//SetTrieString(trie, "474_classname", "saxxy"); 
+	SetTrieValue(trie, "474_index", 474); 
+	SetTrieValue(trie, "474_slot", 2); 
+	SetTrieValue(trie, "474_quality", 6); 
+	SetTrieValue(trie, "474_level", 25); 
+	//SetTrieString(trie, "474_attribs", ""); 
+	SetTrieValue(trie, "474_ammo", -1); 
+
+//Nessie's Nine Iron
+	SetTrieString(trie, "482_classname", "tf_weapon_sword"); 
+	SetTrieValue(trie, "482_index", 482); 
+	SetTrieValue(trie, "482_slot", 2); 
+	SetTrieValue(trie, "482_quality", 6); 
+	SetTrieValue(trie, "482_level", 5); 
+	//SetTrieString(trie, "482_attribs","26;75 ; 107;1.1 ; 292;6 ; 388;6 ; 219;1" );
+	SetTrieValue(trie, "482_ammo", -1); 
+
+//The Original
+	SetTrieString(trie, "513_classname", "tf_weapon_rocketlauncher"); 
+	SetTrieValue(trie, "513_index", 513); 
+	SetTrieValue(trie, "513_slot", 0); 
+	SetTrieValue(trie, "513_quality", 6); 
+	SetTrieValue(trie, "513_level", 5); 
+	//SetTrieString(trie, "513_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
+	SetTrieValue(trie, "513_ammo", 20); 
+
+//The Diamondback
+	SetTrieString(trie, "525_classname", "tf_weapon_revolver"); 
+	SetTrieValue(trie, "525_index", 525); 
+	SetTrieValue(trie, "525_slot", 0); 
+	SetTrieValue(trie, "525_quality", 6); 
+	SetTrieValue(trie, "525_level", 5); 
+	//SetTrieString(trie, "525_attribs", "296 ;1.0 ;1 ;0.85 ;15 ;0.0"); 
+	SetTrieValue(trie, "525_ammo", 24); 
+
+//The Machina
+	SetTrieString(trie, "526_classname", "tf_weapon_sniperrifle"); 
+	SetTrieValue(trie, "526_index", 526); 
+	SetTrieValue(trie, "526_slot", 0); 
+	SetTrieValue(trie, "526_quality", 6); 
+	SetTrieValue(trie, "526_level", 5); 
+	//SetTrieString(trie, "526_attribs", "308 ; 1 ; 297 ; 0 ; 304 ; 100 ; 1 ; 0.1 ; 149 ; 10"); 
+	SetTrieValue(trie, "526_ammo", 25); 
+
+//The Widowmaker
+	SetTrieString(trie, "527_classname", "tf_weapon_shotgun_primary"); 
+	SetTrieValue(trie, "527_index", 527); 
+	SetTrieValue(trie, "527_slot", 0); 
+	SetTrieValue(trie, "527_quality", 6); 
+	SetTrieValue(trie, "527_level", 5); 
+	//SetTrieString(trie, "527_attribs", "298 ; 20 ; 301 ; 1 ; 303 ; -1 ; 299 ; 100 ; 6 ; 0.8 ; 80 ; 1.5 ; 307 ; 1 ; 113 ; 25"); 
+	SetTrieValue(trie, "527_ammo", 200); 
+
+//The Short Circuit
+	SetTrieString(trie, "528_classname", "tf_weapon_mechanical_arm"); 
+	SetTrieValue(trie, "528_index", 528); 
+	SetTrieValue(trie, "528_slot", 1); 
+	SetTrieValue(trie, "528_quality", 6); 
+	SetTrieValue(trie, "528_level", 5); 
+	//SetTrieString(trie, "528_attribs","298;15 ; 301;1 ; 300;1 ; 307;1 ; 303;-1 ; 312;1 ; 299;100 ; 6;1 ; 80;1.5 ; 113;25" );
+	SetTrieValue(trie, "528_ammo", 200); 
+
+//Unarmed Combat
+	SetTrieString(trie, "572_classname", "tf_weapon_bat_fish"); 
+	SetTrieValue(trie, "572_index", 572); 
+	SetTrieValue(trie, "572_slot", 2); 
+	SetTrieValue(trie, "572_quality", 6); 
+	SetTrieValue(trie, "572_level", 13); 
+	//SetTrieString(trie, "572_attribs", "332 ;1.0 ;292 ;7.0 ;388 ;7.0"); 
+	SetTrieValue(trie, "572_ammo", -1); 
+
+//Wanga Prick
+	SetTrieString(trie, "574_classname", "tf_weapon_knife"); 
+	SetTrieValue(trie, "574_index", 574); 
+	SetTrieValue(trie, "574_slot", 2); 
+	SetTrieValue(trie, "574_quality", 6); 
+	SetTrieValue(trie, "574_level", 54); 
+	//SetTrieString(trie, "574_attribs", "154 ;1.0 ;156 ;1.0 ;155 ;1.0 ;144 ;1.0"); 
+	SetTrieValue(trie, "574_ammo", -1); 
+
+//Apoco-Fists
+	SetTrieString(trie, "587_classname", "tf_weapon_fists"); 
+	SetTrieValue(trie, "587_index", 587); 
+	SetTrieValue(trie, "587_slot", 2); 
+	SetTrieValue(trie, "587_quality", 6); 
+	SetTrieValue(trie, "587_level", 10); 
+	//SetTrieString(trie, "587_attribs", "309 ;1.0"); 
+	SetTrieValue(trie, "587_ammo", -1); 
+
+//Pomson 6000
+	SetTrieString(trie, "588_classname", "tf_weapon_drg_pomson"); 
+	SetTrieValue(trie, "588_index", 588); 
+	SetTrieValue(trie, "588_slot", 0); 
+	SetTrieValue(trie, "588_quality", 6); 
+	SetTrieValue(trie, "588_level", 10); 
+	//SetTrieString(trie, "588_attribs", "281 ;1.0 ;285 ;1.0 ;337 ;10.0 ;338 ;20.0"); 
+	SetTrieValue(trie, "588_ammo", -1); 
+
+//Eureka Effect
+	SetTrieString(trie, "589_classname", "tf_weapon_wrench"); 
+	SetTrieValue(trie, "589_index", 589); 
+	SetTrieValue(trie, "589_slot", 2); 
+	SetTrieValue(trie, "589_quality", 6); 
+	SetTrieValue(trie, "589_level", 20); 
+	//SetTrieString(trie, "589_attribs", "352 ;1.0 ;353 ;1.0"); 
+	SetTrieValue(trie, "589_ammo", -1); 
+
+//Third Degree
+	SetTrieString(trie, "593_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "593_index", 593); 
+	SetTrieValue(trie, "593_slot", 2); 
+	SetTrieValue(trie, "593_quality", 6); 
+	SetTrieValue(trie, "593_level", 10); 
+	//SetTrieString(trie, "593_attribs", "107 ; 1.5 ; 128 ; 1 ; 360 ; 1 ; 226 ; 1 ; 66 ; 0.75 ; 64 ; .5 ; 2 ; 2.5"); 
+	SetTrieValue(trie, "593_ammo", -1); 
+
+//Phlogistinator
+	SetTrieString(trie, "594_classname", "tf_weapon_flamethrower"); 
+	SetTrieValue(trie, "594_index", 594); 
+	SetTrieValue(trie, "594_slot", 0); 
+	SetTrieValue(trie, "594_quality", 6); 
+	SetTrieValue(trie, "594_level", 10); 
+//	SetTrieString(trie, "594_attribs", "368 ;1.0 ;116 ;5.0 ;356 ;1.0 ;357 ;1.2 ;350 ;1.0 ;144 ;1.0 ;15 ;0.0"); 
+	//SetTrieString(trie, "594_attribs","368;1 ; 116;5 ; 356;1 ; 144;1 ; 551;1 ; 350;1 ; 201;2" );
+	SetTrieValue(trie, "594_ammo", 200); 
+
+//Manmelter
+	SetTrieString(trie, "595_classname", "tf_weapon_flaregun_revenge"); 
+	SetTrieValue(trie, "595_index", 595); 
+	SetTrieValue(trie, "595_slot", 1); 
+	SetTrieValue(trie, "595_quality", 6); 
+	SetTrieValue(trie, "595_level", 30); 
+	//SetTrieString(trie, "595_attribs", "103 ; 1.9 ; 350 ; 1"); 
+	SetTrieValue(trie, "595_ammo", -1); 
+
+//Bootlegger
+	SetTrieString(trie, "608_classname", "tf_wearable"); 
+	SetTrieValue(trie, "608_index", 608); 
+	SetTrieValue(trie, "608_slot", 0); 
+	SetTrieValue(trie, "608_quality", 6); 
+	SetTrieValue(trie, "608_level", 10); 
+	//SetTrieString(trie, "608_attribs", "246 ; 10 ; 26 ; 250"); 
+	SetTrieValue(trie, "608_ammo", -1); 
+
+//Scottish Handshake
+	SetTrieString(trie, "609_classname", "tf_weapon_bottle"); 
+	SetTrieValue(trie, "609_index", 609); 
+	SetTrieValue(trie, "609_slot", 2); 
+	SetTrieValue(trie, "609_quality", 6); 
+	SetTrieValue(trie, "609_level", 10); 
+	//SetTrieString(trie, "609_attribs", "394 ; 0.35"); 
+	SetTrieValue(trie, "609_ammo", -1); 
+
+//Sharp Dresser
+	SetTrieString(trie, "638_classname", "tf_weapon_knife"); 
+	SetTrieValue(trie, "638_index", 638); 
+	SetTrieValue(trie, "638_slot", 2); 
+	SetTrieValue(trie, "638_quality", 6); 
+	SetTrieValue(trie, "638_level", 1); 
+	//SetTrieString(trie, "638_attribs", "31 ; 3"); 
+	SetTrieValue(trie, "638_ammo", -1); 
+
+//Cozy Camper
+	SetTrieString(trie, "642_classname", "tf_wearable"); 
+	SetTrieValue(trie, "642_index", 642); 
+	SetTrieValue(trie, "642_slot", 1); 
+	SetTrieValue(trie, "642_quality", 6); 
+	SetTrieValue(trie, "642_level", 10); 
+	//SetTrieString(trie, "642_attribs", "57 ; 10 ; 377 ; 0.001 ; 376 ; 1 ; 378 ; 2"); 
+
+//Wrap Assassin
+	SetTrieString(trie, "648_classname", "tf_weapon_bat_giftwrap"); 
+	SetTrieValue(trie, "648_index", 648); 
+	SetTrieValue(trie, "648_slot", 2); 
+	SetTrieValue(trie, "648_quality", 6); 
+	SetTrieValue(trie, "648_level", 15); 
+	//SetTrieString(trie, "648_attribs", "346 ;1.0 ;1 ;0.3"); 
+	SetTrieValue(trie, "648_ammo", 1); 
+
+//Spy-cicle
+	SetTrieString(trie, "649_classname", "tf_weapon_knife"); 
+	SetTrieValue(trie, "649_index", 649); 
+	SetTrieValue(trie, "649_slot", 2); 
+	SetTrieValue(trie, "649_quality", 6); 
+	SetTrieValue(trie, "649_level", 1); 
+	//SetTrieString(trie, "649_attribs", "347 ; 1 ; 156 ; 1 ; 60 ; 100 ; 361 ; 2 ; 365 ; 3"); 
+	SetTrieValue(trie, "649_ammo", 1); 
+
+//Festive Minigun 2011
+	SetTrieString(trie, "654_classname", "tf_weapon_minigun"); 
+	SetTrieValue(trie, "654_index", 654); 
+	SetTrieValue(trie, "654_slot", 0); 
+	SetTrieValue(trie, "654_quality", 6); 
+	SetTrieValue(trie, "654_level", 1); 
+	//SetTrieString(trie, "654_attribs", "76 ; 5 ; 6 ; .9 ; 16 ; 20"); 
+	SetTrieValue(trie, "654_ammo", 200); 
+
+//Holiday Punch
+	SetTrieString(trie, "656_classname", "tf_weapon_fists"); 
+	SetTrieValue(trie, "656_index", 656); 
+	SetTrieValue(trie, "656_slot", 2); 
+	SetTrieValue(trie, "656_quality", 6); 
+	SetTrieValue(trie, "656_level", 10); 
+	//SetTrieString(trie, "656_attribs", "107 ; 1.3 ; 358 ; 1 ; 362 ; 1 ; 369 ; 1 ; 363 ; 1 ; 6 ; 0.25 ; 1 ; 0 ; 128 ; 1 ; 179 ; 1"); 
+	SetTrieValue(trie, "656_ammo", -1); 
+
+//Festive Rocket Launcher 2011
+	SetTrieString(trie, "658_classname", "tf_weapon_rocketlauncher"); 
+	SetTrieValue(trie, "658_index", 658); 
+	SetTrieValue(trie, "658_slot", 0); 
+	SetTrieValue(trie, "658_quality", 6); 
+	SetTrieValue(trie, "658_level", 1); 
+	//SetTrieString(trie, "658_attribs", "104 ; 0.32 ; 99 ; 1.3 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1"); 
+	SetTrieValue(trie, "658_ammo", 20); 
+
+//Festive Flamethrower 2011
+	SetTrieString(trie, "659_classname", "tf_weapon_flamethrower"); 
+	SetTrieValue(trie, "659_index", 659); 
+	SetTrieValue(trie, "659_slot", 0); 
+	SetTrieValue(trie, "659_quality", 6); 
+	SetTrieValue(trie, "659_level", 1); 
+	//SetTrieString(trie, "659_attribs", "171 ; 0.25 ; 256 ; 0.1 ; 255 ; .5 ; 257 ; .05"); 
+	SetTrieValue(trie, "659_ammo", 200); 
+
+//Festive Bat 2011
+	SetTrieString(trie, "660_classname", "tf_weapon_bat"); 
+	SetTrieValue(trie, "660_index", 660); 
+	SetTrieValue(trie, "660_slot", 2); 
+	SetTrieValue(trie, "660_quality", 6); 
+	SetTrieValue(trie, "660_level", 1); 
+	//SetTrieString(trie, "660_attribs", ""); 
+	SetTrieValue(trie, "660_ammo", -1); 
+
+//Festive Sticky Launcher 2011
+	SetTrieString(trie, "661_classname", "tf_weapon_pipebomblauncher"); 
+	SetTrieValue(trie, "661_index", 661); 
+	SetTrieValue(trie, "661_slot", 1); 
+	SetTrieValue(trie, "661_quality", 6); 
+	SetTrieValue(trie, "661_level", 1); 
+	//SetTrieString(trie, "661_attribs", "96 ; 0.3 ; 78 ; 10 ; 6 ; 0.3"); 
+	SetTrieValue(trie, "661_ammo", 24); 
+
+//Festive Wrench 2011
+	SetTrieString(trie, "662_classname", "tf_weapon_wrench"); 
+	SetTrieValue(trie, "662_index", 662); 
+	SetTrieValue(trie, "662_slot", 2); 
+	SetTrieValue(trie, "662_quality", 6); 
+	SetTrieValue(trie, "662_level", 1); 
+	//SetTrieString(trie, "662_attribs", "6 ; 0.35 ; 286 ; 3"); 
+	SetTrieValue(trie, "662_ammo", -1); 
+
+//Festive Medigun 2011
+	SetTrieString(trie, "663_classname", "tf_weapon_medigun"); 
+	SetTrieValue(trie, "663_index", 663); 
+	SetTrieValue(trie, "663_slot", 1); 
+	SetTrieValue(trie, "663_quality", 6); 
+	SetTrieValue(trie, "663_level", 1); 
+	//SetTrieString(trie, "663_attribs", "314 ; 2 ; 11 ; 3"); 
+	SetTrieValue(trie, "663_ammo", -1); 
+
+//Festive Sniper Rifle 2011
+	SetTrieString(trie, "664_classname", "tf_weapon_sniperrifle"); 
+	SetTrieValue(trie, "664_index", 664); 
+	SetTrieValue(trie, "664_slot", 0); 
+	SetTrieValue(trie, "664_quality", 6); 
+	SetTrieValue(trie, "664_level", 1); 
+	//SetTrieString(trie, "664_attribs", "41 ; 5"); 
+	SetTrieValue(trie, "664_ammo", 25); 
+
+//Festive Knife 2011
+	SetTrieString(trie, "665_classname", "tf_weapon_knife"); 
+	SetTrieValue(trie, "665_index", 665); 
+	SetTrieValue(trie, "665_slot", 2); 
+	SetTrieValue(trie, "665_quality", 6); 
+	SetTrieValue(trie, "665_level", 1); 
+	//SetTrieString(trie, "665_attribs", "31 ; 3"); 
+	SetTrieValue(trie, "665_ammo", -1); 
+
+//Festive Scattergun 2011
+	SetTrieString(trie, "669_classname", "tf_weapon_scattergun"); 
+	SetTrieValue(trie, "669_index", 669); 
+	SetTrieValue(trie, "669_slot", 0); 
+	SetTrieValue(trie, "669_quality", 6); 
+	SetTrieValue(trie, "669_level", 1); 
+	//SetTrieString(trie, "669_attribs", "97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8"); 
+	SetTrieValue(trie, "669_ammo", 32); 
+
+//Black Rose
+	SetTrieString(trie, "727_classname", "tf_weapon_knife"); 
+	SetTrieValue(trie, "727_index", 727); 
+	SetTrieValue(trie, "727_slot", 2); 
+	SetTrieValue(trie, "727_quality", 6); 
+	SetTrieValue(trie, "727_level", 1); 
+	//SetTrieString(trie, "727_attribs", "31 ; 3"); 
+	SetTrieValue(trie, "727_ammo", -1); 
+
+//Beggar's Bazooka
+	SetTrieString(trie, "730_classname", "tf_weapon_rocketlauncher"); 
+	SetTrieValue(trie, "730_index", 730); 
+	SetTrieValue(trie, "730_slot", 0); 
+	SetTrieValue(trie, "730_quality", 6); 
+	SetTrieValue(trie, "730_level", 1); 
+	//SetTrieString(trie, "730_attribs","411;20 ; 4;7.5 ; 76;10 ; 413;1 ; 417;1 ; 394;0.07 ; 241;0.45 ; 135;.05 ; 15;1 ; 475;1.05" );
+	SetTrieValue(trie, "730_ammo", 150); 
+	
+//Lollichop
+	SetTrieString(trie, "739_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "739_index", 739); 
+	SetTrieValue(trie, "739_slot", 2); 
+	SetTrieValue(trie, "739_quality", 6); 
+	SetTrieValue(trie, "739_level", 1); 
+	//SetTrieString(trie, "739_attribs", "178 ; .5 ; 2 ; 1.5 ; 267 ; 1 ; 15 ; 0"); 
+	SetTrieValue(trie, "739_ammo", -1); 
+
+//Scorch Shot
+	SetTrieString(trie, "740_classname", "tf_weapon_flaregun"); 
+	SetTrieValue(trie, "740_index", 740); 
+	SetTrieValue(trie, "740_slot", 1); 
+	SetTrieValue(trie, "740_quality", 6); 
+	SetTrieValue(trie, "740_level", 10); 
+	//SetTrieString(trie, "740_attribs","99;3 ; 25;0.5 ; 416;3 ; 72;.5 ; 74;.5" ); 
+	SetTrieValue(trie, "740_ammo", 16); 
+
+//Rainblower
+	SetTrieString(trie, "741_classname", "tf_weapon_flamethrower"); 
+	SetTrieValue(trie, "741_index", 741); 
+	SetTrieValue(trie, "741_slot", 0); 
+	SetTrieValue(trie, "741_quality", 6); 
+	SetTrieValue(trie, "741_level", 10); 
+	//SetTrieString(trie, "741_attribs", "171 ; 0.25 ; 256 ; 0.1 ; 255 ; .5 ; 257 ; .05"); 
+	SetTrieValue(trie, "741_ammo", 200); 
+
+//Cleaner's Carbine
+	SetTrieString(trie, "751_classname", "tf_weapon_smg"); 
+	SetTrieValue(trie, "751_index", 751); 
+	SetTrieValue(trie, "751_slot", 1); 
+	SetTrieValue(trie, "751_quality", 6); 
+	SetTrieValue(trie, "751_level", 1); 
+	//SetTrieString(trie, "751_attribs", "31 ; 30"); 
+	SetTrieValue(trie, "751_ammo", 75); 
+
+//Hitman's Heatmaker
+	SetTrieString(trie, "752_classname", "tf_weapon_sniperrifle"); 
+	SetTrieValue(trie, "752_index", 752); 
+	SetTrieValue(trie, "752_slot", 0); 
+	SetTrieValue(trie, "752_quality", 6); 
+	SetTrieValue(trie, "752_level", 1); 
+	//SetTrieString(trie, "752_attribs", "219 ; 1 ; 329 ; 0.1 ; 387 ; 100 ; 398 ; 50 ; 116 ; 6"); 
+	SetTrieValue(trie, "752_ammo", 25); 
+
+//Baby Face's Blaster
+	SetTrieString(trie, "772_classname", "tf_weapon_pep_brawler_blaster"); 
+	SetTrieValue(trie, "772_index", 772); 
+	SetTrieValue(trie, "772_slot", 0); 
+	SetTrieValue(trie, "772_quality", 6); 
+	SetTrieValue(trie, "772_level", 10); 
+	//SetTrieString(trie, "772_attribs", "106 ; 0.6 ; 107 ; 1.3 ; 418 ; 1 ; 491 ; 0"); 
+	SetTrieValue(trie, "772_ammo", 32); 
+
+//Pretty Boy's Pocket Pistol
+	SetTrieString(trie, "773_classname", "tf_weapon_handgun_scout_secondary"); 
+	SetTrieValue(trie, "773_index", 773); 
+	SetTrieValue(trie, "773_slot", 1); 
+	SetTrieValue(trie, "773_quality", 6); 
+	SetTrieValue(trie, "773_level", 10); 
+	//SetTrieString(trie, "773_attribs", "26 ; 150 ; 275 ; 1"); 
+	SetTrieValue(trie, "773_ammo", 36); 
+
+//Escape Plan
+	SetTrieString(trie, "775_classname", "tf_weapon_shovel"); 
+	SetTrieValue(trie, "775_index", 775); 
+	SetTrieValue(trie, "775_slot", 2); 
+	SetTrieValue(trie, "775_quality", 6); 
+	SetTrieValue(trie, "775_level", 10); 
+	//SetTrieString(trie, "775_attribs", "107 ; 1.45 ; 128 ; 1 ; 414 ; 0"); 
+	SetTrieValue(trie, "775_ammo", -1); 
+
+//Red-Tape Recorder
+	SetTrieString(trie, "810_classname", "tf_weapon_sapper"); 
+	SetTrieValue(trie, "810_index", 810); 
+	SetTrieValue(trie, "810_slot", 1); 
+	SetTrieValue(trie, "810_quality", 6); 
+	SetTrieValue(trie, "810_level", 1); 
+	//SetTrieString(trie, "810_attribs", "433 ;0.5 ;426 ;0.0"); 
+	SetTrieValue(trie, "810_ammo", -1); 
+
+//Huo Long Heater
+	SetTrieString(trie, "811_classname", "tf_weapon_minigun"); 
+	SetTrieValue(trie, "811_index", 811); 
+	SetTrieValue(trie, "811_slot", 0); 
+	SetTrieValue(trie, "811_quality", 6); 
+	SetTrieValue(trie, "811_level", 1); 
+	//SetTrieString(trie, "811_attribs","430;150 ; 431;0 ; 60;.3 ; 87;0.5 ; 527;1" );
+
+//Flying Guillotine
+	SetTrieString(trie, "812_classname", "tf_weapon_cleaver"); 
+	SetTrieValue(trie, "812_index", 812); 
+	SetTrieValue(trie, "812_slot", 1); 
+	SetTrieValue(trie, "812_quality", 6); 
+	SetTrieValue(trie, "812_level", 1); 
+	//SetTrieString(trie, "812_attribs","278;.25 ; 616;1" );
+	SetTrieValue(trie, "812_ammo", 1); 
+
+//Neon Annihilator
+	SetTrieString(trie, "813_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "813_index", 813); 
+	SetTrieValue(trie, "813_slot", 2); 
+	SetTrieValue(trie, "813_quality", 6); 
+	SetTrieValue(trie, "813_level", 1); 
+	//SetTrieString(trie, "813_attribs", "146 ; 1 ; 438 ; 1 ; 2 ; 1.5"); 
+	SetTrieValue(trie, "813_ammo", -1); 
+
+//Promo Red-Tape Recorder
+	SetTrieString(trie, "831_classname", "tf_weapon_sapper"); 
+	SetTrieValue(trie, "831_index", 831); 
+	SetTrieValue(trie, "831_slot", 1); 
+	SetTrieValue(trie, "831_quality", 1); 
+	SetTrieValue(trie, "831_level", 1); 
+	//SetTrieString(trie, "831_attribs", "433 ;0.5 ;426 ;0.0 ;153 ;1.0"); 
+	SetTrieValue(trie, "831_ammo", -1); 
+
+//Promo Huo Long Heater
+	SetTrieString(trie, "832_classname", "tf_weapon_minigun"); 
+	SetTrieValue(trie, "832_index", 832); 
+	SetTrieValue(trie, "832_slot", 0); 
+	SetTrieValue(trie, "832_quality", 1); 
+	SetTrieValue(trie, "832_level", 1); 
+	//SetTrieString(trie, "832_attribs", "430 ; 50 ; 431 ; 0"); 
+	SetTrieValue(trie, "832_ammo", 200); 
+
+//Promo Flying Guillotine
+	SetTrieString(trie, "833_classname", "tf_weapon_cleaver"); 
+	SetTrieValue(trie, "833_index", 833); 
+	SetTrieValue(trie, "833_slot", 1); 
+	SetTrieValue(trie, "833_quality", 1); 
+	SetTrieValue(trie, "833_level", 1); 
+	//SetTrieString(trie, "833_attribs", "435 ;1.0 ;437 ;65536.0 ;15 ;0.0 ;153 ;1.0"); 
+	SetTrieValue(trie, "833_ammo", 1); 
+
+//Promo Neon Annihilator
+	SetTrieString(trie, "834_classname", "tf_weapon_fireaxe"); 
+	SetTrieValue(trie, "834_index", 834); 
+	SetTrieValue(trie, "834_slot", 2); 
+	SetTrieValue(trie, "834_quality", 1); 
+	SetTrieValue(trie, "834_level", 1); 
+	//SetTrieString(trie, "834_attribs", "146 ; 1 ; 438 ; 1 ; 2 ; 1.5"); 
+	SetTrieValue(trie, "834_ammo", -1); 
+
+//Ap-Sap
+	SetTrieString(trie, "933_classname", "tf_weapon_sapper"); 
+	SetTrieValue(trie, "933_index", 933); 
+	SetTrieValue(trie, "933_slot", 1); 
+	SetTrieValue(trie, "933_quality", 6); 
+	SetTrieValue(trie, "933_level", 1); 
+	//SetTrieString(trie, "933_attribs", "451 ;1.0 ;452 ;3.0"); 
+	SetTrieValue(trie, "933_ammo", -1); 
+
+//Bat Outta Hell
+	SetTrieString(trie, "939_classname", "saxxy"); 
+	SetTrieValue(trie, "939_index", 939); 
+	SetTrieValue(trie, "939_slot", 2); 
+	SetTrieValue(trie, "939_quality", 6); 
+	SetTrieValue(trie, "939_level", 5); 
+	//SetTrieString(trie, "939_attribs", ""); 
+	SetTrieValue(trie, "939_ammo", -1); 
+
+//Quackenbirdt
+	SetTrieString(trie, "947_classname", "tf_weapon_invis"); 
+	SetTrieValue(trie, "947_index", 947); 
+	SetTrieValue(trie, "947_slot", 4); 
+	SetTrieValue(trie, "947_quality", 6); 
+	SetTrieValue(trie, "947_level", 30); 
+	//SetTrieString(trie, "947_attribs", ""); 
+	SetTrieValue(trie, "947_ammo", -1); 
+
+//Memory Maker
+	SetTrieString(trie, "954_classname", "saxxy"); 
+	SetTrieValue(trie, "954_index", 954); 
+	SetTrieValue(trie, "954_slot", 2); 
+	SetTrieValue(trie, "954_quality", 6); 
+	SetTrieValue(trie, "954_level", 50); 
+	//SetTrieString(trie, "954_attribs", ""); 
+	SetTrieValue(trie, "954_ammo", -1); 
+
+//Loose Cannon
+	SetTrieString(trie, "996_classname", "tf_weapon_cannon"); 
+	SetTrieValue(trie, "996_index", 996); 
+	SetTrieValue(trie, "996_slot", 0); 
+	SetTrieValue(trie, "996_quality", 6); 
+	SetTrieValue(trie, "996_level", 10); 
+	//SetTrieString(trie, "996_attribs", "103 ; 2 ; 4 ; 5 ; 318 ; .3 ; 6 ; 0.3 ; 1 ; 0.7 ; 76 ; 15 ; 15 ; 1 ; 43 ; 1"); 
+	SetTrieValue(trie, "996_ammo", 16); 
+
+//Rescue Ranger
+	SetTrieString(trie, "997_classname", "tf_weapon_shotgun_building_rescue"); 
+	SetTrieValue(trie, "997_index", 997); 
+	SetTrieValue(trie, "997_slot", 0); 
+	SetTrieValue(trie, "997_quality", 6); 
+	SetTrieValue(trie, "997_level", 1); 
+	//SetTrieString(trie, "997_attribs", "469 ; 1 ; 474 ; 100 ; 4 ; 3.3 ; 37 ; 3 ; 6 ; 0.5"); 
+	SetTrieValue(trie, "997_ammo", 16); 
+
+//Vaccinator
+	SetTrieString(trie, "998_classname", "tf_weapon_medigun"); 
+	SetTrieValue(trie, "998_index", 998); 
+	SetTrieValue(trie, "998_slot", 1); 
+	SetTrieValue(trie, "998_quality", 6); 
+	SetTrieValue(trie, "998_level", 8); 
+	//SetTrieString(trie, "998_attribs","10;5 ; 144;3 ; 473;3 ; 292;1 ; 293;2 ; 60;.5 ; 64;.5 ; 66;.5 ; 8;2" );
+	SetTrieValue(trie, "998_ammo", -1); 
+
+//Ham Shank
+	SetTrieString(trie, "1013_classname", "saxxy"); 
+	SetTrieValue(trie, "1013_index", 1013); 
+	SetTrieValue(trie, "1013_slot", 2); 
+	SetTrieValue(trie, "1013_quality", 6); 
+	SetTrieValue(trie, "1013_level", 5); 
+	//SetTrieString(trie, "1013_attribs", ""); 
+	SetTrieValue(trie, "1013_ammo", -1); 
+
+//force a nature
+	SetTrieString(trie, "45_classname", "tf_weapon_scattergun"); 
+	SetTrieValue(trie, "45_index", 45); 
+	SetTrieValue(trie, "45_slot", 0); 
+	SetTrieValue(trie, "45_quality", 6); 
+	SetTrieValue(trie, "45_level", 10); 
+	//SetTrieString(trie, "45_attribs","44;1 ; 45;16 ; 3;0.166 ; 43;1 ; 1;.35 ; 106;5 ; 37;5 ; 97;0.8" );
+	SetTrieValue(trie, "45_ammo", 32); 
+
+//bottle
+	SetTrieString(trie, "1_classname", "tf_weapon_bottle");
+	SetTrieValue(trie, "1_index", 1);
+	SetTrieValue(trie, "1_slot", 2);
+	SetTrieValue(trie, "1_quality", 0);
+	SetTrieValue(trie, "1_level", 1);
+	//SetTrieString(trie, "1_attribs", "394 ; 0.35");
+	SetTrieValue(trie, "1_ammo", -1);
+    
 //Upgradeable shotgun other classes
 	SetTrieString(trie, "4199_classname", "tf_weapon_shotgun_soldier");
 	SetTrieValue(trie, "4199_index", 199);
 	SetTrieValue(trie, "4199_slot", 1);
 	SetTrieValue(trie, "4199_quality", 6);
 	SetTrieValue(trie, "4199_level", 1);
-	SetTrieString(trie, "4199_attribs", "");
+	//SetTrieString(trie, "4199_attribs", "");
 	SetTrieValue(trie, "4199_ammo", 32);
 
 //valve rocket launcher
@@ -6356,7 +6567,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9018_slot", 0);
 	SetTrieValue(trie, "9018_quality", 8);
 	SetTrieValue(trie, "9018_level", 100);
-	SetTrieString(trie, "9018_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
+	//SetTrieString(trie, "9018_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
 	SetTrieValue(trie, "9018_ammo", 200);
 
 //valve sticky launcher
@@ -6365,7 +6576,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9020_slot", 1);
 	SetTrieValue(trie, "9020_quality", 8);
 	SetTrieValue(trie, "9020_level", 100);
-	SetTrieString(trie, "9020_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
+	//SetTrieString(trie, "9020_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
 	SetTrieValue(trie, "9020_ammo", 200);
 
 //valve sniper rifle
@@ -6374,7 +6585,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9014_slot", 0);
 	SetTrieValue(trie, "9014_quality", 8);
 	SetTrieValue(trie, "9014_level", 100);
-	SetTrieString(trie, "9014_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
+	//SetTrieString(trie, "9014_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
 	SetTrieValue(trie, "9014_ammo", 200);
 
 //valve scattergun
@@ -6383,7 +6594,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9013_slot", 0);
 	SetTrieValue(trie, "9013_quality", 8);
 	SetTrieValue(trie, "9013_level", 100);
-	SetTrieString(trie, "9013_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
+	//SetTrieString(trie, "9013_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
 	SetTrieValue(trie, "9013_ammo", 200);
 
 //valve flamethrower
@@ -6392,7 +6603,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9021_slot", 0);
 	SetTrieValue(trie, "9021_quality", 8);
 	SetTrieValue(trie, "9021_level", 100);
-	SetTrieString(trie, "9021_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
+	//SetTrieString(trie, "9021_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
 	SetTrieValue(trie, "9021_ammo", 400);
 
 //valve syringe gun
@@ -6401,7 +6612,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9017_slot", 0);
 	SetTrieValue(trie, "9017_quality", 8);
 	SetTrieValue(trie, "9017_level", 100);
-	SetTrieString(trie, "9017_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
+	//SetTrieString(trie, "9017_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
 	SetTrieValue(trie, "9017_ammo", 300);
 
 //valve minigun
@@ -6410,7 +6621,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9015_slot", 0);
 	SetTrieValue(trie, "9015_quality", 8);
 	SetTrieValue(trie, "9015_level", 100);
-	SetTrieString(trie, "9015_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
+	//SetTrieString(trie, "9015_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
 	SetTrieValue(trie, "9015_ammo", 400);
 
 //valve revolver
@@ -6419,7 +6630,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9024_slot", 0);
 	SetTrieValue(trie, "9024_quality", 8);
 	SetTrieValue(trie, "9024_level", 100);
-	SetTrieString(trie, "9024_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
+	//SetTrieString(trie, "9024_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
 	SetTrieValue(trie, "9024_ammo", 100);
 
 //valve shotgun engineer
@@ -6428,7 +6639,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9009_slot", 0);
 	SetTrieValue(trie, "9009_quality", 8);
 	SetTrieValue(trie, "9009_level", 100);
-	SetTrieString(trie, "9009_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
+	//SetTrieString(trie, "9009_attribs", "2 ; 1.15 ; 4 ; 1.5 ; 6 ; 0.85 ; 110 ; 15.0 ; 20 ; 1.0 ; 26 ; 50.0 ; 31 ; 5.0 ; 32 ; 0.30 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.15 ; 134 ; 2.0");
 	SetTrieValue(trie, "9009_ammo", 100);
 
 //valve medigun
@@ -6437,7 +6648,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9029_slot", 1);
 	SetTrieValue(trie, "9029_quality", 8);
 	SetTrieValue(trie, "9029_level", 100);
-	SetTrieString(trie, "9029_attribs", "8 ; 1.15 ; 10 ; 1.15 ; 13 ; 0.0 ; 26 ; 50.0 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.5 ; 134 ; 2.0");
+	//SetTrieString(trie, "9029_attribs", "8 ; 1.15 ; 10 ; 1.15 ; 13 ; 0.0 ; 26 ; 50.0 ; 53 ; 1.0 ; 60 ; 0.85 ; 123 ; 1.5 ; 134 ; 2.0");
 	SetTrieValue(trie, "9029_ammo", -1);
 
 //ludmila
@@ -6446,7 +6657,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2041_slot", 0);
 	SetTrieValue(trie, "2041_quality", 10);
 	SetTrieValue(trie, "2041_level", 5);
-	SetTrieString(trie, "2041_attribs", "29 ; 1 ; 86 ; 1.2 ; 5 ; 1.1");
+	//SetTrieString(trie, "2041_attribs", "29 ; 1 ; 86 ; 1.2 ; 5 ; 1.1");
 	SetTrieValue(trie, "2041_ammo", 200);
 	SetTrieString(trie, "2041_viewmodel", "models/weapons/c_models/c_v_ludmila/c_v_ludmila.mdl");
 
@@ -6456,7 +6667,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9027_slot", 3);
 	SetTrieValue(trie, "9027_quality", 2);
 	SetTrieValue(trie, "9027_level", 100);
-	SetTrieString(trie, "9027_attribs", "128 ; 1.0 ; 412 ; 0.0 ; 70 ; 2.0 ; 53 ; 1.0 ; 68 ; -3.0 ; 400 ; 1.0 ; 134 ; 9.0");
+	//SetTrieString(trie, "9027_attribs", "128 ; 1.0 ; 412 ; 0.0 ; 70 ; 2.0 ; 53 ; 1.0 ; 68 ; -3.0 ; 400 ; 1.0 ; 134 ; 9.0");
 	SetTrieValue(trie, "9027_ammo", -1);
 
 //fire retardant suit (revolver does no damage)
@@ -6465,7 +6676,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2061_slot", 0);
 	SetTrieValue(trie, "2061_quality", 10);
 	SetTrieValue(trie, "2061_level", 5);
-	SetTrieString(trie, "2061_attribs", "168 ; 1.0 ; 1 ; 0.0");
+	//SetTrieString(trie, "2061_attribs", "168 ; 1.0 ; 1 ; 0.0");
 	SetTrieValue(trie, "2061_ammo", -1);
 
 //valve cheap rocket launcher
@@ -6474,7 +6685,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "8018_slot", 0);
 	SetTrieValue(trie, "8018_quality", 8);
 	SetTrieValue(trie, "8018_level", 100);
-	SetTrieString(trie, "8018_attribs", "2 ; 100.0 ; 4 ; 91.0 ; 6 ; 0.25 ; 110 ; 500.0 ; 26 ; 250.0 ; 31 ; 10.0 ; 107 ; 3.0 ; 97 ; 0.4 ; 134 ; 2.0");
+	//SetTrieString(trie, "8018_attribs", "2 ; 100.0 ; 4 ; 91.0 ; 6 ; 0.25 ; 110 ; 500.0 ; 26 ; 250.0 ; 31 ; 10.0 ; 107 ; 3.0 ; 97 ; 0.4 ; 134 ; 2.0");
 	SetTrieValue(trie, "8018_ammo", 200);
 
 //PCG cheap Community rocket launcher
@@ -6483,7 +6694,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "7018_slot", 0);
 	SetTrieValue(trie, "7018_quality", 7);
 	SetTrieValue(trie, "7018_level", 100);
-	SetTrieString(trie, "7018_attribs", "26 ; 500.0 ; 110 ; 500.0 ; 6 ; 0.25 ; 4 ; 200.0 ; 2 ; 100.0 ; 97 ; 0.2 ; 134 ; 4.0");
+	//SetTrieString(trie, "7018_attribs", "26 ; 500.0 ; 110 ; 500.0 ; 6 ; 0.25 ; 4 ; 200.0 ; 2 ; 100.0 ; 97 ; 0.2 ; 134 ; 4.0");
 	SetTrieValue(trie, "7018_ammo", 200);
 
 //derpFaN
@@ -6492,7 +6703,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "8045_slot", 0);
 	SetTrieValue(trie, "8045_quality", 8);
 	SetTrieValue(trie, "8045_level", 99);
-	SetTrieString(trie, "8045_attribs", "44 ; 1.0 ; 6 ; 0.25 ; 45 ; 2.0 ; 2 ; 10.0 ; 4 ; 100.0 ; 43 ; 1.0 ; 26 ; 500.0 ; 110 ; 500.0 ; 97 ; 0.2 ; 31 ; 10.0 ; 107 ; 3.0 ; 134 ; 4.0");
+	//SetTrieString(trie, "8045_attribs", "44 ; 1.0 ; 6 ; 0.25 ; 45 ; 2.0 ; 2 ; 10.0 ; 4 ; 100.0 ; 43 ; 1.0 ; 26 ; 500.0 ; 110 ; 500.0 ; 97 ; 0.2 ; 31 ; 10.0 ; 107 ; 3.0 ; 134 ; 4.0");
 	SetTrieValue(trie, "8045_ammo", 200);
 
 //Trilby's Rebel Pack - Texas Ten-Shot
@@ -6501,7 +6712,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2141_slot", 0);
 	SetTrieValue(trie, "2141_quality", 10);
 	SetTrieValue(trie, "2141_level", 10);
-	SetTrieString(trie, "2141_attribs", "4 ; 1.66 ; 19 ; 0.15 ; 76 ; 1.25 ; 96 ; 1.8 ; 134 ; 3");
+	//SetTrieString(trie, "2141_attribs", "4 ; 1.66 ; 19 ; 0.15 ; 76 ; 1.25 ; 96 ; 1.8 ; 134 ; 3.0 ; 3 ; 1.0");
 	SetTrieValue(trie, "2141_ammo", 40);
 
 //Trilby's Rebel Pack - Texan Love
@@ -6510,7 +6721,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2161_slot", 1);
 	SetTrieValue(trie, "2161_quality", 10);
 	SetTrieValue(trie, "2161_level", 10);
-	SetTrieString(trie, "2161_attribs", "2 ; 1.4 ; 106 ; 0.65 ; 6 ; 0.80 ; 146 ; 1.0 ; 97 ; 0.7 ; 69 ; 0.80 ; 45 ; 0.3 ; 106 ; 0.0");
+	//SetTrieString(trie, "2161_attribs", "2 ; 1.4 ; 106 ; 0.65 ; 6 ; 0.80 ; 146 ; 1.0 ; 97 ; 0.7 ; 69 ; 0.80 ; 45 ; 0.3 ; 106 ; 0.0");
 	SetTrieValue(trie, "2161_ammo", 24);
 
 //direct hit LaN
@@ -6519,7 +6730,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2127_slot", 0);
 	SetTrieValue(trie, "2127_quality", 10);
 	SetTrieValue(trie, "2127_level", 1);
-	SetTrieString(trie, "2127_attribs", "3 ; 0.5 ; 103 ; 1.8 ; 2 ; 1.25 ; 114 ; 1.0 ; 67 ; 1.1");
+	//SetTrieString(trie, "2127_attribs", "3 ; 0.5 ; 103 ; 1.8 ; 2 ; 1.25 ; 114 ; 1.0 ; 67 ; 1.1");
 	SetTrieValue(trie, "2127_ammo", 20);
 
 //dalokohs bar Effect
@@ -6528,7 +6739,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2159_slot", 1);
 	SetTrieValue(trie, "2159_quality", 6);
 	SetTrieValue(trie, "2159_level", 1);
-	SetTrieString(trie, "2159_attribs", "140 ; 50 ; 139 ; 1");
+	//SetTrieString(trie, "2159_attribs", "140 ; 50 ; 139 ; 1");
 	SetTrieValue(trie, "2159_ammo", 1);
 
 //fishcake Effect
@@ -6537,7 +6748,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2433_slot", 1);
 	SetTrieValue(trie, "2433_quality", 6);
 	SetTrieValue(trie, "2433_level", 1);
-	SetTrieString(trie, "2433_attribs", "140 ; 50 ; 139 ; 1");
+	//SetTrieString(trie, "2433_attribs", "140 ; 50 ; 139 ; 1");
 	SetTrieValue(trie, "2433_ammo", 1);
 
 //The Army of One
@@ -6546,7 +6757,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2228_slot", 0);
 	SetTrieValue(trie, "2228_quality", 10);
 	SetTrieValue(trie, "2228_level", 5);
-	SetTrieString(trie, "2228_attribs", "2 ; 5.0 ; 99 ; 3.0 ; 3 ; 0.25 ; 104 ; 0.3 ; 77 ; 0.0");
+	SetTrieString(trie, "2228_attribs", "2 ; 5.0 ; 99 ; 3.0 ; 521 ; 1.0 ; 3 ; 0.25 ; 104 ; 0.3 ; 77 ; 0.0 ; 16 ; 0.0");
 	SetTrieValue(trie, "2228_ammo", 0);
 	SetTrieString(trie, "2228_model", "models/advancedweaponiser/fbomb/c_fbomb.mdl");
 	SetTrieString(trie, "2228_viewmodel", "models/advancedweaponiser/fbomb/c_fbomb.mdl");
@@ -6557,7 +6768,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2009_slot", 0);
 	SetTrieValue(trie, "2009_quality", 0);
 	SetTrieValue(trie, "2009_level", 1);
-	SetTrieString(trie, "2009_attribs", "");
+	//SetTrieString(trie, "2009_attribs", "");
 	SetTrieValue(trie, "2009_ammo", 32);
 
 //Another weapon by Trilby- Fighter's Falcata
@@ -6575,7 +6786,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2171_slot", 2);
 	SetTrieValue(trie, "2171_quality", 10);
 	SetTrieValue(trie, "2171_level", 11);
-	SetTrieString(trie, "2171_attribs", "1 ; 0.9 ; 5 ; 1.95");
+	SetTrieString(trie, "2171_attribs", "1 ; 0.9 ; 5 ; 1.95 ; 149 ; 6.0");
 	SetTrieValue(trie, "2171_ammo", -1);
 	SetTrieString(trie, "2171_model", "models/advancedweaponiser/w_sickle_sniper.mdl");
 	SetTrieString(trie, "2171_viewmodel", "models/advancedweaponiser/w_sickle_sniper.mdl");
@@ -6595,7 +6806,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "2197_slot", 2);
 	SetTrieValue(trie, "2197_quality", 10);
 	SetTrieValue(trie, "2197_level", 13);
-	SetTrieString(trie, "2197_attribs", "156 ; 1 ; 2 ; 1.05 ; 107 ; 1.1 ; 62 ; 0.90 ; 64 ; 0.90 ; 125 ; -10 ; 5 ; 1.2 ; 81 ; 0.75");
+	SetTrieString(trie, "2197_attribs", "156 ; 1.0 ; 2 ; 1.05 ; 107 ; 1.1 ; 62 ; 0.90 ; 64 ; 0.90 ; 125 ; -10.0 ; 5 ; 1.2 ; 81 ; 0.75 ; 436 ; 1.0");
 	SetTrieValue(trie, "2197_ammo", -1);
 	SetTrieString(trie, "2197_model", "models/custom/weapons/rebelscurse/c_wrench_v2.mdl");
 	SetTrieString(trie, "2197_viewmodel", "models/custom/weapons/rebelscurse/c_wrench_v2.mdl");
@@ -6631,291 +6842,290 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 //	SetTrieString(trie, "5142_model", "models/custom/weapons/goldslinger/engineer_v3.mdl"); //horridly broken
 //	SetTrieString(trie, "5142_model", "models/custom/weapons/goldslinger/c_engineer_gunslinger.mdl");	//also does not work
 	SetTrieString(trie, "5142_viewmodel", "models/custom/weapons/goldslinger/c_engineer_gunslinger.mdl");
-
 	
-	//HOPEFULLY THIS WILL OVERWRITE
-	SetTrieString(trie, "237_attribs","134;2 ; 181;2 ; 476;-1 ; 318;0.1 ; 4;10 ; 76;10 ; 128;1 ; 275;1 ; 169;0.1 ; 252;0.7" );
-	SetTrieString(trie, "265_attribs","134;2 ; 181;2 ; 476;-1 ; 318;0.1 ; 4;10 ; 275;1 ; 78;10 ; 88;8" );
-	SetTrieString(trie, "730_attribs","411;20 ; 4;5 ; 76;10 ; 413;1 ; 417;1 ; 394;0.07 ; 241;0.55 ; 135;.05 ; 15;0 ; 475;1.05 ; 214;1" );
-	SetTrieString(trie, "18_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1 ; 214;1" );
-	SetTrieString(trie, "127_attribs","103;3.5 ; 100;0.01 ; 2;3 ; 114;1 ; 214;1 ; 215;60" );
-	SetTrieString(trie, "414_attribs","103;1.5 ; 6;0.5 ; 1;1 ; 4;1.5 ; 318;0.9 ; 76;2 ; 488;3 ; 214;1" );
-	SetTrieString(trie, "228_attribs","26;100 ; 16;150 ; 5;1 ; 180;150 ; 3;0.75 ; 214;1" );
-	SetTrieString(trie, "1085_attribs","26;100 ; 16;150 ; 5;1 ; 180;150 ; 3;0.75 ; 214;1" );
-	SetTrieString(trie, "441_attribs","28;1 ; 281;1 ; 103;2.5 ; 3;0.25 ; 318;0.05 ; 285;1 ; 75;10 ; 214;1" );
-	SetTrieString(trie, "444_attribs","259;1 ; 252;0.01 ; 2;100 ; 129;10 ; 214;1" );
-	SetTrieString(trie, "21_attribs","171;0.25 ; 256;0.1 ; 254;4 ; 214;1" );
-	SetTrieString(trie, "40_attribs","255;3 ; 256;2 ; 24;1 ; 162;1.5 ; 164;1.5 ; 214;1" );
-	SetTrieString(trie, "1146_attribs","255;3 ; 256;2 ; 24;1 ; 162;1.5 ; 164;1.5 ; 214;1" );
-	SetTrieString(trie, "351_attribs","58;2.5 ; 144;1 ; 275;1 ; 135;0 ; 318;0.5 ; 78;3 ; 214;1" );
-	SetTrieString(trie, "740_attribs","99;3 ; 25;0.5 ; 416;3 ; 72;.5 ; 74;.5 ; 214;1" );
-	SetTrieString(trie, "39_attribs","6;0.25 ; 78;3 ; 214;1" );
-	SetTrieString(trie, "1081_attribs","6;0.25 ; 78;3 ; 214;1" );
-	SetTrieString(trie, "595_attribs","103;1.9 ; 350;1 ; 96;0.8 ; 6;0.8 ; 2;2 ; 74;0 ; 20;1 ; 367;1 ; 28;0 ; 214;1" );
-	SetTrieString(trie, "415_attribs","178;0.05 ; 265;60 ; 214;1 ; 6;0.75 ; 96;0.75" );
-	SetTrieString(trie, "2_attribs","178;.5 ; 2;1.5 ; 267;1 ; 214;1" );
-	SetTrieString(trie, "348_attribs","208;1 ; 20;1 ; 6;0.3 ; 1;0.5 ; 214;1" );
-	SetTrieString(trie, "214_attribs","26;100 ; 180;150 ; 107;1.17 ; 128;0 ; 214;1 ; 412;1 ; 62;1" );
-	SetTrieString(trie, "215_attribs","178;.2 ; 26;25 ; 107;1.1 ; 57;5 ; 214;1 ; 66;0.5" );
-	SetTrieString(trie, "326_attribs","69;0 ; 2;3 ; 108;3 ; 214;1" );
-	SetTrieString(trie, "153_attribs","137;10 ; 146;1 ; 169;0.1 ; 2;1 ; 252;0.01 ; 214;1 ; 128;1 ; 67;1.5 ; 206;3" );
-	SetTrieString(trie, "813_attribs","146;1 ; 438;1 ; 2;2 ; 214;1" );
-	SetTrieString(trie, "38_attribs","20;1 ; 21;0 ; 22;1 ; 2;1.5 ; 638;0 ; 214;1" );
-	SetTrieString(trie, "593_attribs","107;1.3 ; 128;1 ; 360;1 ; 226;1 ; 66;0.75 ; 64;.5 ; 2;2 ; 214;1" );
-	SetTrieString(trie, "412_attribs","144;1 ; 6;0.001 ; 1;0.5 ; 96;0.3 ; 3;0.4 ; 107;1.25 ; 76;2 ; 214;1" );
-	SetTrieString(trie, "19_attribs","411;10 ; 4;4 ; 76;10 ; 413;1 ; 417;1 ; 394;0.08 ; 241;0.75 ; 15;0 ; 470;0.5 ; 214;1" );
-	SetTrieString(trie, "20_attribs","96;0.5 ; 78;10 ; 6;0.3 ; 214;1" );
-	SetTrieString(trie, "130_attribs","119;1 ; 4;4 ; 76;10 ; 121;1 ; 78;3 ; 88;60 ; 120;.6 ; 96;0.5 ; 6;0.5 ; 214;1" );
-	SetTrieString(trie, "308_attribs","103;2.7 ; 2;2.5 ; 3;0.25 ; 127;2 ; 207;1.50 ; 15;1 ; 99;1.1 ; 214;1" );
-	SetTrieString(trie, "996_attribs","103;1 ; 4;1 ; 318;1 ; 6;1 ; 1;1.5 ; 76;5 ; 15;1 ; 43;1 ; 466;1 ; 179;1 ; 207;.25 ; 15;1 ; 214;1" );
-	SetTrieString(trie, "405_attribs","246;10 ; 26;200" );
-	SetTrieString(trie, "608_attribs","246;10 ; 26;200" );
-	SetTrieString(trie, "406_attribs","247;1 ; 248;700 ; 60;0.8 ; 64;0.85 ; 214;1" );
-	SetTrieString(trie, "131_attribs","60;0.25 ; 64;0.25 ; 527;1 ; 214;1" );
-	SetTrieString(trie, "1144_attribs","60;0.25 ; 64;0.25 ; 527;1 ; 214;1" );
-	SetTrieString(trie, "1_attribs","394;0.5 ; 214;1" );
-	SetTrieString(trie, "327_attribs","202;10 ; 214;1" );
-	SetTrieString(trie, "132_attribs","292;6 ; 388;6 ; 219;1 ; 214;1" );
-	SetTrieString(trie, "1082_attribs","292;6 ; 388;6 ; 219;1 ; 214;1" );
-	SetTrieString(trie, "266_attribs","292;6 ; 388;6 ; 219;1 ; 214;1" );
-	SetTrieString(trie, "482_attribs","292;6 ; 388;6 ; 219;1 ; 214;1 ; 215;300 ; 216;600" );
-	SetTrieString(trie, "357_attribs","220;100 ; 226;1 ; 180;500 ; 125;150 ; 140;-150 ; 214;1" );
-	SetTrieString(trie, "416_attribs","178;.5 ; 2;2.5 ; 267;1 ; 15;0 ; 5;1.75" );
-	SetTrieString(trie, "128_attribs","2;3.5 ; 128;1" );
-	SetTrieString(trie, "775_attribs","107;1.45 ; 128;1 ; 414;0 ; 235;1" );
-	SetTrieString(trie, "447_attribs","251;1 ; 1;0 ; 264;20 ; 263;10 ; 394;0.25 ; 107;1.25 ; 128;1" );
-	SetTrieString(trie, "133_attribs","135;0 ; 275;1 ; 112;0.05 ; 107;1.25" );
-	SetTrieString(trie, "354_attribs","116;3 ; 57;15" );
-	SetTrieString(trie, "129_attribs","116;1 ; 357;4" );
-	SetTrieString(trie, "226_attribs","116;2 ; 357;5 ; 26;100" );
-	SetTrieString(trie, "811_attribs","430;150 ; 431;0 ; 60;.3 ; 87;0.5 ; 527;1" );
-	SetTrieString(trie, "15_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "424_attribs","107;1.3 ; 1;0.8 ; 75;2.13 ; 238;1 ; 87;0.1 ; 128;1" );
-	SetTrieString(trie, "312_attribs","2;2 ; 86;2 ; 183;0.005 ; 266;1 ; 106;0.1" );
-	SetTrieString(trie, "41_attribs","32;2 ; 1;0.66 ; 76;10 ; 6;.1 ; 106;5 ; 323;2" );
-	SetTrieString(trie, "159_attribs","139;1 ; 201;.8 ; 551;1" );
-	SetTrieString(trie, "42_attribs","200;1 ; 144;3 ; 201;1 ; 551;1" );
-	SetTrieString(trie, "425_attribs","4;3.3 ; 6;0.5 ; 25;3.3 ; 1;0.85" );
-	SetTrieString(trie, "5_attribs","326;2 ; 128;1 ; 107;1.3 ; 275;1 ; 2;2" );
-	SetTrieString(trie, "239_attribs","107;1.83 ; 128;1 ; 414;0" );
-	SetTrieString(trie, "1084_attribs","107;1.83 ; 128;1 ; 414;0" );
-	SetTrieString(trie, "331_attribs","177;3 ; 128;1 ; 205;0 ; 206;5 ; 107;1.3 ; 2;2" );
-	SetTrieString(trie, "310_attribs","26;200 ; 180;100 ; 2;10" );
-	SetTrieString(trie, "43_attribs","31;30 ; 107;1.3 ; 128;1 ; 2;2 ; 5;1.5" );
-	SetTrieString(trie, "426_attribs","1;0.7 ; 6;0.25 ; 107;1.4 ; 128;1 ; 149;10" );
-	SetTrieString(trie, "656_attribs","107;1.3 ; 358;1 ; 362;1 ; 369;1 ; 363;1 ; 1;0 ; 128;1 ; 28;10000" );
-	SetTrieString(trie, "450_attribs","250;10" );
-	SetTrieString(trie, "317_attribs","203;1 ; 108;3 ; 412;1 ; 62;1" );
-	SetTrieString(trie, "325_attribs","149;30 ; 204;0" );
-	SetTrieString(trie, "448_attribs","97;0.5 ; 6;0.25 ; 418;0 ; 43;1 ; 37;3 ; 107;1 ; 128;1 ; 3;.5" );
-	SetTrieString(trie, "220_attribs","26;50 ; 16;15 ; 78;3 ; 2;1.2 ; 526;2 ; 438;1" );
-	SetTrieString(trie, "45_attribs","44;1 ; 45;16 ; 3;0.166 ; 43;1 ; 1;.35 ; 106;5 ; 37;5 ; 97;0.8" );
-	SetTrieString(trie, "1078_attribs","44;1 ; 45;16 ; 3;0.166 ; 43;1 ; 1;.35 ; 106;5 ; 37;5 ; 97;0.8" );
-	SetTrieString(trie, "13_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "772_attribs","106;0.6 ; 107;1.3 ; 418;1 ; 491;0" );
-	SetTrieString(trie, "773_attribs","26;150 ; 275;1 ; 412;1 ; 62;1" );
-	SetTrieString(trie, "23_attribs","97;0.8 ; 78;4 ; 1;0.65 ; 6;0.05" );
-	SetTrieString(trie, "22_attribs","97;0.8 ; 78;4 ; 1;0.65 ; 6;0.05" );
-	SetTrieString(trie, "294_attribs","97;0.8 ; 78;4 ; 1;0.65 ; 6;0.05" );
-	SetTrieString(trie, "160_attribs","97;0.8 ; 78;4 ; 1;0.65 ; 6;0.05" );
-	SetTrieString(trie, "209_attribs","97;0.8 ; 78;4 ; 1;0.65 ; 6;0.05" );
-	SetTrieString(trie, "449_attribs","2;2.5 ; 78;1.5 ; 5;1.5 ; 326;2 ; 275;1" );
-	SetTrieString(trie, "355_attribs","218;1 ; 149;10 ; 337;1 ; 1;0.1 ; 6;0.75 ; 340;1" );
-	SetTrieString(trie, "7_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "589_attribs","286;3 ; 465;6 ; 2043;1 ; 94;1 ; 148;0 ; 352;1 ; 276;1" );
-	SetTrieString(trie, "155_attribs","286;3 ; 94;3 ; 148;2.15 ; 345;10 ; 80;3 ; 2;3 ; 2043;4 ; 6;2 ; 412;1 ; 62;1 ; 149;10" );
-	SetTrieString(trie, "142_attribs","124;1 ; 125;175 ; 321;2" );
-	SetTrieString(trie, "329_attribs","286;3 ; 2;1.25 ; 327;1 ; 92;10" );
-	SetTrieString(trie, "997_attribs","469;1 ; 474;100 ; 4;3.3 ; 37;3 ; 6;0.5 ; 280;18 ; 1;0.3" );
-	SetTrieString(trie, "527_attribs","298;20 ; 301;1 ; 303;-1 ; 299;100 ; 6;0.8 ; 80;1.5 ; 307;1 ; 113;25" );
-	SetTrieString(trie, "141_attribs","136;1 ; 15;1 ; 3;0.75" );
-	SetTrieString(trie, "9_attribs","4;1.5 ; 6;0.5 ; 25;3.3 ; 318;0.5" );
-	SetTrieString(trie, "528_attribs","298;7 ; 301;1 ; 300;1 ; 307;1 ; 303;-1 ; 312;1 ; 299;100 ; 6;1 ; 80;1.5 ; 113;25" );
-	SetTrieString(trie, "140_attribs","26;75 ; 57;5 ; 135;0" );
-	SetTrieString(trie, "1086_attribs","26;75 ; 57;5 ; 135;0" );
-	SetTrieString(trie, "29_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "35_attribs","18;1 ; 10;3 ; 26;100" );
-	SetTrieString(trie, "411_attribs","8;3 ; 10;2 ; 231;2 ; 144;2 ; 57;15 ; 11;0.5" );
-	SetTrieString(trie, "305_attribs","199;1 ; 97;.25 ; 76;2.6" );
-	SetTrieString(trie, "1079_attribs","199;1 ; 97;.25 ; 76;2.6" );
-	SetTrieString(trie, "998_attribs","10;5 ; 144;3 ; 473;3 ; 292;1 ; 293;2 ; 7;1 ; 499;1" );
-	SetTrieString(trie, "173_attribs","188;100 ; 125;100 ; 144;2" );
-	SetTrieString(trie, "30_attribs","128;1 ; 107;3 ; 35;5 ; 34;0.5" );
-	SetTrieString(trie, "61_attribs","51;1 ; 5;2 ; 2;2 ; 392;0.05" );
-	SetTrieString(trie, "224_attribs","6;0.3 ; 1;0.15 ; 166;150 ; 78;5" );
-	SetTrieString(trie, "24_attribs","6;0.3 ; 78;5" );
-	SetTrieString(trie, "1142_attribs","6;0.3 ; 78;5" );
-	SetTrieString(trie, "210_attribs","6;0.3 ; 78;5" );
-	SetTrieString(trie, "460_attribs","2;3.1 ; 5;4 ; 3;0.16 ; 299;1 ; 78;0.25" );
-	SetTrieString(trie, "16_attribs","6;0.3 ; 1;0.6 ; 78;8 ; 4;3 ; 266;1" );
-	SetTrieString(trie, "203_attribs","6;0.3 ; 1;0.6 ; 78;8 ; 4;3 ; 266;1" );
-	SetTrieString(trie, "1149_attribs","6;0.3 ; 1;0.6 ; 78;8 ; 4;3 ; 266;1" );
-	SetTrieString(trie, "14_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "230_attribs","41;2 ; 42;1 ; 175;15 ; 179;1" );
-	SetTrieString(trie, "526_attribs","308;1 ; 297;0 ; 304;100 ; 1;0.1 ; 305;1" );
-	SetTrieString(trie, "402_attribs","237;1 ; 222;1 ; 223;1 ; 390;2" );
-	SetTrieString(trie, "752_attribs","219;1 ; 329;0 ; 387;100 ; 398;50 ; 116;6 ; 318;.25 ; 76;2.5" );
-	SetTrieString(trie, "751_attribs","6;0.7 ; 613;30 ; 4;1.5 ; 78;2" );
-	SetTrieString(trie, "231_attribs","26;200" );
-	SetTrieString(trie, "642_attribs","57;10 ; 377;0.001 ; 376;1 ; 378;2 ; 412;1 ; 62;1" );
-	SetTrieString(trie, "56_attribs","76;3 ; 318;0.5 ; 1;1 ; 266;1 ; 26;50" );
-	SetTrieString(trie, "1092_attribs","76;3 ; 318;0.5 ; 1;1 ; 266;1 ; 26;50" );
-	SetTrieString(trie, "17_attribs","6;0.7 ; 17;0.05 ; 76;3" );
-	SetTrieString(trie, "37_attribs","5;2.5 ; 17;1" );
-	SetTrieString(trie, "1003_attribs","5;2.5 ; 17;1" );
-	SetTrieString(trie, "4_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "356_attribs","125;-100 ; 140;-150 ; 220;99900" );
-	SetTrieString(trie, "225_attribs","154;1 ; 144;1 ; 155;0" );
-	SetTrieString(trie, "649_attribs","347;1 ; 156;1 ; 359;3 ; 361;6 ; 365;3" );
-	SetTrieString(trie, "461_attribs","166;150 ; 107;1.1 ; 125;-20 ; 57;1 ; 258;1 ; 251;1 ; 264;1.25 ; 263;1.25" );
-	SetTrieString(trie, "59_attribs","33;1 ; 34;.9 ; 35;2 ; 292;9" );
-	SetTrieString(trie, "60_attribs","48;2 ; 35;5" );
-	SetTrieString(trie, "401_attribs","224;5 ; 225;0.1" );
-	SetTrieString(trie, "171_attribs","149;10 ; 208;1" );
-	SetTrieString(trie, "264_attribs","6;0.5 ; 208;1 ; 1;0.5 ; 134;1" );
-	SetTrieString(trie, "200_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "669_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "799_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "808_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "888_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "897_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "906_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "915_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "964_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "973_attribs","97;0.75 ; 37;3 ; 106;0.05 ; 45;2 ; 6;0.75 ; 15;1 ; 1;.8" );
-	SetTrieString(trie, "1005_attribs","76;3 ; 318;0.5 ; 1;1 ; 266;1 ; 26;50" );
-	SetTrieString(trie, "201_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "664_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "851_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "792_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "801_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "881_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "890_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "899_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "908_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "857_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "966_attribs","41;5 ; 390;2" );
-	SetTrieString(trie, "205_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "658_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "513_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "800_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "809_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "889_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "898_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "907_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "916_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "965_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "974_attribs","104;0.32 ; 99;1 ; 2;5 ; 97;1.4 ; 3;0.25 ; 15;1" );
-	SetTrieString(trie, "298_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "202_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "654_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "793_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "802_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "882_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "891_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "900_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "909_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "958_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "967_attribs","76;5 ; 6;.9 ; 16;20" );
-	SetTrieString(trie, "206_attribs","411;10 ; 4;4 ; 76;10 ; 413;1 ; 417;1 ; 394;0.08 ; 241;0.75 ; 15;0 ; 470;0.5" );
-	SetTrieString(trie, "1007_attribs","411;10 ; 4;4 ; 76;10 ; 413;1 ; 417;1 ; 394;0.08 ; 241;0.75 ; 15;0 ; 470;0.5" );
-	SetTrieString(trie, "207_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieString(trie, "661_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieString(trie, "797_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieString(trie, "806_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieString(trie, "886_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieString(trie, "895_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieString(trie, "904_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieString(trie, "913_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieString(trie, "962_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieString(trie, "971_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieString(trie, "1006_attribs","51;1 ; 5;2 ; 2;2 ; 392;0.05" );
-	SetTrieString(trie, "727_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "194_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "665_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "794_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "803_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "883_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "892_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "901_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "910_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "959_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "968_attribs","31;5 ; 394;0.5" );
-	SetTrieString(trie, "199_attribs","4;1.5 ; 6;0.5 ; 25;3.3 ; 318;0.5" );
-	SetTrieString(trie, "1141_attribs","4;1.5 ; 6;0.5 ; 25;3.3 ; 318;0.5" );
-	SetTrieString(trie, "141_attribs","136;1 ; 15;1 ; 3;0.75" );
-	SetTrieString(trie, "169_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "197_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "662_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "795_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "804_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "884_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "893_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "902_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "911_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "960_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "969_attribs","6;0.35 ; 286;3 ; 1;.75 ; 15;1" );
-	SetTrieString(trie, "204_attribs","6;0.3 ; 17;0.05" );
-	SetTrieString(trie, "211_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "663_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "796_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "805_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "885_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "894_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "903_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "912_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "961_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "970_attribs","314;2 ; 11;3 ; 26;100" );
-	SetTrieString(trie, "208_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "659_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "798_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "807_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "887_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "896_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "905_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "914_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "963_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "972_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "452_attribs","149;30 ; 204;0" );
-	SetTrieString(trie, "192_attribs","178;.5 ; 2;1.5 ; 267;1 ; 15;0" );
-	SetTrieString(trie, "739_attribs","178;.5 ; 2;1.5 ; 267;1 ; 15;0" );
-	SetTrieString(trie, "457_attribs","20;1 ; 21;0 ; 22;1 ; 2;1.5" );
-	SetTrieString(trie, "1000_attribs","20;1 ; 21;0 ; 22;1 ; 2;1.5 ; 638;0" );
-	SetTrieString(trie, "466_attribs","137;10 ; 146;1 ; 169;0.1 ; 2;1 ; 252;0.01 ; 214;1 ; 128;1 ; 67;1.5 ; 206;3" );
-	SetTrieString(trie, "834_attribs","146;1 ; 438;1 ; 2;1.5" );
-	SetTrieString(trie, "191_attribs","394;0.5" );
-	SetTrieString(trie, "609_attribs","394;0.5" );
-	SetTrieString(trie, "154_attribs","68;5 ; 67;2" );
-	SetTrieString(trie, "741_attribs","171;0.25 ; 256;0.1 ; 254;4" );
-	SetTrieString(trie, "638_attribs","31;3" );
-	SetTrieString(trie, "10_attribs","4;1.5 ; 6;0.5 ; 25;3.3 ; 318;0.5" );
-	SetTrieString(trie, "12_attribs","4;1.5 ; 6;0.5 ; 25;3.3 ; 318;0.5" );
-	SetTrieString(trie, "11_attribs","4;1.5 ; 6;0.5 ; 25;3.3 ; 318;0.5" );
-	SetTrieString(trie, "36_attribs","16;30 ; 180;150" );
-	SetTrieString(trie, "8_attribs","6;0.8 ; 149;30" );
-	SetTrieString(trie, "1143_attribs","6;0.8 ; 149;30" );
-	SetTrieString(trie, "304_attribs","129;10 ; 128;0" );
-	SetTrieString(trie, "1104_attribs","644;9 ; 621;.1 ; 4;1.5 ; 1;.75 ; 318;0.75 ; 76;2 ; 135;0 ; 275;1 ; 6;1" );
-	SetTrieString(trie, "1103_attribs","613;15 ; 179;1 ; 106;1 ; 76;3 ; 3;1 ; 619;1" );
-	SetTrieString(trie, "1098_attribs","378;2 ; 41;2.5 ; 306;0 ; 636;1 ; 637;1" );
-	SetTrieString(trie, "812_attribs","278;.25 ; 616;1 ; 437;1" );
-	SetTrieString(trie, "163_attribs","278;.25 ; 144;2" );
-	SetTrieString(trie, "232_attribs","107;1.2 ; 128;1 ; 179;1 ; 2;1.5 ; 28;0" );
-	SetTrieString(trie, "58_attribs","278;.40 ; 279;3 ; 99;3" );
-	SetTrieString(trie, "44_attribs","278;.4 ; 279;3 ; 38;1" );
-	SetTrieString(trie, "0_attribs","215;300 ; 216;600 ; 2;3 ; 15;0" );
-	SetTrieString(trie, "594_attribs","368;1 ; 116;5 ; 356;1 ; 144;1 ; 551;1 ; 350;1 ; 201;2" );
-	SetTrieString(trie, "222_attribs","278;.40 ; 99;3 ; 129;5" );
-	SetTrieString(trie, "1121_attribs","278;.40 ; 99;3 ; 129;5" );
-	SetTrieString(trie, "735_attribs","425;1.75 ; 427;10" );
-	SetTrieString(trie, "736_attribs","425;1.75 ; 427;10" );
-	SetTrieString(trie, "1080_attribs","425;1.75 ; 427;10" );
-	SetTrieString(trie, "1102_attribs","425;1.75 ; 427;10" );
-	SetTrieString(trie, "933_attribs","425;1.75 ; 427;10" );
-	SetTrieString(trie, "588_attribs","337;5 ; 338;5 ; 339;1 ; 340;1 ; 349;0 ; 6;.3 ; 1;0.1 ; 28;0" );
-	SetTrieString(trie, "1150_attribs","670;0.01 ; 669;1 ; 4;0.75 ; 97;0.7 ; 126;-2 ; 6;0.5 ; 15;1" );
-	SetTrieString(trie, "1151_attribs","100;0.85 ; 6;0.7 ; 97;0.5 ; 671;1 ; 684;3" );
-	SetTrieString(trie, "1153_attribs","708;1 ; 709;0.5 ; 710;1 ; 711;0 ; 651;0.25 ; 644;9 ; 97;0.2 ; 394;0.5 ; 424;1.5 ; 25;5" );
+	
+		//HOPEFULLY THIS WILL OVERWRITE
+	SetTrieString(trie, "730_attribs","411 ; 20 ; 4 ; 5 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.07 ; 241 ; 0.55 ; 135 ; .05 ; 15 ; 0 ; 475 ; 1.05 ; 214 ; 1" );
+	SetTrieString(trie, "18_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "127_attribs","103 ; 3.5 ; 100 ; 0.01 ; 2 ; 3 ; 114 ; 1 ; 214 ; 1 ; 215 ; 60" );
+	SetTrieString(trie, "414_attribs","103 ; 1.5 ; 6 ; 0.5 ; 1 ; 1 ; 4 ; 1.5 ; 318 ; 0.9 ; 76 ; 2 ; 488 ; 3 ; 214 ; 1" );
+	SetTrieString(trie, "228_attribs","26 ; 100 ; 16 ; 150 ; 5 ; 1 ; 180 ; 150 ; 3 ; 0.75 ; 214 ; 1" );
+	SetTrieString(trie, "1085_attribs","26 ; 100 ; 16 ; 150 ; 5 ; 1 ; 180 ; 150 ; 3 ; 0.75 ; 214 ; 1" );
+	SetTrieString(trie, "441_attribs","28 ; 1 ; 281 ; 1 ; 103 ; 2.5 ; 3 ; 0.25 ; 318 ; 0.05 ; 285 ; 1 ; 75 ; 10 ; 214 ; 1" );
+	SetTrieString(trie, "444_attribs","259 ; 1 ; 252 ; 0.01 ; 2 ; 100 ; 129 ; 10 ; 214 ; 1" );
+	SetTrieString(trie, "21_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4 ; 214 ; 1" );
+	SetTrieString(trie, "40_attribs","255 ; 3 ; 256 ; 2 ; 24 ; 1 ; 162 ; 1.5 ; 164 ; 1.5 ; 214 ; 1" );
+	SetTrieString(trie, "1146_attribs","255 ; 3 ; 256 ; 2 ; 24 ; 1 ; 162 ; 1.5 ; 164 ; 1.5 ; 214 ; 1" );
+	SetTrieString(trie, "351_attribs","58 ; 2.5 ; 144 ; 1 ; 275 ; 1 ; 135 ; 0 ; 318 ; 0.5 ; 78 ; 3 ; 214 ; 1" );
+	SetTrieString(trie, "740_attribs","99 ; 3 ; 25 ; 0.5 ; 416 ; 3 ; 72 ; .5 ; 74 ; .5 ; 214 ; 1" );
+	SetTrieString(trie, "39_attribs","6 ; 0.25 ; 78 ; 3 ; 214 ; 1" );
+	SetTrieString(trie, "1081_attribs","6 ; 0.25 ; 78 ; 3 ; 214 ; 1" );
+	SetTrieString(trie, "595_attribs","103 ; 1.9 ; 350 ; 1 ; 96 ; 0.8 ; 6 ; 0.8 ; 2 ; 2 ; 74 ; 0 ; 20 ; 1 ; 367 ; 1 ; 28 ; 0 ; 214 ; 1" );
+	SetTrieString(trie, "415_attribs","178 ; 0.05 ; 265 ; 60 ; 214 ; 1 ; 6 ; 0.75 ; 96 ; 0.75" );
+	SetTrieString(trie, "2_attribs","178 ; .5 ; 2 ; 1.5 ; 267 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "348_attribs","208 ; 1 ; 20 ; 1 ; 6 ; 0.3 ; 1 ; 0.5 ; 214 ; 1" );
+	SetTrieString(trie, "214_attribs","26 ; 100 ; 180 ; 150 ; 107 ; 1.17 ; 128 ; 0 ; 214 ; 1 ; 412 ; 1 ; 62 ; 1" );
+	SetTrieString(trie, "215_attribs","178 ; .2 ; 26 ; 25 ; 107 ; 1.1 ; 57 ; 5 ; 214 ; 1 ; 66 ; 0.5" );
+	SetTrieString(trie, "326_attribs","69 ; 0 ; 2 ; 3 ; 108 ; 3 ; 214 ; 1" );
+	SetTrieString(trie, "153_attribs","137 ; 10 ; 146 ; 1 ; 169 ; 0.1 ; 2 ; 1 ; 252 ; 0.01 ; 214 ; 1 ; 128 ; 1 ; 67 ; 1.5 ; 206 ; 3" );
+	SetTrieString(trie, "813_attribs","146 ; 1 ; 438 ; 1 ; 2 ; 2 ; 214 ; 1" );
+	SetTrieString(trie, "38_attribs","20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5 ; 638 ; 0 ; 214 ; 1" );
+	SetTrieString(trie, "593_attribs","107 ; 1.3 ; 128 ; 1 ; 360 ; 1 ; 226 ; 1 ; 66 ; 0.75 ; 64 ; .5 ; 2 ; 2 ; 214 ; 1" );
+	SetTrieString(trie, "412_attribs","144 ; 1 ; 6 ; 0.001 ; 1 ; 0.5 ; 96 ; 0.3 ; 3 ; 0.4 ; 107 ; 1.25 ; 76 ; 2 ; 214 ; 1" );
+	SetTrieString(trie, "19_attribs","411 ; 10 ; 4 ; 4 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.75 ; 15 ; 0 ; 470 ; 0.5 ; 214 ; 1" );
+	SetTrieString(trie, "20_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3 ; 214 ; 1" );
+	SetTrieString(trie, "130_attribs","119 ; 1 ; 4 ; 4 ; 76 ; 10 ; 121 ; 1 ; 78 ; 3 ; 88 ; 60 ; 120 ; .6 ; 96 ; 0.5 ; 6 ; 0.5 ; 214 ; 1" );
+	SetTrieString(trie, "308_attribs","103 ; 2.7 ; 2 ; 2.5 ; 3 ; 0.25 ; 127 ; 2 ; 207 ; 1.50 ; 15 ; 1 ; 99 ; 1.1 ; 214 ; 1" );
+	SetTrieString(trie, "996_attribs","103 ; 1 ; 4 ; 1 ; 318 ; 1 ; 6 ; 1 ; 1 ; 1.5 ; 76 ; 5 ; 15 ; 1 ; 43 ; 1 ; 466 ; 1 ; 179 ; 1 ; 207 ; .25 ; 15 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "405_attribs","246 ; 10 ; 26 ; 200" );
+	SetTrieString(trie, "608_attribs","246 ; 10 ; 26 ; 200" );
+	SetTrieString(trie, "406_attribs","247 ; 1 ; 248 ; 700 ; 60 ; 0.8 ; 64 ; 0.85 ; 214 ; 1" );
+	SetTrieString(trie, "131_attribs","60 ; 0.25 ; 64 ; 0.25 ; 527 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "1144_attribs","60 ; 0.25 ; 64 ; 0.25 ; 527 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "1_attribs","394 ; 0.5 ; 214 ; 1" );
+	SetTrieString(trie, "327_attribs","202 ; 10 ; 214 ; 1" );
+	SetTrieString(trie, "132_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "1082_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "266_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "482_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1 ; 215 ; 300 ; 216 ; 600" );
+	SetTrieString(trie, "357_attribs","220 ; 100 ; 226 ; 1 ; 180 ; 500 ; 125 ; 150 ; 140 ; -150 ; 214 ; 1" );
+	SetTrieString(trie, "416_attribs","178 ; .5 ; 2 ; 2.5 ; 267 ; 1 ; 15 ; 0 ; 5 ; 1.75" );
+	SetTrieString(trie, "128_attribs","2 ; 3.5 ; 128 ; 1" );
+	SetTrieString(trie, "775_attribs","107 ; 1.45 ; 128 ; 1 ; 414 ; 0 ; 235 ; 1" );
+	SetTrieString(trie, "447_attribs","251 ; 1 ; 1 ; 0 ; 264 ; 20 ; 263 ; 10 ; 394 ; 0.25 ; 107 ; 1.25 ; 128 ; 1" );
+	SetTrieString(trie, "133_attribs","135 ; 0 ; 275 ; 1 ; 112 ; 0.05 ; 107 ; 1.25" );
+	SetTrieString(trie, "354_attribs","116 ; 3 ; 57 ; 15" );
+	SetTrieString(trie, "129_attribs","116 ; 1 ; 357 ; 4" );
+	SetTrieString(trie, "226_attribs","116 ; 2 ; 357 ; 5 ; 26 ; 100" );
+	SetTrieString(trie, "811_attribs","430 ; 150 ; 431 ; 0 ; 60 ; .3 ; 87 ; 0.5 ; 527 ; 1" );
+	SetTrieString(trie, "15_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "424_attribs","107 ; 1.3 ; 1 ; 0.8 ; 75 ; 2.13 ; 238 ; 1 ; 87 ; 0.1 ; 128 ; 1" );
+	SetTrieString(trie, "312_attribs","2 ; 2 ; 86 ; 2 ; 183 ; 0.005 ; 266 ; 1 ; 106 ; 0.1" );
+	SetTrieString(trie, "41_attribs","32 ; 2 ; 1 ; 0.66 ; 76 ; 10 ; 6 ; .1 ; 106 ; 5 ; 323 ; 2" );
+	SetTrieString(trie, "159_attribs","139 ; 1 ; 201 ; .8 ; 551 ; 1" );
+	SetTrieString(trie, "42_attribs","200 ; 1 ; 144 ; 3 ; 201 ; 1 ; 551 ; 1" );
+	SetTrieString(trie, "425_attribs","4 ; 3.3 ; 6 ; 0.5 ; 25 ; 3.3 ; 1 ; 0.85" );
+	SetTrieString(trie, "5_attribs","326 ; 2 ; 128 ; 1 ; 107 ; 1.3 ; 275 ; 1 ; 2 ; 2" );
+	SetTrieString(trie, "239_attribs","107 ; 1.83 ; 128 ; 1 ; 414 ; 0" );
+	SetTrieString(trie, "1084_attribs","107 ; 1.83 ; 128 ; 1 ; 414 ; 0" );
+	SetTrieString(trie, "331_attribs","177 ; 3 ; 128 ; 1 ; 205 ; 0 ; 206 ; 5 ; 107 ; 1.3 ; 2 ; 2" );
+	SetTrieString(trie, "310_attribs","26 ; 200 ; 180 ; 100 ; 2 ; 10" );
+	SetTrieString(trie, "43_attribs","31 ; 30 ; 107 ; 1.3 ; 128 ; 1 ; 2 ; 2 ; 5 ; 1.5" );
+	SetTrieString(trie, "426_attribs","1 ; 0.7 ; 6 ; 0.25 ; 107 ; 1.4 ; 128 ; 1 ; 149 ; 10" );
+	SetTrieString(trie, "656_attribs","107 ; 1.3 ; 358 ; 1 ; 362 ; 1 ; 369 ; 1 ; 363 ; 1 ; 1 ; 0 ; 128 ; 1 ; 28 ; 10000" );
+	SetTrieString(trie, "450_attribs","250 ; 10" );
+	SetTrieString(trie, "317_attribs","203 ; 1 ; 108 ; 3 ; 412 ; 1 ; 62 ; 1" );
+	SetTrieString(trie, "325_attribs","149 ; 30 ; 204 ; 0" );
+	SetTrieString(trie, "448_attribs","97 ; 0.5 ; 6 ; 0.25 ; 418 ; 0 ; 43 ; 1 ; 37 ; 3 ; 107 ; 1 ; 128 ; 1 ; 3 ; .5" );
+	SetTrieString(trie, "220_attribs","26 ; 50 ; 16 ; 15 ; 78 ; 3 ; 2 ; 1.2 ; 526 ; 2 ; 438 ; 1" );
+	SetTrieString(trie, "45_attribs","44 ; 1 ; 45 ; 16 ; 3 ; 0.166 ; 43 ; 1 ; 1 ; .35 ; 106 ; 5 ; 37 ; 5 ; 97 ; 0.8" );
+	SetTrieString(trie, "1078_attribs","44 ; 1 ; 45 ; 16 ; 3 ; 0.166 ; 43 ; 1 ; 1 ; .35 ; 106 ; 5 ; 37 ; 5 ; 97 ; 0.8" );
+	SetTrieString(trie, "13_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "772_attribs","106 ; 0.6 ; 107 ; 1.3 ; 418 ; 1 ; 491 ; 0" );
+	SetTrieString(trie, "773_attribs","26 ; 150 ; 275 ; 1 ; 412 ; 1 ; 62 ; 1" );
+	SetTrieString(trie, "23_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
+	SetTrieString(trie, "22_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
+	SetTrieString(trie, "294_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
+	SetTrieString(trie, "160_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
+	SetTrieString(trie, "209_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
+	SetTrieString(trie, "449_attribs","2 ; 2.5 ; 78 ; 1.5 ; 5 ; 1.5 ; 326 ; 2 ; 275 ; 1" );
+	SetTrieString(trie, "355_attribs","218 ; 1 ; 149 ; 10 ; 337 ; 1 ; 1 ; 0.1 ; 6 ; 0.75 ; 340 ; 1" );
+	SetTrieString(trie, "7_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "589_attribs","286 ; 3 ; 465 ; 6 ; 2043 ; 1 ; 94 ; 1 ; 148 ; 0 ; 352 ; 1 ; 276 ; 1" );
+	SetTrieString(trie, "155_attribs","286 ; 3 ; 94 ; 3 ; 148 ; 2.15 ; 345 ; 10 ; 80 ; 3 ; 2 ; 3 ; 2043 ; 4 ; 6 ; 2 ; 412 ; 1 ; 62 ; 1 ; 149 ; 10" );
+	SetTrieString(trie, "142_attribs","124 ; 1 ; 125 ; 175 ; 321 ; 2" );
+	SetTrieString(trie, "329_attribs","286 ; 3 ; 2 ; 1.25 ; 327 ; 1 ; 92 ; 10" );
+	SetTrieString(trie, "997_attribs","469 ; 1 ; 474 ; 100 ; 4 ; 3.3 ; 37 ; 3 ; 6 ; 0.5 ; 280 ; 18 ; 1 ; 0.3" );
+	SetTrieString(trie, "527_attribs","298 ; 20 ; 301 ; 1 ; 303 ; -1 ; 299 ; 100 ; 6 ; 0.8 ; 80 ; 1.5 ; 307 ; 1 ; 113 ; 25" );
+	SetTrieString(trie, "141_attribs","136 ; 1 ; 15 ; 1 ; 3 ; 0.75" );
+	SetTrieString(trie, "9_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "528_attribs","298 ; 7 ; 301 ; 1 ; 300 ; 1 ; 307 ; 1 ; 303 ; -1 ; 312 ; 1 ; 299 ; 100 ; 6 ; 1 ; 80 ; 1.5 ; 113 ; 25" );
+	SetTrieString(trie, "140_attribs","26 ; 75 ; 57 ; 5 ; 135 ; 0" );
+	SetTrieString(trie, "1086_attribs","26 ; 75 ; 57 ; 5 ; 135 ; 0" );
+	SetTrieString(trie, "29_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "35_attribs","18 ; 1 ; 10 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "411_attribs","8 ; 3 ; 10 ; 2 ; 231 ; 2 ; 144 ; 2 ; 57 ; 15 ; 11 ; 0.5" );
+	SetTrieString(trie, "305_attribs","199 ; 1 ; 97 ; .25 ; 76 ; 2.6" );
+	SetTrieString(trie, "1079_attribs","199 ; 1 ; 97 ; .25 ; 76 ; 2.6" );
+	SetTrieString(trie, "998_attribs","10 ; 5 ; 144 ; 3 ; 473 ; 3 ; 292 ; 1 ; 293 ; 2 ; 7 ; 1 ; 499 ; 1" );
+	SetTrieString(trie, "173_attribs","188 ; 100 ; 125 ; 100 ; 144 ; 2" );
+	SetTrieString(trie, "30_attribs","128 ; 1 ; 107 ; 3 ; 35 ; 5 ; 34 ; 0.5" );
+	SetTrieString(trie, "61_attribs","51 ; 1 ; 5 ; 2 ; 2 ; 2 ; 392 ; 0.05" );
+	SetTrieString(trie, "224_attribs","6 ; 0.3 ; 1 ; 0.15 ; 166 ; 150 ; 78 ; 5" );
+	SetTrieString(trie, "24_attribs","6 ; 0.3 ; 78 ; 5" );
+	SetTrieString(trie, "1142_attribs","6 ; 0.3 ; 78 ; 5" );
+	SetTrieString(trie, "210_attribs","6 ; 0.3 ; 78 ; 5" );
+	SetTrieString(trie, "460_attribs","2 ; 3.1 ; 5 ; 4 ; 3 ; 0.16 ; 299 ; 1 ; 78 ; 0.25" );
+	SetTrieString(trie, "16_attribs","6 ; 0.3 ; 1 ; 0.6 ; 78 ; 8 ; 4 ; 3 ; 266 ; 1" );
+	SetTrieString(trie, "203_attribs","6 ; 0.3 ; 1 ; 0.6 ; 78 ; 8 ; 4 ; 3 ; 266 ; 1" );
+	SetTrieString(trie, "1149_attribs","6 ; 0.3 ; 1 ; 0.6 ; 78 ; 8 ; 4 ; 3 ; 266 ; 1" );
+	SetTrieString(trie, "14_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "230_attribs","41 ; 2 ; 42 ; 1 ; 175 ; 15 ; 179 ; 1" );
+	SetTrieString(trie, "526_attribs","308 ; 1 ; 297 ; 0 ; 304 ; 100 ; 1 ; 0.1 ; 305 ; 1" );
+	SetTrieString(trie, "402_attribs","237 ; 1 ; 222 ; 1 ; 223 ; 1 ; 390 ; 2" );
+	SetTrieString(trie, "752_attribs","219 ; 1 ; 329 ; 0 ; 387 ; 100 ; 398 ; 50 ; 116 ; 6 ; 318 ; .25 ; 76 ; 2.5" );
+	SetTrieString(trie, "751_attribs","6 ; 0.7 ; 613 ; 30 ; 4 ; 1.5 ; 78 ; 2" );
+	SetTrieString(trie, "231_attribs","26 ; 200" );
+	SetTrieString(trie, "642_attribs","57 ; 10 ; 377 ; 0.001 ; 376 ; 1 ; 378 ; 2 ; 412 ; 1 ; 62 ; 1" );
+	SetTrieString(trie, "56_attribs","76 ; 3 ; 318 ; 0.5 ; 1 ; 1 ; 266 ; 1 ; 26 ; 50" );
+	SetTrieString(trie, "1092_attribs","76 ; 3 ; 318 ; 0.5 ; 1 ; 1 ; 266 ; 1 ; 26 ; 50" );
+	SetTrieString(trie, "17_attribs","6 ; 0.7 ; 17 ; 0.05 ; 76 ; 3" );
+	SetTrieString(trie, "37_attribs","5 ; 2.5 ; 17 ; 1" );
+	SetTrieString(trie, "1003_attribs","5 ; 2.5 ; 17 ; 1" );
+	SetTrieString(trie, "4_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "356_attribs","125 ; -100 ; 140 ; -150 ; 220 ; 99900" );
+	SetTrieString(trie, "225_attribs","154 ; 1 ; 144 ; 1 ; 155 ; 0" );
+	SetTrieString(trie, "649_attribs","347 ; 1 ; 156 ; 1 ; 359 ; 3 ; 361 ; 6 ; 365 ; 3" );
+	SetTrieString(trie, "461_attribs","166 ; 150 ; 107 ; 1.1 ; 125 ; -20 ; 57 ; 1 ; 258 ; 1 ; 251 ; 1 ; 264 ; 1.25 ; 263 ; 1.25" );
+	SetTrieString(trie, "59_attribs","33 ; 1 ; 34 ; .9 ; 35 ; 2 ; 292 ; 9" );
+	SetTrieString(trie, "60_attribs","48 ; 2 ; 35 ; 5" );
+	SetTrieString(trie, "401_attribs","224 ; 5 ; 225 ; 0.1" );
+	SetTrieString(trie, "171_attribs","149 ; 10 ; 208 ; 1" );
+	SetTrieString(trie, "264_attribs","6 ; 0.5 ; 208 ; 1 ; 1 ; 0.5 ; 134 ; 1" );
+	SetTrieString(trie, "200_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "669_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "799_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "808_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "888_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "897_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "906_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "915_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "964_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "973_attribs","97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8" );
+	SetTrieString(trie, "1005_attribs","76 ; 3 ; 318 ; 0.5 ; 1 ; 1 ; 266 ; 1 ; 26 ; 50" );
+	SetTrieString(trie, "201_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "664_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "851_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "792_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "801_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "881_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "890_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "899_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "908_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "857_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "966_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "205_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "658_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "513_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "800_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "809_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "889_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "898_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "907_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "916_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "965_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "974_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "298_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "202_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "654_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "793_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "802_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "882_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "891_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "900_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "909_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "958_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "967_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "206_attribs","411 ; 10 ; 4 ; 4 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.75 ; 15 ; 0 ; 470 ; 0.5" );
+	SetTrieString(trie, "1007_attribs","411 ; 10 ; 4 ; 4 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.75 ; 15 ; 0 ; 470 ; 0.5" );
+	SetTrieString(trie, "207_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "661_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "797_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "806_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "886_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "895_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "904_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "913_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "962_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "971_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "1006_attribs","51 ; 1 ; 5 ; 2 ; 2 ; 2 ; 392 ; 0.05" );
+	SetTrieString(trie, "727_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "194_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "665_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "794_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "803_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "883_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "892_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "901_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "910_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "959_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "968_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "199_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "1141_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "141_attribs","136 ; 1 ; 15 ; 1 ; 3 ; 0.75" );
+	SetTrieString(trie, "169_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "197_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "662_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "795_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "804_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "884_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "893_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "902_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "911_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "960_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "969_attribs","6 ; 0.35 ; 286 ; 3 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "204_attribs","6 ; 0.3 ; 17 ; 0.05" );
+	SetTrieString(trie, "211_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "663_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "796_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "805_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "885_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "894_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "903_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "912_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "961_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "970_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "208_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "659_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "798_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "807_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "887_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "896_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "905_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "914_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "963_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "972_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "452_attribs","149 ; 30 ; 204 ; 0" );
+	SetTrieString(trie, "192_attribs","178 ; .5 ; 2 ; 1.5 ; 267 ; 1 ; 15 ; 0" );
+	SetTrieString(trie, "739_attribs","178 ; .5 ; 2 ; 1.5 ; 267 ; 1 ; 15 ; 0" );
+	SetTrieString(trie, "457_attribs","20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5" );
+	SetTrieString(trie, "1000_attribs","20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5 ; 638 ; 0" );
+	SetTrieString(trie, "466_attribs","137 ; 10 ; 146 ; 1 ; 169 ; 0.1 ; 2 ; 1 ; 252 ; 0.01 ; 214 ; 1 ; 128 ; 1 ; 67 ; 1.5 ; 206 ; 3" );
+	SetTrieString(trie, "834_attribs","146 ; 1 ; 438 ; 1 ; 2 ; 1.5" );
+	SetTrieString(trie, "191_attribs","394 ; 0.5" );
+	SetTrieString(trie, "609_attribs","394 ; 0.5" );
+	SetTrieString(trie, "154_attribs","68 ; 5 ; 67 ; 2" );
+	SetTrieString(trie, "741_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "638_attribs","31 ; 3" );
+	SetTrieString(trie, "10_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "12_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "11_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "36_attribs","16 ; 30 ; 180 ; 150" );
+	SetTrieString(trie, "8_attribs","6 ; 0.8 ; 149 ; 30" );
+	SetTrieString(trie, "1143_attribs","6 ; 0.8 ; 149 ; 30" );
+	SetTrieString(trie, "304_attribs","129 ; 10 ; 128 ; 0" );
+	SetTrieString(trie, "1104_attribs","644 ; 9 ; 621 ; .1 ; 4 ; 1.5 ; 1 ; .75 ; 318 ; 0.75 ; 76 ; 2 ; 135 ; 0 ; 275 ; 1 ; 6 ; 1" );
+	SetTrieString(trie, "1103_attribs","613 ; 15 ; 179 ; 1 ; 106 ; 1 ; 76 ; 3 ; 3 ; 1 ; 619 ; 1" );
+	SetTrieString(trie, "1098_attribs","378 ; 2 ; 41 ; 2.5 ; 306 ; 0 ; 636 ; 1 ; 637 ; 1" );
+	SetTrieString(trie, "812_attribs","278 ; .25 ; 616 ; 1 ; 437 ; 1" );
+	SetTrieString(trie, "163_attribs","278 ; .25 ; 144 ; 2" );
+	SetTrieString(trie, "232_attribs","107 ; 1.2 ; 128 ; 1 ; 179 ; 1 ; 2 ; 1.5 ; 28 ; 0" );
+	SetTrieString(trie, "58_attribs","278 ; .40 ; 279 ; 3 ; 99 ; 3" );
+	SetTrieString(trie, "44_attribs","278 ; .4 ; 279 ; 3 ; 38 ; 1" );
+	SetTrieString(trie, "0_attribs","215 ; 300 ; 216 ; 600 ; 2 ; 3 ; 15 ; 0" );
+	SetTrieString(trie, "194_attribs","215 ; 300 ; 216 ; 600 ; 2 ; 3 ; 15 ; 0" );
+	SetTrieString(trie, "594_attribs","368 ; 1 ; 116 ; 5 ; 356 ; 1 ; 144 ; 1 ; 551 ; 1 ; 350 ; 1 ; 201 ; 2" );
+	SetTrieString(trie, "222_attribs","278 ; .40 ; 99 ; 3 ; 129 ; 5" );
+	SetTrieString(trie, "1121_attribs","278 ; .40 ; 99 ; 3 ; 129 ; 5" );
+	SetTrieString(trie, "735_attribs","425 ; 1.75 ; 427 ; 10" );
+	SetTrieString(trie, "736_attribs","425 ; 1.75 ; 427 ; 10" );
+	SetTrieString(trie, "1080_attribs","425 ; 1.75 ; 427 ; 10" );
+	SetTrieString(trie, "1102_attribs","425 ; 1.75 ; 427 ; 10" );
+	SetTrieString(trie, "933_attribs","425 ; 1.75 ; 427 ; 10" );
+	SetTrieString(trie, "588_attribs","337 ; 5 ; 338 ; 5 ; 339 ; 1 ; 340 ; 1 ; 349 ; 0 ; 6 ; .3 ; 1 ; 0.1 ; 28 ; 0" );
+	SetTrieString(trie, "1150_attribs","670 ; 0.01 ; 669 ; 1 ; 4 ; 0.75 ; 97 ; 0.7 ; 126 ; -2 ; 6 ; 0.5 ; 15 ; 1" );
+	SetTrieString(trie, "1151_attribs","100 ; 0.85 ; 6 ; 0.7 ; 97 ; 0.5 ; 671 ; 1 ; 684 ; 3" );
+	SetTrieString(trie, "1153_attribs","708 ; 1 ; 709 ; 0.5 ; 710 ; 1 ; 711 ; 0 ; 651 ; 0.25 ; 644 ; 9 ; 97 ; 0.2 ; 394 ; 0.5 ; 424 ; 1.5 ; 25 ; 5 ; 76 ; 5 ; 128 ; 1" );
 
 
 //TF2 BETA SECTION, THESE MAY NOT WORK AT ALL
@@ -7006,106 +7216,76 @@ PrepareAllModels()
 	{
 		decl String:modelname[PLATFORM_MAX_PATH];
 		decl String:formatBuffer[32];
-		decl String:modelfile[PLATFORM_MAX_PATH + 4];
-		decl String:strLine[PLATFORM_MAX_PATH];
 		Format(formatBuffer, sizeof(formatBuffer), "%d_model", i);
-		if (GetTrieString(g_hItemInfoTrie, formatBuffer, modelname, sizeof(modelname)))
+		if (GetTrieString(hItemInfoTrie, formatBuffer, modelname, sizeof(modelname)))
 		{
-			Format(modelfile, sizeof(modelfile), "%s.dep", modelname);
-			new Handle:hStream = INVALID_HANDLE;
-			if (FileExists(modelfile))
-			{
-				// Open stream, if possible
-				hStream = OpenFile(modelfile, "r");
-				if (hStream == INVALID_HANDLE)
-				{
-					if (cvar_debug) LogMessage("[TF2Items Randomizer]%d: Error, can't read file containing model dependencies %s", i, modelfile);
-					return;
-				}
-
-				while(!IsEndOfFile(hStream))
-				{
-					// Try to read line. If EOF has been hit, exit.
-					ReadFileLine(hStream, strLine, sizeof(strLine));
-
-					// Cleanup line
-					CleanString(strLine);
-
-					// If file exists...
-					if (!FileExists(strLine, true))
-					{
-						if (cvar_debug) LogMessage("[TF2Items Randomizer]%d: File %s doesn't exist, skipping", i, strLine);
-						continue;
-					}
-
-					// Precache depending on type, and add to download table
-					if (StrContains(strLine, ".vmt", false) != -1)		PrecacheDecal(strLine, true);
-					else if (StrContains(strLine, ".mdl", false) != -1)	PrecacheModel(strLine, true);
-					else if (StrContains(strLine, ".pcf", false) != -1)	PrecacheGeneric(strLine, true);
-					if (cvar_debug) LogMessage("[TF2Items Randomizer]%d: Preparing %s", i, strLine);
-					AddFileToDownloadsTable(strLine);
-				}
-
-				// Close file
-				CloseHandle(hStream);
-			}
-			else if (FileExists(modelname, true) && StrContains(modelname, ".mdl", false) != -1)
-			{
-				PrecacheModel(modelname, true);
-				if (cvar_debug) LogMessage("[TF2Items Randomizer]%d: Preparing %s", i, modelname);
-			}
-			else if (cvar_debug) LogMessage("[TF2Items Randomizer]%d: cannot find valid model %s, skipping", i, modelname);
+			PrepareCustomWeaponModel(modelname, formatBuffer);
 		}
-		decl String:viewmodelname[128];
 		Format(formatBuffer, sizeof(formatBuffer), "%d_viewmodel", i);
-		if (GetTrieString(g_hItemInfoTrie, formatBuffer, viewmodelname, sizeof(viewmodelname)))
+		if (GetTrieString(hItemInfoTrie, formatBuffer, modelname, sizeof(modelname)))
 		{
-			Format(modelfile, sizeof(modelfile), "%s.dep", viewmodelname);
-			new Handle:hStream = INVALID_HANDLE;
-			if (FileExists(modelfile))
-			{
-				// Open stream, if possible
-				hStream = OpenFile(modelfile, "r");
-				if (hStream == INVALID_HANDLE)
-				{
-					if (cvar_debug) LogMessage("[TF2Items Randomizer]%d: Error, can't read file containing model dependencies %s", i, modelfile);
-					return;
-				}
-
-				while(!IsEndOfFile(hStream))
-				{
-					// Try to read line. If EOF has been hit, exit.
-					ReadFileLine(hStream, strLine, sizeof(strLine));
-
-					// Cleanup line
-					CleanString(strLine);
-
-					// If file exists...
-					if (!FileExists(strLine, true))
-					{
-						if (cvar_debug) LogMessage("[TF2Items Randomizer]%d: File %s doesn't exist, skipping", i, strLine);
-						continue;
-					}
-
-					// Precache depending on type, and add to download table
-					if (StrContains(strLine, ".vmt", false) != -1)		PrecacheDecal(strLine, true);
-					else if (StrContains(strLine, ".mdl", false) != -1)	PrecacheModel(strLine, true);
-					else if (StrContains(strLine, ".pcf", false) != -1)	PrecacheGeneric(strLine, true);
-					if (cvar_debug) LogMessage("[TF2Items Randomizer]%d: Preparing %s", i, strLine);
-					AddFileToDownloadsTable(strLine);
-				}
-
-				// Close file
-				CloseHandle(hStream);
-			}
-			else if (FileExists(viewmodelname, true) && StrContains(viewmodelname, ".mdl", false) != -1)
-			{
-				PrecacheModel(viewmodelname, true);
-				if (cvar_debug) LogMessage("[TF2Items Randomizer]%d: Preparing %s", i, viewmodelname);
-			}
-			else if (cvar_debug) LogMessage("[TF2Items Randomizer]%d: cannot find valid model %s, skipping", i, viewmodelname);
+			PrepareCustomWeaponModel(modelname, formatBuffer);
+		}
+		Format(formatBuffer, sizeof(formatBuffer), "%d_model_pv", i);
+		if (GetTrieString(hItemInfoTrie, formatBuffer, modelname, sizeof(modelname)))
+		{
+			PrepareCustomWeaponModel(modelname, formatBuffer);
+		}
+		Format(formatBuffer, sizeof(formatBuffer), "%d_model_hv", i);
+		if (GetTrieString(hItemInfoTrie, formatBuffer, modelname, sizeof(modelname)))
+		{
+			PrepareCustomWeaponModel(modelname, formatBuffer);
 		}
 	}
+}
+stock PrepareCustomWeaponModel(const String:modelname[], const String:key[])
+{
+	decl String:modelfile[PLATFORM_MAX_PATH + 4];
+	decl String:strLine[PLATFORM_MAX_PATH];
+	Format(modelfile, sizeof(modelfile), "%s.dep", modelname);
+	new Handle:hStream = INVALID_HANDLE;
+	if (FileExists(modelfile))
+	{
+		// Open stream, if possible
+		hStream = OpenFile(modelfile, "r");
+		if (hStream == INVALID_HANDLE)
+		{
+			if (bCvarDebug) LogMessage("[TF2Items Randomizer]%s: Error, can't read file containing model dependencies %s", key, modelfile);
+			return;
+		}
+
+		while(!IsEndOfFile(hStream))
+		{
+			// Try to read line. If EOF has been hit, exit.
+			ReadFileLine(hStream, strLine, sizeof(strLine));
+
+			// Cleanup line
+			CleanString(strLine);
+
+			// If file exists...
+			if (!FileExists(strLine, true))
+			{
+				if (bCvarDebug) LogMessage("[TF2Items Randomizer]%s: File %s doesn't exist, skipping", key, strLine);
+				continue;
+			}
+
+			// Precache depending on type, and add to download table
+			if (StrContains(strLine, ".vmt", false) != -1)		PrecacheDecal(strLine, true);
+			else if (StrContains(strLine, ".mdl", false) != -1)	PrecacheModel(strLine, true);
+			else if (StrContains(strLine, ".pcf", false) != -1)	PrecacheGeneric(strLine, true);
+			if (bCvarDebug) LogMessage("[TF2Items Randomizer]%s: Preparing %s", key, strLine);
+			AddFileToDownloadsTable(strLine);
+		}
+
+		// Close file
+		CloseHandle(hStream);
+	}
+	else if (FileExists(modelname, true) && StrContains(modelname, ".mdl", false) != -1)
+	{
+		PrecacheModel(modelname, true);
+		if (bCvarDebug) LogMessage("[TF2Items Randomizer]%s: Preparing %s", key, modelname);
+	}
+	else if (bCvarDebug) LogMessage("[TF2Items Randomizer]%s: cannot find valid model %s, skipping", key, modelname);
 }
 
 stock CleanString(String:strBuffer[])
@@ -7128,7 +7308,7 @@ stock CleanString(String:strBuffer[])
 
 stock TF2_GetMaxHealth(client)
 {
-	new maxhealth = TF2_GetPlayerResourceData(client, TFResource_MaxHealth);
+	new maxhealth = GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iMaxHealth", _, client);
 	return ((maxhealth == -1 || maxhealth == 80896) ? GetEntProp(client, Prop_Data, "m_iMaxHealth") : maxhealth);
 //	if (hMaxHealth != INVALID_HANDLE)
 //		return SDKCall(hMaxHealth, client);
@@ -7204,18 +7384,18 @@ public Action:Timer_ResetOwner(Handle:timer, Handle:pack)
 }*/
 stock GiveWeaponOfIndex(client, weaponLookupIndex)
 {
-	if (cvar_debug) LogMessage("Giving weapon %d to client %d %N team %d class %s", weaponLookupIndex, client, client, GetClientTeam(client), TF2_GetClassName(TF2_GetPlayerClass(client)));
+	if (bCvarDebug) LogMessage("Giving weapon %d to client %d %N team %d class %s", weaponLookupIndex, client, client, GetClientTeam(client), TF2_GetClassName(TF2_GetPlayerClass(client)));
 	decl String:strSteamID[32];
 
 	new weaponSlot;
 	new String:formatBuffer[32];
 	Format(formatBuffer, 32, "%d_%s", weaponLookupIndex, "slot");
-	new bool:isValidItem = GetTrieValue(g_hItemInfoTrie, formatBuffer, weaponSlot);
+	new bool:isValidItem = GetTrieValue(hItemInfoTrie, formatBuffer, weaponSlot);
 
 	if (!isValidItem)
 	{
 		PrintToChat(client, "[TF2Items]Randomizer: Error! Tried to give you nonexistent weapon %d.", weaponLookupIndex);
-		return;
+		return -1;
 	}
 
 	new loopBreak = 0;
@@ -7252,7 +7432,7 @@ stock GiveWeaponOfIndex(client, weaponLookupIndex)
 	if (!IsValidEntity(entity))
 	{
 		PrintToChat(client, "[TF2Items] Error giving one of your weapons D:");
-		return;
+		return -1;
 	}
 	switch (weaponLookupIndex)
 	{
@@ -7336,6 +7516,7 @@ stock GiveWeaponOfIndex(client, weaponLookupIndex)
 		{
 			new model = PrecacheModel("models/weapons/c_models/c_bigaxe/c_bigaxe.mdl");
 			SetEntProp(entity, Prop_Send, "m_iWorldModelIndex", model);
+			SetEntProp(entity, Prop_Send, "m_nModelIndexOverrides", model, _, 0);
 			if (TF2_GetPlayerClass(client) == TFClass_Heavy)
 			{
 				SetEntityRenderMode(entity, RENDER_TRANSCOLOR);
@@ -7382,7 +7563,7 @@ stock GiveWeaponOfIndex(client, weaponLookupIndex)
 				}
 			}
 		}
-		case 735, 736, 810, 831:
+/*		case 735, 736, 810, 831:
 		{
 			decl String:classname[64];
 			for (new i = 0; i < 48; i++)
@@ -7400,15 +7581,37 @@ stock GiveWeaponOfIndex(client, weaponLookupIndex)
 			}
 			SetEntProp(entity, Prop_Send, "m_iObjectType", 3);
 			SetEntProp(entity, Prop_Data, "m_iSubType", 3);
-		}
+		}*/
 	}
 
 	decl String:classname[64];
 	Format(formatBuffer, sizeof(formatBuffer), "%d_%s", weaponLookupIndex, "classname");
-	GetTrieString(g_hItemInfoTrie, formatBuffer, classname, sizeof(classname));
+	GetTrieString(hItemInfoTrie, formatBuffer, classname, sizeof(classname));
+
+	if (StrEqual(classname, "tf_weapon_builder", false) || StrEqual(classname, "tf_weapon_sapper", false))
+	{
+		if (weaponSlot == TFWeaponSlot_Secondary)
+		{
+			SetEntProp(entity, Prop_Send, "m_iObjectType", 3);
+			SetEntProp(entity, Prop_Data, "m_iSubType", 3);
+			SetEntProp(entity, Prop_Send, "m_aBuildableObjectTypes", 0, _, 0);
+			SetEntProp(entity, Prop_Send, "m_aBuildableObjectTypes", 0, _, 1);
+			SetEntProp(entity, Prop_Send, "m_aBuildableObjectTypes", 0, _, 2);
+			SetEntProp(entity, Prop_Send, "m_aBuildableObjectTypes", 1, _, 3);
+		}
+		else
+		{
+			SetEntProp(entity, Prop_Send, "m_aBuildableObjectTypes", 1, _, 0);
+			SetEntProp(entity, Prop_Send, "m_aBuildableObjectTypes", 1, _, 1);
+			SetEntProp(entity, Prop_Send, "m_aBuildableObjectTypes", 1, _, 2);
+			SetEntProp(entity, Prop_Send, "m_aBuildableObjectTypes", 0, _, 3);
+		}
+	}
+
+	new bool:wearable = (StrContains(classname, "wearable", false) != -1 || StrContains(classname, "powerup", false) != -1);
 	decl String:viewmodel[128];
 	Format(formatBuffer, sizeof(formatBuffer), "%d_%s", weaponLookupIndex, "viewmodel");
-	if (GetTrieString(g_hItemInfoTrie, formatBuffer, viewmodel, sizeof(viewmodel)) && FileExists(viewmodel))
+	if (GetTrieString(hItemInfoTrie, formatBuffer, viewmodel, sizeof(viewmodel)) && FileExists(viewmodel, true))
 	{
 		new vm = CreateVM(client, viewmodel);
 		if (weaponLookupIndex != 5142) SetEntPropEnt(vm, Prop_Send, "m_hWeaponAssociatedWith", entity);
@@ -7417,7 +7620,7 @@ stock GiveWeaponOfIndex(client, weaponLookupIndex)
 	}
 	decl String:worldmodel[128];
 	Format(formatBuffer, sizeof(formatBuffer), "%d_%s", weaponLookupIndex, "model");
-	if (GetTrieString(g_hItemInfoTrie, formatBuffer, worldmodel, sizeof(worldmodel)) && FileExists(worldmodel, true) && weaponLookupIndex != 169)
+	if (GetTrieString(hItemInfoTrie, formatBuffer, worldmodel, sizeof(worldmodel)) && FileExists(worldmodel, true) && weaponLookupIndex != 169)
 	{
 		new model = PrecacheModel(worldmodel);
 		if (weaponLookupIndex == 5142)
@@ -7435,14 +7638,18 @@ stock GiveWeaponOfIndex(client, weaponLookupIndex)
 				SetEntProp(client, Prop_Send, "m_nBody", flags);
 			}*/
 		}
-		else if (StrContains(classname, "wearable", false) == -1) SetEntProp(entity, Prop_Send, "m_iWorldModelIndex", model);
+		else if (!wearable)
+		{
+			SetEntProp(entity, Prop_Send, "m_iWorldModelIndex", model);
+			SetEntProp(entity, Prop_Send, "m_nModelIndexOverrides", model, _, 0);
+		}
 		else SetEntProp(entity, Prop_Send, "m_nModelIndex", model);
 	}
 
 #if defined _visweps_included
 	new bool:wearablewep = false;
 #endif
-	if (StrContains(classname, "wearable", false) != -1)
+	if (wearable)
 	{
 		TF2_EquipWearable(client, entity);
 #if defined _visweps_included
@@ -7476,22 +7683,28 @@ stock GiveWeaponOfIndex(client, weaponLookupIndex)
 		{
 			TF2_SetPlayerClass(client, class, _, false);
 		}
+		if (TF2_GetPlayerClass(client) == TFClass_Heavy && StrEqual(classname, "tf_weapon_medigun", false))
+		{
+			SetEntProp(entity, Prop_Send, "m_fEffects", GetEntProp(entity, Prop_Send, "m_fEffects") & ~(EF_BONEMERGE|EF_BONEMERGE_FASTCULL));
+			SetEntPropVector(entity, Prop_Send, "m_vecOrigin", Float:{ 0.0, 0.0, 38.0 });
+		}
 	}
+
 	new weaponAmmo = -1;
 	Format(formatBuffer, sizeof(formatBuffer), "%d_%s", weaponLookupIndex, "ammo");
-	GetTrieValue(g_hItemInfoTrie, formatBuffer, weaponAmmo);
+	GetTrieValue(hItemInfoTrie, formatBuffer, weaponAmmo);
 
 	if (weaponAmmo != -1)
 	{
 		if (!IsFakeClient(client) || GetSpeshulAmmo(client, weaponSlot) < weaponAmmo) SetSpeshulAmmo(client, weaponSlot, weaponAmmo);
 	}
 #if defined _visweps_included
-	if (visibleweapons)
+	if (bVisWeps)
 	{
 		decl String:indexmodel[128];
 		new index = weaponLookupIndex;
 		Format(formatBuffer, sizeof(formatBuffer), "%d_%s", index, "model");
-		if (GetTrieString(g_hItemInfoTrie, formatBuffer, indexmodel, sizeof(indexmodel)) && (IsModelPrecached(indexmodel) || strcmp(indexmodel, "-1", false) == 0))
+		if (GetTrieString(hItemInfoTrie, formatBuffer, indexmodel, sizeof(indexmodel)) && (IsModelPrecached(indexmodel) || strcmp(indexmodel, "-1", false) == 0))
 		{
 			if (wearablewep) weaponSlot = 6;
 			VisWep_GiveWeapon(client, weaponSlot, indexmodel, _, (weaponSlot == 1));
@@ -7502,7 +7715,7 @@ stock GiveWeaponOfIndex(client, weaponLookupIndex)
 			if (wearablewep) weaponSlot = 6;
 			new index2;
 			Format(formatBuffer, sizeof(formatBuffer), "%d_%s", index, "index");
-			GetTrieValue(g_hItemInfoTrie, formatBuffer, index2);
+			GetTrieValue(hItemInfoTrie, formatBuffer, index2);
 //				if (index2 == 193) index2 = 3;
 //				if (index2 == 205) index2 = 18;
 			if (index == 2041 && index2 == 41) index2 = 2041;
@@ -7514,6 +7727,7 @@ stock GiveWeaponOfIndex(client, weaponLookupIndex)
 		}
 	}
 #endif
+	return entity;
 }
 stock CreateVM(client, String:model[])
 {
@@ -7536,7 +7750,7 @@ stock TFClassType:FixReload(client, idx, String:classname[])
 	new realindex = -1;
 	new String:formatBuffer[32];
 	Format(formatBuffer, 32, "%d_%s", idx, "index");
-	GetTrieValue(g_hItemInfoTrie, formatBuffer, realindex);
+	GetTrieValue(hItemInfoTrie, formatBuffer, realindex);
 	new bool:found = false;
 	if (StrEqual(classname, "tf_weapon_revolver", false) && realindex != 24 && realindex != 210 && class != TFClass_Spy)
 	{
@@ -7578,7 +7792,7 @@ stock TFClassType:FixReload(client, idx, String:classname[])
 		found = true;
 		TF2_SetPlayerClass(client, TFClass_Soldier, _, false);
 	}
-	if (StrEqual(classname, "tf_weapon_crossbow", false) && class != TFClass_Medic)
+	if (StrEqual(classname, "tf_weapon_crossbow", false) && class != TFClass_Medic && class != TFClass_Soldier)
 	{
 		found = true;
 		TF2_SetPlayerClass(client, TFClass_Medic, _, false);
@@ -7632,7 +7846,7 @@ public Action:Command_Reroll(client, args)
 
 	for (new i = 0; i < target_count; i++)
 	{
-		if (cvar_enabled)
+		if (bCvarEnabled)
 		{
 			if (IsClientInGame(target_list[i]))
 			{
@@ -7677,6 +7891,7 @@ public Action:Command_SetLoadout(client, args)
 		if (wep == -1)
 		{
 			ReplyToCommand(client, "[TF2Items] Couldn't find primary weapon %d, proceeding with other arguments", wep1);
+			wep1 = -1;
 		}
 		else wep1 = wep;
 	}
@@ -7689,6 +7904,7 @@ public Action:Command_SetLoadout(client, args)
 		if (wep == -1)
 		{
 			ReplyToCommand(client, "[TF2Items] Couldn't find secondary weapon %d, proceeding with other arguments", wep2);
+			wep2 = -2;
 		}
 		else wep2 = wep;
 	}
@@ -7697,10 +7913,12 @@ public Action:Command_SetLoadout(client, args)
 		if (!StrEqual(strArgs[4], "_", false) && strArgs[4][0] != '\0')
 			wep3 = StringToInt(strArgs[4]);
 		else wep3 = -2;
+		if (wep3 == 5) wep3 = 195;
 		new wep = FindWepInWepsArray(wep3, TFWeaponSlot_Melee);
 		if (wep == -1)
 		{
 			ReplyToCommand(client, "[TF2Items] Couldn't find melee weapon %d, proceeding with other arguments", wep3);
+			wep3 = -2;
 		}
 		else wep3 = wep;
 	}
@@ -7713,6 +7931,7 @@ public Action:Command_SetLoadout(client, args)
 		if (wep == -1)
 		{
 			ReplyToCommand(client, "[TF2Items] Couldn't find cloak %d, proceeding with other arguments", cloak);
+			cloak = -2;
 		}
 		else cloak = wep;
 	}
@@ -7744,18 +7963,19 @@ public Action:Command_SetLoadout(client, args)
 	{
 		if (IsClientInGame(target_list[i]))
 		{
-			if (wep1 >= 0) setwep[target_list[i]][0] = wep1;
-			if (wep2 >= 0) setwep[target_list[i]][1] = wep2;
-			if (wep3 >= 0) setwep[target_list[i]][2] = wep3;
-			if (cloak >= 0) cloakwep[target_list[i]] = cloak;
+			if (wep1 >= 0) iRndWeapon[target_list[i]][0] = wep1;
+			if (wep2 >= 0) iRndWeapon[target_list[i]][1] = wep2;
+			if (wep3 >= 0) iRndWeapon[target_list[i]][2] = wep3;
+			if (cloak >= 0) iRndCloak[target_list[i]] = cloak;
 			if (class != TFClass_Unknown)
 			{
-				setclass[target_list[i]] = class;
-				if (cvar_enabled && TF2_GetPlayerClass(target_list[i]) != class) TF2_SetPlayerClass(target_list[i], class, _, true);
+				iRndClass[target_list[i]] = class;
+				if (bCvarEnabled && TF2_GetPlayerClass(target_list[i]) != class) TF2_SetPlayerClass(target_list[i], class, _, true);
 			}
-			if (cvar_enabled && IsPlayerAlive(target_list[i]))
+			if (bCvarEnabled && IsPlayerAlive(target_list[i]))
 			{
 				TF2_RegeneratePlayer(target_list[i]);
+				iDefClass[client] = TF2_GetPlayerClass(target_list[i]);
 			}
 		}
 		LogAction(client, target_list[i], "\"%L\" set randomization info on \"%L\" to %d %d %d %d %d", client, target_list[i], _:class, wep1, wep2, wep3, cloak);
@@ -7770,30 +7990,30 @@ stock FindWepInWepsArray(wep, slot)
 	{
 		case TFWeaponSlot_Primary:
 		{
-			for (new i = 0; i < sizeof(weapon_primary); i++)
+			for (new i = 0; i < sizeof(iWeaponPrimary); i++)
 			{
-				if (wep == weapon_primary[i]) return i;
+				if (wep == iWeaponPrimary[i]) return i;
 			}
 		}
 		case TFWeaponSlot_Secondary:
 		{
-			for (new i = 0; i < sizeof(weapon_secondary); i++)
+			for (new i = 0; i < sizeof(iWeaponSecondary); i++)
 			{
-				if (wep == weapon_secondary[i]) return i;
+				if (wep == iWeaponSecondary[i]) return i;
 			}
 		}
 		case TFWeaponSlot_Melee:
 		{
-			for (new i = 0; i < sizeof(weapon_tertiary); i++)
+			for (new i = 0; i < sizeof(iWeaponMelee); i++)
 			{
-				if (wep == weapon_tertiary[i]) return i;
+				if (wep == iWeaponMelee[i]) return i;
 			}
 		}
 		case 3:
 		{
-			for (new i = 0; i < sizeof(weapon_cloakary); i++)
+			for (new i = 0; i < sizeof(iWeaponCloakary); i++)
 			{
-				if (wep == weapon_cloakary[i]) return i;
+				if (wep == iWeaponCloakary[i]) return i;
 			}
 		}
 	}
@@ -7883,7 +8103,7 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 			if (melee && IsValidEntity(melee)) SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", melee);
 		}
 	}*/
-	if (cvar_fixspy /*&& TF2_GetPlayerClass(client) == TFClass_Spy*/ && (TF2_IsPlayerInCondition(client, TFCond_Disguising) || TF2_IsPlayerInCondition(client, TFCond_Disguised)))
+	if (bCvarFixSpy /*&& TF2_GetPlayerClass(client) == TFClass_Spy*/ && (TF2_IsPlayerInCondition(client, TFCond_Disguising) || TF2_IsPlayerInCondition(client, TFCond_Disguised)))
 	{
 		if (StrEqual(weaponname, "tf_weapon_flamethrower")
 			|| StrEqual(weaponname, "tf_weapon_grenadelauncher")
@@ -8010,6 +8230,21 @@ public SickleClimbWalls(client)
 	fVelocity[2] = 600.0;
 	TeleportEntity(client, NULL_VECTOR, NULL_VECTOR, fVelocity);
 	ClientCommand(client, "playgamesound \"%s\"", "player\\taunt_clip_spin.wav");
+	if (GetEntProp(client, Prop_Send, "m_nNumHealers") <= 0) return;
+	for (new healer = 1; healer <= MaxClients; healer++)
+	{
+		if (!IsClientInGame(healer)) continue;
+		if (!IsPlayerAlive(healer)) continue;
+		new sec = GetPlayerWeaponSlot(healer, TFWeaponSlot_Secondary);
+		if (IsValidEntity(sec) && GetEdictClassname(sec, classname, sizeof(classname)) && StrEqual(classname, "tf_weapon_medigun", false))	//it's a medigun
+		{
+			if (GetEntProp(sec, Prop_Send, "m_iItemDefinitionIndex") != 411 || client != GetEntPropEnt(sec, Prop_Send, "m_hHealingTarget"))
+			{
+				continue;
+			}
+			TeleportEntity(healer, NULL_VECTOR, NULL_VECTOR, fVelocity);
+		}
+	}
 }
 
 public bool:TraceRayDontHitSelf(entity, mask, any:data)
@@ -8036,7 +8271,7 @@ stock RemovePlayerBack(client)
 			new idx = GetEntProp(edict, Prop_Send, "m_iItemDefinitionIndex");
 			if ((idx == 57 || idx == 133 || idx == 231 || idx == 444 || idx == 642) && GetEntPropEnt(edict, Prop_Send, "m_hOwnerEntity") == client && !GetEntProp(edict, Prop_Send, "m_bDisguiseWearable"))
 			{
-				if (setwep[client][1] != 0)
+				if (iRndWeapon[client][1] != 0)
 				{
 					AcceptEntityInput(edict, "Kill");
 				}
@@ -8056,7 +8291,7 @@ stock RemovePlayerBooties(client)
 			new idx = GetEntProp(edict, Prop_Send, "m_iItemDefinitionIndex");
 			if ((idx == 405 || idx == 608) && GetEntPropEnt(edict, Prop_Send, "m_hOwnerEntity") == client && !GetEntProp(edict, Prop_Send, "m_bDisguiseWearable"))
 			{
-				if (setwep[client][0] != 0)
+				if (iRndWeapon[client][0] != 0)
 				{
 					AcceptEntityInput(edict, "Kill");
 				}
@@ -8073,7 +8308,7 @@ stock RemovePlayerTarge(client)
 		new idx = GetEntProp(edict, Prop_Send, "m_iItemDefinitionIndex");
 		if ((idx == 131 || idx == 406) && GetEntPropEnt(edict, Prop_Send, "m_hOwnerEntity") == client && !GetEntProp(edict, Prop_Send, "m_bDisguiseWearable"))
 		{
-			if (setwep[client][1] != 0)
+			if (iRndWeapon[client][1] != 0)
 			{
 				AcceptEntityInput(edict, "Kill");
 			}
@@ -8146,7 +8381,7 @@ stock GetPlayerWeaponSlot_Wearable(client, slot)
 }
 /*public Action:OnGetGameDescription(String:gameDesc[64])
 {
-	if (cvar_enabled && cvar_gamedesc && (g_bMapLoaded || !cvar_manifix))
+	if (bCvarEnabled && bCvarGameDesc && (g_bMapLoaded || !cvar_manifix))
 	{
 		decl String:g_szGameDesc[64];
 		Format(g_szGameDesc, 64, "%s v%s", "[TF2Items]Randomizer", PLUGIN_VERSION);
@@ -8189,8 +8424,8 @@ stock bool:TF2_SdkStartup()
 	StartPrepSDKCall(SDKCall_Player);
 	PrepSDKCall_SetFromConf(hGameConf, SDKConf_Virtual, "CTFPlayer::EquipWearable");
 	PrepSDKCall_AddParameter(SDKType_CBaseEntity, SDKPass_Pointer);
-	g_hSdkEquipWearable = EndPrepSDKCall();
-	if (g_hSdkEquipWearable == INVALID_HANDLE)
+	hSDKEquipWearable = EndPrepSDKCall();
+	if (hSDKEquipWearable == INVALID_HANDLE)
 	{
 		SetFailState("Could not initialize call for CTFPlayer::EquipWearable");
 		CloseHandle(hGameConf);
@@ -8223,19 +8458,8 @@ stock bool:TF2_SdkStartup()
 		return false;
 	}*/
 
-/*	StartPrepSDKCall(SDKCall_Entity);
-	PrepSDKCall_SetFromConf(hGameConf, SDKConf_Virtual, "CBaseEntity::GetBaseEntity");
-	PrepSDKCall_SetReturnInfo(SDKType_PlainOldData, SDKPass_Plain);
-	hGetBaseEntity = EndPrepSDKCall();
-	if (hGetBaseEntity == INVALID_HANDLE)
-	{
-		SetFailState("Could not initialize call for CBaseEntity::GetBaseEntity");
-		CloseHandle(hGameConf);
-		return false;
-	}*/
-
 	CloseHandle(hGameConf);
-	g_bSdkStarted = true;
+	bSDKStarted = true;
 	return true;
 }
 
@@ -8247,19 +8471,6 @@ stock bool:TF2_SdkStartup()
 	PrintToChat(client, "address %d shared %d %d %d", clientaddress, pants, shirts, pants-shirts);
 	if (clientaddress == Address_Null) return -1;
 	return (_:clientaddress + (pants - shirts));	//playerSharedOffset(actual);
-}
-
-stock Address:GetEntityAddress(entity)	//ProdigySim
-{
-	if (hGetBaseEntity == INVALID_HANDLE)
-	{
-		return Address_Null;
-	}
-	if (!IsValidEntity(entity))
-	{
-		return Address_Null;
-	}
-	return Address:SDKCall(hGetBaseEntity, entity);
 }
 
 stock bool:DoAOEHeal(client, bool:start = true)
@@ -8282,14 +8493,14 @@ public Action:Cmd_Healring(client, args)
 }*/
 stock TF2_EquipWearable(client, entity)
 {
-	if (g_bSdkStarted == false || g_hSdkEquipWearable == INVALID_HANDLE)
+	if (bSDKStarted == false || hSDKEquipWearable == INVALID_HANDLE)
 	{
 		TF2_SdkStartup();
 		LogMessage("Error: Can't call EquipWearable, SDK functions not loaded! If it continues to fail, reload plugin or restart server. Make sure your gamedata is intact!");
 	}
 	else
 	{
-		if (TF2_IsEntityWearable(entity)) SDKCall(g_hSdkEquipWearable, client, entity);
+		if (TF2_IsEntityWearable(entity)) SDKCall(hSDKEquipWearable, client, entity);
 		else LogMessage("Error: Item %i isn't a valid wearable.", entity);
 	}
 }
@@ -8299,7 +8510,7 @@ stock bool:TF2_IsEntityWearable(entity)
 	if (entity > MaxClients && IsValidEdict(entity))
 	{
 		new String:strClassname[32]; GetEdictClassname(entity, strClassname, sizeof(strClassname));
-		return (strncmp(strClassname, "tf_wearable", 11, false) == 0);
+		return (strncmp(strClassname, "tf_wearable", 11, false) == 0 || strncmp(strClassname, "tf_powerup", 10, false) == 0);
 	}
 
 	return false;
@@ -8422,9 +8633,18 @@ stock bool:ClearTimer(&Handle:timer, bool:autoClose = false)
 	}
 	return false;
 }
-/*stock TeleportEffects(client)
+
+stock DoTeleportParticles(client)
 {
-	TE_SetupTFParticle("player_sparkles_blue", 
+	decl Float:pos[3];
+	GetClientAbsOrigin(client, pos);
+	decl String:name[32];
+	name = (GetClientTeam(client) == _:TFTeam_Blue ? "player_sparkles_blue" : "player_sparkles_red");
+	if (TE_SetupTFParticle(name, pos, _, _, client, 3, 0, false))
+		TE_SendToAll(0.0);
+	name = (GetClientTeam(client) == _:TFTeam_Blue ? "teleported_blue" : "teleported_red");
+	if (TE_SetupTFParticle(name, pos, _, _, client, 0, 0, false))
+		TE_SendToAll(0.0);
 }
 stock bool:TE_SetupTFParticle(String:Name[],
 			Float:origin[3] = NULL_VECTOR,
@@ -8437,7 +8657,7 @@ stock bool:TE_SetupTFParticle(String:Name[],
 {
 	// find string table
 	new tblidx = FindStringTable("ParticleEffectNames");
-	if (tblidx == INVALID_STRING_TABLE) 
+	if (tblidx == INVALID_STRING_TABLE)
 	{
 		LogError("Could not find string table: ParticleEffectNames");
 		return false;
@@ -8461,7 +8681,6 @@ stock bool:TE_SetupTFParticle(String:Name[],
 		LogError("Could not find particle: %s", Name);
 		return false;
 	}
-	
 	TE_Start("TFParticleEffect");
 	TE_WriteFloat("m_vecOrigin[0]", origin[0]);
 	TE_WriteFloat("m_vecOrigin[1]", origin[1]);
@@ -8483,5 +8702,6 @@ stock bool:TE_SetupTFParticle(String:Name[],
 	{
 		TE_WriteNum("m_iAttachmentPointIndex", attachpoint);
 	}
-	TE_WriteNum("m_bResetParticles", resetParticles ? 1 : 0);	
-}*/
+	TE_WriteNum("m_bResetParticles", resetParticles ? 1 : 0);
+	return true;
+}
