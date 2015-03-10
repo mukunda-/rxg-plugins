@@ -8409,17 +8409,15 @@ public OnTakeDamagePost(client, attacker, inflictor, Float:damage, damagetype)
 
 public OnEntityCreated(entity, const String:classname[])
 {
-	if(GetConVarBool(cvarHealthBar))
-	{
-		if(StrEqual(classname, HEALTHBAR_CLASS))
-		{
-			healthBar=entity;
-		}
 
-		if(g_Monoculus==-1 && StrEqual(classname, MONOCULUS))
-		{
-			g_Monoculus=entity;
-		}
+	if(StrEqual(classname, HEALTHBAR_CLASS))
+	{
+		healthBar=entity;
+	}
+
+	if(g_Monoculus==-1 && StrEqual(classname, MONOCULUS))
+	{
+		g_Monoculus=entity;
 	}
 
 	if(StrContains(classname, "item_healthkit")!=-1 || StrContains(classname, "item_ammopack")!=-1 || StrEqual(classname, "tf_ammo_pack"))
@@ -8499,7 +8497,7 @@ FindHealthBar()
 
 public HealthbarEnableChanged(Handle:convar, const String:oldValue[], const String:newValue[])
 {
-	if(GetConVarBool(cvarHealthBar) && Enabled)
+	if(Enabled)
 	{
 		UpdateHealthBar();
 	}
@@ -8511,7 +8509,7 @@ public HealthbarEnableChanged(Handle:convar, const String:oldValue[], const Stri
 
 UpdateHealthBar()
 {
-	if(!Enabled || !GetConVarBool(cvarHealthBar) || g_Monoculus!=-1 || CheckRoundState()==-1)
+	if(!Enabled || g_Monoculus!=-1 || CheckRoundState()==-1)
 	{
 		return;
 	}
