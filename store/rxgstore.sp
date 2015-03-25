@@ -20,7 +20,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.2.1",
+    version     = "2.2.2",
     url         = "www.mukunda.com"
 };
 
@@ -644,7 +644,7 @@ public OnClientInventoryLoaded( Handle:owner, Handle:hndl, const String:error[],
 	ResetPack(data);
 	new client = GetClientOfUserId( ReadPackCell(data) );
 	//skip account field
-	SetPackPosition( data, 16 );
+	ReadPackCell(data);
 	new client2 = ReadPackCell(data);
 	new bool:chain = !!ReadPackCell(data);
 	CloseHandle(data);
