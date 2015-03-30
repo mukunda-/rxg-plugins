@@ -56,7 +56,6 @@ public Action:Event_Player_Hurt( Handle:event, const String:name[], bool:dontBro
 }
 //-----------------------------------------------------------------------------
 public Action:Timer_createExplosion(Handle:timer, Handle:data){
-
 	ResetPack(data);
 	new attacker = GetClientOfUserId( ReadPackCell(data) );
 	
@@ -79,14 +78,20 @@ public Action:Timer_createExplosion(Handle:timer, Handle:data){
 	SetEntPropEnt( ent, Prop_Data, "m_hOwnerEntity", attacker );
 	DispatchSpawn(ent);
 	ActivateEntity(ent);
-	new Float:damage=FF2_GetAbilityArgumentFloat(attacker, this_plugin_name, "explosive_punch", 0, 500.0);
-	new Float:radius=FF2_GetAbilityArgumentFloat(attacker, this_plugin_name, "explosive_punch", 1, 400.0);
-	SetEntProp(ent, Prop_Data, "m_iMagnitude", RoundToNearest(damage)); 
-	SetEntProp(ent, Prop_Data, "m_iRadiusOverride", RoundToNearest(radius)); 
+	
+	new Float:damageFloat=FF2_GetAbilityArgumentFloat(boss, this_plugin_name, "explosive_punch", 1, 500.0);
+	new Float:radiusFloat=FF2_GetAbilityArgumentFloat(boss, this_plugin_name, "explosive_punch", 2, 400.0);
+	
+	new damage = RoundToNearest(damageFloat);
+	new radius = RoundToNearest(radiusFloat);
+	
+	SetEntProp(ent, Prop_Data, "m_iMagnitude", damage); 
+	SetEntProp(ent, Prop_Data, "m_iRadiusOverride", radius); 
+	
 	
 	TeleportEntity(ent, location, NULL_VECTOR, NULL_VECTOR);
 	AcceptEntityInput(ent, "explode");
 	AcceptEntityInput(ent, "kill");
 	boss = -1;
-	return Plugin_Handled;
+	return Plugin_Continue;
 }
