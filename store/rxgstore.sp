@@ -20,7 +20,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.2.2",
+    version     = "2.3.0",
     url         = "www.mukunda.com"
 };
 
@@ -111,6 +111,7 @@ public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max 
 	CreateNative( "RXGSTORE_TakeCash", Native_TakeCash );
 	CreateNative( "RXGSTORE_CanUseItem", Native_CanUseItem );
 	CreateNative( "RXGSTORE_UseItem", Native_UseItem );
+	CreateNative( "RXGSTORE_GiveItem", Native_GiveItem );
 	CreateNative( "RXGSTORE_ShowUseItemMenu", Native_ShowUseItemMenu );
 	CreateNative( "RXGSTORE_IsClientLoaded", Native_IsClientLoaded );
 	CreateNative( "RXGSTORE_IsConnected", Native_IsConnected );
@@ -994,6 +995,20 @@ public Native_UseItem( Handle:plugin, numParams ) {
 	if( (g_client_items[client][slot]+g_client_items_change[client][slot]) <= 0 ) return false;
 	
 	CommitItemChange( client, slot, -1 );
+	return true;
+}
+
+//-----------------------------------------------------------------------------
+public Native_GiveItem( Handle:plugin, numParams ) {
+	new client = GetNativeCell(1);
+	new itemid = GetNativeCell(2);
+	new count = GetNativeCell(3);
+	new slot = item_map[itemid]-1;
+	
+	if( slot == -1 ) return false;
+	if( !IsClientInGame(client) ) return false;
+	if( !DBRELAY_IsConnected() || !g_client_data_loaded[client] ) return false;
+	CommitItemChange( client, slot, count );
 	return true;
 }
 

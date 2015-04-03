@@ -67,6 +67,11 @@ native RXGSTORE_CanUseItem( client, itemid );
 native RXGSTORE_UseItem( client, itemid );
 
 //-------------------------------------------------------------------------------------------------
+// add an item to the client's inventory
+//
+native RXGSTORE_GiveItem( client, itemid, count = 1 );
+
+//-------------------------------------------------------------------------------------------------
 // show the useitem menu
 // 
 native RXGSTORE_ShowUseItemMenu( client );
