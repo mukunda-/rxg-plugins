@@ -342,14 +342,18 @@ Update() {
 }
 
 //-----------------------------------------------------------------------------
+LogItemUse( client, item ) {
+	decl String:player_name[33];
+	GetClientName( client, player_name, sizeof player_name );
+	LogMessage( "%s used a %s", player_name, item_names[item] );
+}
+
+//-----------------------------------------------------------------------------
 CommitItemChange( client, item, amount ) {
 	
 	if( amount == 0 ) return;
 	
-	// log item usage
-	decl String:player_name[33];
-	GetClientName( client, player_name, sizeof player_name );
-	LogMessage( "%s used a %s", player_name, item_names[item] );
+	LogItemUse( client, item );
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
