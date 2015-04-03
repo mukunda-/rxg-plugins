@@ -20,7 +20,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.3.0",
+    version     = "2.3.1",
     url         = "www.mukunda.com"
 };
 
@@ -342,18 +342,16 @@ Update() {
 }
 
 //-----------------------------------------------------------------------------
-LogItemUse( client, item ) {
+LogItemUse( client, slot ) {
 	decl String:player_name[33];
 	GetClientName( client, player_name, sizeof player_name );
-	LogMessage( "%s used a %s", player_name, item_names[item] );
+	LogMessage( "%s used a %s", player_name, item_names[slot] );
 }
 
 //-----------------------------------------------------------------------------
 CommitItemChange( client, item, amount ) {
-	
+
 	if( amount == 0 ) return;
-	
-	LogItemUse( client, item );
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
@@ -379,7 +377,7 @@ CommitItemChange( client, item, amount ) {
 public OnCommitItem( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	ResetPack(data);
 	new client = ReadPackCell(data);
-	new item = ReadPackCell(data);
+	new slot = ReadPackCell(data);
 	new amount = ReadPackCell(data);
 	new account = ReadPackCell(data);
 	new serial = ReadPackCell( data );
@@ -387,16 +385,16 @@ public OnCommitItem( Handle:owner, Handle:hndl, const String:error[], any:data )
 	
 	if( !hndl ) {
 		LogError( "[SERIOUS] SQL error during item usage commit! ::: %s", error ); 
-		LogError( "user_id=%d, item_id=%d (%s), quantity=%d", account, item_ids[item], item_names[item], amount );
+		LogError( "user_id=%d, item_id=%d (%s), quantity=%d", account, item_ids[slot], item_names[slot], amount );
 		return;
 	}
 	
-	if( item_serial[item] != serial ) return; // something changed with the plugin.
+	if( item_serial[slot] != serial ) return; // something changed with the plugin.
 	client = GetClientOfUserId( client );
 	if( client == 0 ) return; // disconnected
 	
-	g_client_items_change[client][item] -= amount;
-	g_client_items[client][item] += amount;
+	g_client_items_change[client][slot] -= amount;
+	g_client_items[client][slot] += amount;
 } 
 
 //-----------------------------------------------------------------------------
@@ -874,8 +872,9 @@ public Action:Command_use_item( client, args ) {
 }
 
 //-----------------------------------------------------------------------------
-UseItem( client, item ) {
-	CommitItemChange( client, item, -1 );
+UseItem( client, slot ) {
+	LogItemUse( client, slot );
+	CommitItemChange( client, slot, -1 );
 }
 
 
@@ -998,7 +997,7 @@ public Native_UseItem( Handle:plugin, numParams ) {
 	
 	if( (g_client_items[client][slot]+g_client_items_change[client][slot]) <= 0 ) return false;
 	
-	CommitItemChange( client, slot, -1 );
+	UseItem( client, slot );
 	return true;
 }
 
