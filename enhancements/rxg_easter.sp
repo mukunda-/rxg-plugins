@@ -161,7 +161,6 @@ public OnEggTouch( entity, client) {
 	EmitSoundToAll( egg_sound, client );
 	
 	AcceptEntityInput( entity, "Kill" );
-	givePrize(client);
 }
 bool givePrize(client){
 	int random = GetRandomInt(0, 5000);
