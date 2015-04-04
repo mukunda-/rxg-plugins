@@ -207,7 +207,7 @@ givePrize(client){
 			itemID = 8;
 		}else if(random <= 425){
 			//roman candle
-			itemName = "Roman Candle";
+		itemName = "Roman Candle";
 			itemID = 10;
 		}else if(random <= 675){
 			//fire cracker
@@ -216,7 +216,7 @@ givePrize(client){
 		}else if(random <= 1175){
 			//spectral monoculus
 			itemName = "Spectral Monoculus";
-			itemID = 7;
+			itemID = 9;
 		}else if(random <= 1675){
 			//cookie
 			itemName = "Cookie";
@@ -226,7 +226,7 @@ givePrize(client){
 			itemName = "Pumpkin Bomb";
 			itemID = 6;
 		}else{
-			cashDropped = GetRandomInt(50, 150);
+			cashDropped = GetRandomInt(50, 15r0);
 			if(!RXGSTORE_AddCash( client,  cashDropped)){
 				return;
 			}
@@ -272,7 +272,6 @@ eggDB(client){
         
         char query[1024];
         FormatEx( query, sizeof query, "INSERT INTO sourcebans_easter.players( account, egg_count ) VALUES ( %i, %i ) ON DUPLICATE KEY UPDATE egg_count = egg_count + 1", account, 1 );
-        
         DBRELAY_TQuery( IgnoredSQLResult, query );
      }
 }
