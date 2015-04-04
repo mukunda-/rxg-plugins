@@ -4,18 +4,18 @@
 
 #define _dbrelay_included
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Global forward that fires when the database relay establishes a connection. This will also fire
 // on a reconnect after dropping the connection.
 //
 forward OnDBRelayConnected();
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Checks if the Database is connected and returns true/false
 //
-native bool:DBRELAY_IsConnected();
+native bool DBRELAY_IsConnected();
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 // Runs a threaded query through the Database Relay
 // 
 // callback: the callback for when the query has completed
@@ -23,10 +23,10 @@ native bool:DBRELAY_IsConnected();
 // data: data to pass to the callback
 // prio: priority of query
 // 
-native DBRELAY_TQuery( SQLTCallback:callback, const String:query[], any:data=0, DBPriority:prio=DBPrio_Normal );
+native DBRELAY_TQuery( SQLTCallback callback, const char[] query, any data = 0, DBPriority prio = DBPrio_Normal );
 
-//-------------------------------------------------------------------------------------------------
-public SharedPlugin:__pl_dbrelay = 
+//-----------------------------------------------------------------------------
+public SharedPlugin __pl_dbrelay = 
 {
 	name = "dbrelay",
 	file = "dbrelay.smx",

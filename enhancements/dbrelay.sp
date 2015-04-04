@@ -8,36 +8,36 @@
 
 #pragma semicolon 1
 
-//-------------------------------------------------------------------------------------------------
-public Plugin:myinfo = {
+//-----------------------------------------------------------------------------
+public Plugin myinfo = {
 	name = "Database Relay",
 	author = "WhiteThunder",
-	description = "Relays database connections and queries through one plugin",
-	version = "1.1.6",
+	description = "Relays database queries through a single connection",
+	version = "1.2.0",
 	url = "www.reflex-gamers.com"
 };
 
-new Handle:g_ConnectForward;
-new Handle:g_db;
+Handle g_ConnectForward;
+Handle g_db;
 
-new Handle:sm_dbrelay_auto_reconnect;
-new Handle:sm_dbrelay_retry_delay;
-new Handle:sm_dbrelay_max_retries;
-new bool:c_auto_reconnect;
-new Float:c_retry_delay;
-new c_max_retries;
+Handle sm_dbrelay_auto_reconnect;
+Handle sm_dbrelay_retry_delay;
+Handle sm_dbrelay_max_retries;
+bool c_auto_reconnect;
+float c_retry_delay;
+int c_max_retries;
 
-new g_last_connect;
-new g_last_query;
-new g_last_error;
-new g_queries_since_up;
+int g_last_connect;
+int g_last_query;
+int g_last_error;
+int g_queries_since_up;
 
-new bool:g_connecting;
-new bool:g_connected;
-new g_reconnect_tries;
+bool g_connecting;
+bool g_connected;
+int g_reconnect_tries;
 
 
-new bool:use_irc;
+bool use_irc;
 
 public OnAllPluginsLoaded() {
 	if (LibraryExists("sourceirc"))
@@ -52,26 +52,26 @@ public OnLibraryRemoved(const String:name[]) {
 		use_irc = false;
 }
 
-//-------------------------------------------------------------------------------------------------
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) {
+//-----------------------------------------------------------------------------
+public APLRes AskPluginLoad2( Handle myself, bool late, char[] error, err_max ) {
 	CreateNative( "DBRELAY_IsConnected", Native_IsConnected );
 	CreateNative( "DBRELAY_TQuery", Native_TQuery );
 	RegPluginLibrary("dbrelay");
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 RecacheConvars() {
 	c_auto_reconnect = GetConVarBool( sm_dbrelay_auto_reconnect );
 	c_retry_delay = GetConVarFloat( sm_dbrelay_retry_delay );
 	c_max_retries = GetConVarInt( sm_dbrelay_max_retries );
 }
 
-//-------------------------------------------------------------------------------------------------
-public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[] ) {
+//-----------------------------------------------------------------------------
+public OnConVarChanged( Handle cvar, const char[] oldval, const char[] newval ) {
 	RecacheConvars();
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnPluginStart() {
 
 	sm_dbrelay_auto_reconnect = CreateConVar( "sm_dbrelay_auto_reconnect", "1", "Whether to automatically reconnect when there is a database connection problem.", FCVAR_PLUGIN );
@@ -84,7 +84,7 @@ public OnPluginStart() {
 	RecacheConvars();
 	
 	g_ConnectForward = CreateGlobalForward( "OnDBRelayConnected", ET_Ignore );
-
+	
 	DB_Open();
 	
 	RegServerCmd( "dbrelay_connect", Command_connect );
@@ -92,8 +92,8 @@ public OnPluginStart() {
 	RegServerCmd( "dbrelay_status", Command_status );
 }
 
-//-------------------------------------------------------------------------------------------------
-public Action:Command_connect( args ) {
+//-----------------------------------------------------------------------------
+public Action Command_connect( args ) {
 	
 	if( g_connected ) {
 		PrintToServer( "Already connected." );
@@ -105,8 +105,8 @@ public Action:Command_connect( args ) {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
-public Action:Command_disonnect( args ) {
+//-----------------------------------------------------------------------------
+public Action Command_disonnect( args ) {
 	
 	if( g_connected ) {
 		PrintToServer( "[DBRELAY] Closing database connection." );
@@ -118,15 +118,15 @@ public Action:Command_disonnect( args ) {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
-public Action:Command_status( args ) {
+//-----------------------------------------------------------------------------
+public Action Command_status( args ) {
 	
-	decl String:reply[256];
-	decl String:status_content[128];
+	char reply[256];
+	char status_content[128];
 	
-	decl String:last_connect_str[13];
-	decl String:last_query_str[13];
-	decl String:last_error_str[13];
+	char last_connect_str[13];
+	char last_query_str[13];
+	char last_error_str[13];
 	
 	
 	if( g_last_connect != 0 ) {
@@ -166,8 +166,8 @@ public Action:Command_status( args ) {
 	PrintToServer( reply );
 }
 
-//-------------------------------------------------------------------------------------------------
-bool:DB_Open( bool:first=true ) {
+//-----------------------------------------------------------------------------
+bool DB_Open( bool first = true ) {
 
 	if( first && !SQL_CheckConfig("reflex") ) {
 		IRCMessage( "\x030,4[DBRELAY] Could not find Database conf \"reflex\"." );
@@ -189,8 +189,8 @@ bool:DB_Open( bool:first=true ) {
 	return false;
 }
 
-//-------------------------------------------------------------------------------------------------
-public DB_OnConnect( Handle:owner, Handle:hndl, const String:error[], any:data ) {
+//-----------------------------------------------------------------------------
+public DB_OnConnect( Handle owner, Handle hndl, const char[] error, any data ) {
 	
 	if( hndl == INVALID_HANDLE ) {
 		LogError( "sql connection error: %s", error );
@@ -217,14 +217,14 @@ public DB_OnConnect( Handle:owner, Handle:hndl, const String:error[], any:data )
 	Call_Finish();
 }
 
-//-------------------------------------------------------------------------------------------------
-public Action:DB_ReconnectTimer( Handle:timer ) {
+//-----------------------------------------------------------------------------
+public Action DB_ReconnectTimer( Handle timer ) {
 	g_connecting = false;
 	DB_Open( false );
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public DB_Close() {
 	IRCMessage( "\x030,4[DBRELAY] Database connection closed." );
 	PrintToServer( "[DBRELAY] Database connection closed." );
@@ -235,7 +235,7 @@ public DB_Close() {
 	g_connecting = false;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public DB_Fault() {
 	DB_Close();
 	g_last_error = GetTime();
@@ -244,18 +244,42 @@ public DB_Fault() {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
-public Native_IsConnected( Handle:plugin, numParams ) {
+//-----------------------------------------------------------------------------
+public Native_IsConnected( Handle plugin, numParams ) {
 	return g_connected;
 }
 
-//-------------------------------------------------------------------------------------------------
-public OnQueryResult( Handle:owner, Handle:hndl, const String:error[], any:data ) {
+//-----------------------------------------------------------------------------
+public Native_TQuery( Handle plugin, numParams ) {
+	
+	SQLTCallback callback = GetNativeCell(1);
+	
+	int len;
+	GetNativeStringLength( 2, len );
+	
+	char[] query = new char[len + 1];
+	GetNativeString( 2, query, len + 1 );
+	
+	Handle inner_pack = GetNativeCell(3);
+	
+	Handle pack = CreateDataPack();
+	WritePackHandle( pack, plugin );
+	WritePackFunction( pack, callback );
+	WritePackHandle( pack, inner_pack );
+	
+	SQL_TQuery( g_db, OnQueryResult, query, pack );
+	
+	g_queries_since_up++;
+	g_last_query = GetTime();
+}
+
+//-----------------------------------------------------------------------------
+public OnQueryResult( Handle owner, Handle hndl, const char[] error, any data ) {
 	
 	ResetPack(data);
-	new Handle:plugin = ReadPackHandle(data);
-	new SQLTCallback:callback = SQLTCallback:ReadPackCell(data);
-	new Handle:inner_data = ReadPackHandle(data);
+	Handle plugin = ReadPackHandle(data);
+	SQLTCallback callback = SQLTCallback:ReadPackFunction(data);
+	Handle inner_data = ReadPackHandle(data);
 	CloseHandle(data);
 	
 	if( !hndl ) {
@@ -265,7 +289,7 @@ public OnQueryResult( Handle:owner, Handle:hndl, const String:error[], any:data 
 		DB_Fault();
 	}
 	
-	Call_StartFunction( plugin, Function:callback );
+	Call_StartFunction( plugin, callback );
 	Call_PushCell( owner );
 	Call_PushCell( hndl );
 	Call_PushString( error );
@@ -273,32 +297,8 @@ public OnQueryResult( Handle:owner, Handle:hndl, const String:error[], any:data 
 	Call_Finish();
 }
 
-//-------------------------------------------------------------------------------------------------
-public Native_TQuery( Handle:plugin, numParams ) {
-	
-	new SQLTCallback:callback = SQLTCallback:GetNativeCell(1);
-	
-	new len;
-	GetNativeStringLength( 2, len );
-	
-	decl String:query[len + 1];
-	GetNativeString( 2, query, len + 1 );
-	
-	new Handle:inner_pack = Handle:GetNativeCell(3);
-	
-	new Handle:pack = CreateDataPack();
-	WritePackHandle( pack, plugin );
-	WritePackCell( pack, callback );
-	WritePackHandle( pack, inner_pack );
-	
-	SQL_TQuery( g_db, OnQueryResult, query, pack );
-	
-	g_queries_since_up++;
-	g_last_query = GetTime();
-}
-
-//-------------------------------------------------------------------------------------------------
-public IRCMessage( const String:msg[] ) {
+//-----------------------------------------------------------------------------
+public IRCMessage( const char[] msg ) {
 	if( use_irc ) {
 		IRC_MsgFlaggedChannels( "relay", msg );
 	}
