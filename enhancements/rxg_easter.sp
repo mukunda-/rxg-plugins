@@ -1,11 +1,11 @@
 
 #include <sourcemod>
 #include <sdktools>
-#include <tf2_stocks>
+//#include <tf2_stocks>
 #include <rxgcommon>
 #include <dbrelay>
 #include <rxgstore>
-#include <morecolors>
+//#include <morecolors>
 	
 #pragma semicolon 1
 //#pragma newdecls required
@@ -23,13 +23,13 @@ char files[][] = {
 	"materials/models/props_easteregg/c_easteregg.vtf",
 	"materials/models/props_easteregg/c_easteregg.vmt",
 	"materials/models/props_easteregg/c_easteregg_gold.vmt",
-	"models/player/saxton_hale/w_easteregg.mdl",
-	"models/player/saxton_hale/w_easteregg.dx90.vtx",
-	"models/player/saxton_hale/w_easteregg.vvd",
-	"models/player/saxton_hale/w_easteregg.phy",
+	"models/player/saxton_hale/w_easteregg{version}.mdl",
+	"models/player/saxton_hale/w_easteregg{version}.dx90.vtx",
+	"models/player/saxton_hale/w_easteregg{version}.vvd",
+	"models/player/saxton_hale/w_easteregg{version}.phy",
 	"sound/rxg/items/egg_sound.mp3"
 };
-char egg_model[64] = "models/player/saxton_hale/w_easteregg.mdl";
+char egg_model[64] = "models/player/saxton_hale/w_easteregg{version}.mdl";
 char egg_sound[64] = "rxg/items/egg_sound.mp3";
 
 int GAME;
@@ -49,9 +49,14 @@ public OnPluginStart() {
 	} else {
 		GAME = GAME_TF2;
 	}
+	if( GAME == GAME_CSGO ) {
+		ReplaceString( egg_model, sizeof egg_model, "{version}", "_csgo" );
+	} else {
+		ReplaceString( egg_model, sizeof egg_model, "{version}", "" );
+	}
 	
 	item_color = GAME == GAME_TF2 ? "\x07874fad" : "\x03";
-	initial_space = GAME == GAME_CSGO ? "\x01 " : "";
+	initial_space = GAME == GAME_CSGO ? "\x01 " : "\x01";
 	
 	HookEvent("player_death", Event_Player_Death, EventHookMode_Pre);
 }
@@ -61,7 +66,14 @@ public OnMapStart() {
 	PrecacheSound( egg_sound );
 	
 	for( new i = 0; i < sizeof files; i++ ) {
-		AddFileToDownloadsTable( files[i] );
+		decl String:file[64];
+		strcopy( file, sizeof file, files[i] );
+		if( GAME == GAME_CSGO ) {
+			ReplaceString( file, sizeof file, "{version}", "_csgo" );
+		} else {
+			ReplaceString( file, sizeof file, "{version}", "" );
+		}
+		AddFileToDownloadsTable( file );
 	}
 	
 	if( GAME == GAME_TF2 ) {
@@ -73,7 +85,7 @@ public OnMapStart() {
 public Action Event_Player_Death( Handle event, const char [] name, bool dontBroadcast ) {
 	int killer = GetClientOfUserId( GetEventInt( event, "attacker" ));
 	int client = GetClientOfUserId( GetEventInt( event, "userid" ));
-	if(killer != client){
+	if(killer != client && GetClientCount() > 6){
 		if (GetRandomInt(0, 5) == 1){
 			dropEgg(client);
 		}
@@ -87,13 +99,17 @@ dropEgg(client){
 	float pos[3];
 	GetClientEyePosition(client,pos);
 	
+	
+	if( GAME==GAME_CSGO ){
+		SetEntityRenderColor( ent, 128,128,128);
+	}
+	
 	DispatchKeyValue( ent, "spawnflags", "256" );
 	SetEntProp( ent, Prop_Send, "m_CollisionGroup", 2 );
 	DispatchSpawn( ent );
 	
 	TeleportEntity( ent, pos, NULL_VECTOR, NULL_VECTOR );
 	AddTrigger(ent);
-
 }
 //-----------------------------------------------------------------------------
 AddTrigger( parent ) {
@@ -107,9 +123,9 @@ AddTrigger( parent ) {
 	SetVariantString("!activator");
 	AcceptEntityInput( ent, "SetParent", parent );
 	AcceptEntityInput( ent, "Disable" );
-
-
-
+	
+	SetEntityModel( ent, egg_model );
+	
 	float minbounds[3] = {-33.0, -33.0, -33.0};
 	float maxbounds[3] = {33.0, 33.0, 33.0};
 	SetEntPropVector( ent, Prop_Send, "m_vecMins", minbounds);
@@ -132,7 +148,6 @@ AddTrigger( parent ) {
 }
 //-----------------------------------------------------------------------------
 public TriggerTouched( const char [] output, caller,activator, float delay ) {
-
 	OnEggTouch( caller, activator );
 }
 //-----------------------------------------------------------------------------
@@ -148,8 +163,38 @@ public OnEggTouch( entity, client) {
 givePrize(client){
 	int random = GetRandomInt(0, 5000);
 	int itemID = -1;
-	char itemName[100];
+	char itemName[64];
 	bool bigItem = false;
+	int cashDropped = 0;
+	if(GAME == GAME_CSGO){
+		if(random <= 1){
+			//nuke
+			itemName = "Nuke";
+			itemID = 5;
+		}else if(random <= 150){
+			//negev
+			itemName = "Negev";
+			itemID = 3;
+		}else if(random <= 600){
+			//radio
+			itemName = "Disposable Radio";
+			itemID = 2;
+		}else if(random <= 1050){
+			//cookie
+			itemName = "Cookie";
+			itemID = 4;
+		}else if(random <= 3300){
+			//chicken
+			itemName = "Chicken";
+			itemID = 7;
+		}else{
+			cashDropped = GetRandomInt(50, 150);
+			if(!RXGSTORE_AddCash( client,  cashDropped)){
+				return;
+			}
+			PrintToChat(client, "You found \x04$%i \x01in an easter egg!",cashDropped);
+		}
+	}
 	if(GAME == GAME_TF2){
 		if(random <= 50){
 			//time warp
@@ -180,24 +225,43 @@ givePrize(client){
 			itemName = "Pumpkin Bomb";
 			itemID = 6;
 		}else{
-			int cashDropped = GetRandomInt(10, 500);
-			RXGSTORE_AddCash( client,  cashDropped);
-			PrintToChat(client, "%sYou found a {limegreen}$%i \x01in an easter egg!",initial_space,cashDropped);
+			cashDropped = GetRandomInt(50, 150);
+			if(!RXGSTORE_AddCash( client,  cashDropped)){
+				return;
+			}
+			PrintToChat(client, "%sYou found \x04$%i \x01in an easter egg!", initial_space, cashDropped);
 		}
 	}
 	if(itemID != -1){
-		RXGSTORE_GiveItem( client, itemID );
+		if(!RXGSTORE_GiveItem( client, itemID )){
+			return;
+		}
 		bigItem = (random <= 50);
 		if(bigItem){
 			char clientName[64];
 			GetClientName(client,clientName,64);
-			PrintCenterTextAll("%s has just found a %s in an Easter Egg!!!",clientName,itemName);
+			PrintCenterTextAll("%s has just found a %s in an Easter Egg!!!", clientName, itemName);
 		}else{
-			PrintCenterText(client, "You found a %s store item!",itemName);
+			PrintCenterText(client, "You found a %s store item!", itemName);
 		}
-		CPrintToChat(client, "You found a {unusual}%s \x01store item in an Easter Egg. Use {unusual}!useitem\x01 to use it.",itemName);
-		CPrintToChatAll("You found a {unusual}%s \x01store item in an Easter Egg. Use {unusual}!useitem\x01 to use it.",itemName);
+		PrintToChat(client, "%sYou found a %s%s \x01in an Easter Egg. Type \x04!useitem \x01to use it.", initial_space, item_color, itemName);
 	}
+	itemDropDB(client,itemID,cashDropped);
+}
+itemDropDB(client,itemID,cashDropped){
+	if( DBRELAY_IsConnected() ){
+        int account = GetSteamAccountID(client);
+        if (account == 0){ return;}
+        
+        int val = 1;
+        char query[1024];
+        if(itemID == -1){
+        	val = cashDropped;
+        }
+        FormatEx( query, sizeof query, "INSERT INTO sourcebans_easter.drops( account, item, count ) VALUES ( %i, %i, %i ) ON DUPLICATE KEY UPDATE count = count + %i", account, itemID, val , val);
+        
+        DBRELAY_TQuery( IgnoredSQLResult, query );
+     }
 }
 //-----------------------------------------------------------------------------
 eggDB(client){
@@ -210,7 +274,6 @@ eggDB(client){
         
         DBRELAY_TQuery( IgnoredSQLResult, query );
      }
-
 }
 //-----------------------------------------------------------------------------
 public IgnoredSQLResult( Handle owner, Handle hndl, const char [] error, any data ) {
