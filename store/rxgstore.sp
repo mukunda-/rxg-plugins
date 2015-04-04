@@ -20,7 +20,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.3.1",
+    version     = "2.4.0",
     url         = "www.mukunda.com"
 };
 
@@ -355,11 +355,12 @@ CommitItemChange( client, item, amount ) {
 	
 	decl String:query[1024];
 	FormatEx( query, sizeof query, 
-		"UPDATE sourcebans_store2.user_item SET quantity=quantity%s%d WHERE user_id=%d AND item_id=%d",
-		amount >= 0 ? "+":"",
-		amount,
+		"INSERT INTO sourcebans_store2.user_item ( user_id, item_id, quantity ) VALUES ( %d, %d, %d ) ON DUPLICATE KEY UPDATE quantity = quantity %s %d",
 		g_client_data_account[client],
-		item_ids[item] );
+		item_ids[item],
+		amount,
+		amount >= 0 ? "+":"",
+		amount );
 	
 	new Handle:pack = CreateDataPack();
 	WritePackCell( pack, GetClientUserId(client) );
