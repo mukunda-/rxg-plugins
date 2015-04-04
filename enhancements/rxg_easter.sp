@@ -15,7 +15,7 @@ public Plugin myinfo = {
 	name = "Reflex Easter Egg Hunt",
 	author = "Roker",
 	description = "Pickup dem eggs.",
-	version = "1.0.1",
+	version = "1.0.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -154,19 +154,23 @@ public TriggerTouched( const char [] output, caller,activator, float delay ) {
 //-----------------------------------------------------------------------------
 public OnEggTouch( entity, client) {
 	if( IsFakeClient( client ) ) return;
+	if(!givePrize(client)) return;
+	eggDB(client);
+	
 	entity = GetEntPropEnt( entity, Prop_Send, "m_hOwnerEntity" );
 	EmitSoundToAll( egg_sound, client );
 	
 	AcceptEntityInput( entity, "Kill" );
 	givePrize(client);
-	eggDB(client);
 }
-givePrize(client){
+bool givePrize(client){
 	int random = GetRandomInt(0, 5000);
 	int itemID = -1;
 	char itemName[64];
 	bool bigItem = false;
 	int cashDropped = 0;
+	char clientName[64];
+	GetClientName(client,clientName,64);
 	if(GAME == GAME_CSGO){
 		if(random <= 1){
 			//nuke
@@ -191,7 +195,8 @@ givePrize(client){
 		}else{
 			cashDropped = GetRandomInt(50, 150);
 			if(!RXGSTORE_AddCash( client,  cashDropped)){
-				return;
+				LogError("Tried to give %s %i cash. Failed.", clientName, cashDropped);
+				return false;
 			}
 			PrintToChat(client, "You found \x04$%i \x01in an easter egg!",cashDropped);
 		}
@@ -207,7 +212,7 @@ givePrize(client){
 			itemID = 8;
 		}else if(random <= 425){
 			//roman candle
-		itemName = "Roman Candle";
+			itemName = "Roman Candle";
 			itemID = 10;
 		}else if(random <= 675){
 			//fire cracker
@@ -226,21 +231,21 @@ givePrize(client){
 			itemName = "Pumpkin Bomb";
 			itemID = 6;
 		}else{
-			cashDropped = GetRandomInt(50, 15r0);
+			cashDropped = GetRandomInt(50, 150);
 			if(!RXGSTORE_AddCash( client,  cashDropped)){
-				return;
+				LogError("Tried to give %s %i cash. Failed.", clientName, cashDropped);
+				return false;
 			}
 			PrintToChat(client, "%sYou found \x04$%i \x01in an easter egg!", initial_space, cashDropped);
 		}
 	}
 	if(itemID != -1){
 		if(!RXGSTORE_GiveItem( client, itemID )){
-			return;
+			LogError("Tried to give %s item '%s' with ID %i. Failed.", clientName, itemName, itemID);
+			return false;
 		}
 		bigItem = (random <= 50);
 		if(bigItem){
-			char clientName[64];
-			GetClientName(client,clientName,64);
 			PrintCenterTextAll("%s has just found a %s in an Easter Egg!!!", clientName, itemName);
 		}else{
 			PrintCenterText(client, "You found a %s store item!", itemName);
@@ -248,6 +253,7 @@ givePrize(client){
 		PrintToChat(client, "%sYou found a %s%s \x01in an Easter Egg. Type \x04!useitem \x01to use it.", initial_space, item_color, itemName);
 	}
 	itemDropDB(client,itemID,cashDropped);
+	return true;
 }
 itemDropDB(client,itemID,cashDropped){
 	if( DBRELAY_IsConnected() ){
