@@ -15,7 +15,7 @@ public Plugin myinfo = {
 	name = "Reflex Easter Egg Hunt",
 	author = "Roker",
 	description = "Pickup dem eggs.",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -51,6 +51,7 @@ public OnPluginStart() {
 	}
 	if( GAME == GAME_CSGO ) {
 		ReplaceString( egg_model, sizeof egg_model, "{version}", "_csgo" );
+		Format( egg_sound, sizeof egg_sound, "*%s", egg_sound );
 	} else {
 		ReplaceString( egg_model, sizeof egg_model, "{version}", "" );
 	}
