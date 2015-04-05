@@ -154,7 +154,7 @@ new Float:Announce=120.0;
 new AliveToEnable=5;
 new PointType;
 new bool:BossCrits=true;
-new Float:circuitStun;
+//new Float:circuitStun;
 new countdownPlayers=1;
 new countdownTime=120;
 new countdownHealth=2000;
@@ -1226,7 +1226,7 @@ public EnableFF2()
 	canBossRTD=GetConVarBool(cvarBossRTD);
 	AliveToEnable=GetConVarInt(cvarAliveToEnable);
 	BossCrits=GetConVarBool(cvarCrits);
-	circuitStun=GetConVarFloat(cvarCircuitStun);
+	//circuitStun=GetConVarFloat(cvarCircuitStun);
 	countdownHealth=GetConVarInt(cvarCountdownHealth);
 	countdownPlayers=GetConVarInt(cvarCountdownPlayers);
 	countdownTime=GetConVarInt(cvarCountdownTime);
@@ -1693,7 +1693,7 @@ public CvarChange(Handle:convar, const String:oldValue[], const String:newValue[
 	}
 	else if(convar==cvarCircuitStun)
 	{
-		circuitStun=StringToFloat(newValue);
+		//circuitStun=StringToFloat(newValue);
 	}
 	else if(convar==cvarCountdownPlayers)
 	{
@@ -3350,7 +3350,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 				return Plugin_Changed;
 			}
 		} */
-		// case 226:  //Battalion's Backup
+		/* case 226:  //Battalion's Backup
 		// {
 			// new Handle:itemOverride=PrepareItemHandle(item, _, _, "140 ; 10.0");
 			// if(itemOverride!=INVALID_HANDLE)
@@ -3359,7 +3359,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 				// return Plugin_Changed;
 			// }
 		// }
-		/* case 231:  //Darwin's Danger Shield
+		 case 231:  //Darwin's Danger Shield
 		{
 			new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 50");  //+50 health
 			if(itemOverride!=INVALID_HANDLE)
@@ -3402,7 +3402,7 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 		} */
  		/* case 444:  //Mantreads
 		{
-			/*new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5");
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5");
 			if(itemOverride!=INVALID_HANDLE)
 			{
 				item=itemOverride;
@@ -4490,11 +4490,11 @@ public Action:ClientTimer(Handle:timer)
 				}
 				case 22, 23, 160, 209, 294, 449, 773:  //Pistols
 				{
-					addthecrit=true;
+					/*addthecrit=true;
 					if(class==TFClass_Scout && cond==TFCond_HalloweenCritCandy)
 					{
 						cond=TFCond_Buffed;
-					}
+					}*/
 				}
 			}
 
@@ -5873,7 +5873,7 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 							damage=85.0;  //255 final damage
 						}
 					}
-					case 528:  //Short Circuit
+					/*case 528:  //Short Circuit
 					{
 						if(circuitStun)
 						{
@@ -5881,7 +5881,7 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 							EmitSoundToAll("weapons/barret_arm_zap.wav", client);
 							EmitSoundToClient(client, "weapons/barret_arm_zap.wav");
 						}
-					}
+					}*/
 					case 593:  //Third Degree
 					{
 						new healers[MAXPLAYERS];
@@ -7332,7 +7332,7 @@ public Action:HelpPanel3Cmd(client, args)
 
 public Action:HelpPanel3(client)
 {
-	if(!Enabled2)
+	/*if(!Enabled2)
 	{
 		return Plugin_Continue;
 	}
@@ -7343,7 +7343,7 @@ public Action:HelpPanel3(client)
 	DrawPanelItem(panel, "Off");
 	SendPanelToClient(panel, client, ClassinfoTogglePanelH, MENU_TIME_FOREVER);
 	CloseHandle(panel);
-	return Plugin_Handled;
+	return Plugin_Handled;*/
 }
 
 

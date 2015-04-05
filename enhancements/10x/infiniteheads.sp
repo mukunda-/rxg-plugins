@@ -5,9 +5,10 @@
 #include <tf2attributes>
 
 #pragma semicolon 1
+#pragma newdecls required
 
 //-----------------------------------------------------------------------------
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = "Infinite Heads",
 	author = "Roker",
 	description = "All heads benefit user.",
@@ -16,16 +17,16 @@ public Plugin:myinfo = {
 };
 
 #define WEAPON_INDEX 132
-new bool:extra_stats[MAXPLAYERS+1];
+bool extra_stats[MAXPLAYERS+1];
 
 //-----------------------------------------------------------------------------
-public OnPluginStart() {
+public void OnPluginStart(){
 	HookEvent( "player_death", Event_Player_Death);
 	HookEvent( "teamplay_round_win", Event_Round_End );
 }
 //-----------------------------------------------------------------------------
-public Action:Event_Round_End( Handle:event, const String:name[], bool:dontBroadcast ) {
-	for(new i=1;i<=MaxClients;i++){
+public Action Event_Round_End( Handle event, const char[] name, bool dontBroadcast ) {
+	for(int i=1;i<=MaxClients;i++){
 		if( !IsValidClient(i) ) continue;
 		if( !IsPlayerAlive(i))  continue;
 		if(GetEntProp(i, Prop_Send, "m_iDecapitations") > 0){
@@ -34,25 +35,27 @@ public Action:Event_Round_End( Handle:event, const String:name[], bool:dontBroad
 	}
 }
 //-----------------------------------------------------------------------------
-public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBroadcast ) {
-	new victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
+public Action Event_Player_Death( Handle event, const char[] name, bool dontBroadcast ) {
+	int victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	if(extra_stats[victim]){
 		removeStats(victim);
 	}
-	new shooter_id = GetEventInt( event, "attacker" );
-	new killer = GetClientOfUserId( shooter_id );
+	int shooter_id = GetEventInt( event, "attacker" );
+	int killer = GetClientOfUserId( shooter_id );
 	
 	if( !IsValidClient(killer) || !IsPlayerAlive(killer) ) {
 		return Plugin_Continue;
 	}
-	new weapon = GetPlayerWeaponSlot( killer, TFWeaponSlot_Melee );	
+	int weapon = GetPlayerWeaponSlot( killer, TFWeaponSlot_Melee );	
 
-	new bool:isDecapitation = GetEventInt( event, "customkill" ) == TF_CUSTOM_DECAPITATION;
+	bool isDecapitation = GetEventInt( event, "customkill" ) == TF_CUSTOM_DECAPITATION;
 	
 	if( !isDecapitation) {
 		return Plugin_Continue;
 	}
-	new heads = GetEntProp(killer, Prop_Send, "m_iDecapitations");
+	int heads = GetEntProp(killer, Prop_Send, "m_iDecapitations");
+	heads+=1;
+	SetEntProp(killer, Prop_Send, "m_iDecapitations",heads);
 	if(heads > 4){
 		heads -= 4;
 		TF2Attrib_SetByDefIndex(weapon,107,1.0 + 0.06*heads);
@@ -62,8 +65,8 @@ public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBr
 	return Plugin_Continue;
 }
 //-----------------------------------------------------------------------------
-removeStats(client){
-	new weapon = GetPlayerWeaponSlot( client, TFWeaponSlot_Melee );	
+void removeStats(int client){
+	int weapon = GetPlayerWeaponSlot( client, TFWeaponSlot_Melee );	
 	TF2Attrib_RemoveByDefIndex(weapon,26);
 	TF2Attrib_RemoveByDefIndex(weapon,107);
 	extra_stats[client] = false;

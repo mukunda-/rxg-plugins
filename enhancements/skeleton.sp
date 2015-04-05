@@ -1,9 +1,8 @@
 #include <sourcemod>
 #include <sdktools>
-#include <rxgstore>
+#include <tf2>
 
 #pragma semicolon 1
-//#pragma newdecls required
 
 //-----------------------------------------------------------------------------
 public Plugin myinfo = {
@@ -15,22 +14,41 @@ public Plugin myinfo = {
 };
 
 Handle sm_skeleton_max_summon_distance;
+Handle sm_skeletons_broadcast_cooldown;
 
 float c_max_summon_distance;
+float c_broadcast_cooldown;
+
+float g_last_broadcast[MAXPLAYERS+1];
 
 public void OnPluginStart(){
 	sm_skeleton_max_summon_distance = CreateConVar( "sm_skeleton_max_summon_distance", "750", "The maximum distance you may summon a Skeleton away from yourself. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
+	sm_skeletons_broadcast_cooldown = CreateConVar( "sm_skeletons_broadcast_cooldown", "30", "How frequently to broadcast that a player is spawning skeletons.", FCVAR_PLUGIN, true, 0.0 );
 	RegAdminCmd("sm_spawnskeleton", Command_SpawnSkeleton, ADMFLAG_RCON);
 	RegAdminCmd("sm_slayskeletons", Command_SlaySkeletons, ADMFLAG_RCON);
 	RecacheConvars();
 }
 //-------------------------------------------------------------------------------------------------
-public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[] ) {
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
+	CreateNative( "SKEL_SpawnSkeleton", Native_SpawnSkeleton );
+	RegPluginLibrary("skeleton");
+}
+//-------------------------------------------------------------------------------------------------
+public OnConVarChanged( Handle cvar, const char[] oldval, const char[] newval) {
 	RecacheConvars();
 }
 //-------------------------------------------------------------------------------------------------
 void RecacheConvars(){
 	c_max_summon_distance = GetConVarFloat(sm_skeleton_max_summon_distance);
+	c_broadcast_cooldown = GetConVarFloat(sm_skeletons_broadcast_cooldown);
+}
+//-----------------------------------------------------------------------------
+public OnMapStart() {
+	for(int i=0;i<=7;i++){
+		char sound[64];
+		Format( sound, sizeof sound, "misc/halloween/skeletons/skelly_medium_0%i.wav", i );
+		PrecacheSound(sound,true );
+	}
 }
 //-------------------------------------------------------------------------------------------------
 public Action:Command_SpawnSkeleton( client, args ) {
@@ -54,6 +72,13 @@ public Action:Command_SlaySkeletons( client, args ) {
 	SlaySkeletons( client );
 	return Plugin_Handled;
 }
+//-------------------------------------------------------------------------------------------------
+public Native_SpawnSkeleton( Handle plugin, numParams ) {
+	int client = GetNativeCell(1);
+	int team = GetNativeCell(2);
+	return SpawnSkeleton(client, team);
+}
+//-------------------------------------------------------------------------------------------------
 void SlaySkeletons(int client){
 	int ent = -1;
 	int prev;
@@ -67,7 +92,6 @@ void SlaySkeletons(int client){
 	if (prev) RemoveEdict(prev);
 	PrintToConsole(client,"%i skeletons slayed.",count);
 }
-
 //-------------------------------------------------------------------------------------------------
 bool SpawnSkeleton(int client, team){
 	float start[3];
@@ -91,19 +115,45 @@ bool SpawnSkeleton(int client, team){
 
 		if( c_max_summon_distance != 0 && distance > c_max_summon_distance * c_max_summon_distance ) {
 			PrintToChat( client, "\x07FFD800Cannot summon that far away." );
-			//RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
 		
 		if( FloatAbs( norm_angles[0] - (270.0) ) > 45.0 ) {
 			PrintToChat( client, "\x07FFD800Cannot summon there." );
-			//RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
 		if(getSkeletonCount() >= 10){
 			PrintToChat( client, "\x07FFD800Too many skeletons alive to summon more." );
 			return false;
 		}
+		char map[64];
+		GetCurrentMap(map, sizeof(map));
+		Format(map, sizeof(map), "maps/%s.nav", map);
+		if(!FileExists(map)){
+			PrintToChat( client, "\x07FFD800This Map has not yet been prepped for skeletons. Contact an administrator to get this fixed." );
+			return false;
+		}
+		
+		char team_color[7];
+		char player_name[64];
+		GetClientName(client,player_name,sizeof(player_name));
+		TFTeam client_team = TFTeam:GetClientTeam(client);
+		
+		if( client_team == TFTeam_Red ){
+			team_color = "ff3d3d";
+		} else if ( client_team == TFTeam_Blue ){
+			team_color = "84d8f4";
+		} else {
+			team_color = "874fad";
+		}
+	
+		float time = GetGameTime();
+		if( time >= g_last_broadcast[client] + c_broadcast_cooldown ) {
+			PrintToChatAll( "\x07%s%s \x07FFD800is spawning skeletons!", team_color, player_name );
+			g_last_broadcast[client] = time;
+		}
+	}else{
+		return false;
 	}
 	
 	new ent = CreateEntityByName("tf_zombie");
@@ -115,6 +165,12 @@ bool SpawnSkeleton(int client, team){
 	DispatchSpawn( ent );
 	SetEntProp( ent, Prop_Send, "m_CollisionGroup", 2 );
 	TeleportEntity( ent, end, NULL_VECTOR, NULL_VECTOR );
+	
+	int random = GetRandomInt(1,7);
+	char sound[64];
+	Format( sound, sizeof sound, "misc/halloween/skeletons/skelly_medium_0%i.wav", random );
+	EmitAmbientSound(sound, end, SOUND_FROM_WORLD, SNDLEVEL_NORMAL);
+	
 	return true;
 }
 //-------------------------------------------------------------------------------------------------

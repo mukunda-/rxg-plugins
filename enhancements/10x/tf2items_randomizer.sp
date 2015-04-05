@@ -7126,6 +7126,8 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieString(trie, "1150_attribs","670 ; 0.01 ; 669 ; 1 ; 4 ; 0.75 ; 97 ; 0.7 ; 126 ; -2 ; 6 ; 0.5 ; 15 ; 1" );
 	SetTrieString(trie, "1151_attribs","100 ; 0.85 ; 6 ; 0.7 ; 97 ; 0.5 ; 671 ; 1 ; 684 ; 3" );
 	SetTrieString(trie, "1153_attribs","708 ; 1 ; 709 ; 0.5 ; 710 ; 1 ; 711 ; 0 ; 651 ; 0.25 ; 644 ; 9 ; 97 ; 0.2 ; 394 ; 0.5 ; 424 ; 1.5 ; 25 ; 5 ; 76 ; 5 ; 128 ; 1" );
+	SetTrieString(trie, "237_attribs","134 ; 2 ; 181 ; 2 ; 476 ; -1 ; 318 ; 0.1 ; 4 ; 10 ; 76 ; 10 ; 128 ; 1 ; 275 ; 1 ; 169 ; 0.1 ; 252 ; 0.7" );
+	SetTrieString(trie, "265_attribs","134 ; 2 ; 181 ; 2 ; 476 ; -1 ; 318 ; 0.1 ; 4 ; 10 ; 275 ; 1 ; 78 ; 10 ; 88 ; 8" );
 
 
 //TF2 BETA SECTION, THESE MAY NOT WORK AT ALL
