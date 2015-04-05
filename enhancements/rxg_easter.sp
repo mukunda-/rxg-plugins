@@ -14,7 +14,7 @@ public Plugin myinfo = {
 	name = "Reflex Easter Egg Hunt",
 	author = "Roker",
 	description = "Pickup dem eggs",
-	version = "1.1.2",
+	version = "1.2.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -81,6 +81,8 @@ public OnPluginStart() {
 	HookConVarChange( sm_easter_egg_scale, OnConVarChanged );
 	RecacheConvars();
 	
+	RegAdminCmd( "sm_spawnegg", Command_SpawnEgg, ADMFLAG_SLAY );
+	
 	if( GAME == GAME_CSGO ) {
 		HookEvent( "player_use", OnPlayerUse );
 	}
@@ -117,13 +119,26 @@ public Action Event_Player_Death( Handle event, const char[] name, bool dontBroa
 	
 	if( killer != client && GetClientCount() > 6 ) {
 		if( GetRandomInt(0, 5) == 1 ) {
-			dropEgg(client);
+			DropEgg(client);
 		}
 	}
 }
 
 //-----------------------------------------------------------------------------
-dropEgg( int client ) {
+public Action Command_SpawnEgg( client, args ) {
+
+	if( !RXGSTORE_IsConnected() ) {
+		ReplyToCommand( client, "Store is not connected yet." );
+		return Plugin_Handled;
+	}
+	
+	DropEgg( client );
+	return Plugin_Handled;
+}
+
+//-----------------------------------------------------------------------------
+public DropEgg( int client ) {
+
 	int ent = CreateEntityByName( "prop_physics_override" );
 	DispatchKeyValue( ent, "targetname", "RXG_EGG" );
 	SetEntityModel( ent, egg_model );
