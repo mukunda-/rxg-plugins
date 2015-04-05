@@ -303,14 +303,16 @@ bool givePrize( client ) {
 			//cookie
 			itemName = "Cookie";
 			itemID = 4;
-		} else if( random <= 3340 && RXGSTORE_IsItemRegistered(6) ) {
+		}else if( random <= 2500 && RXGSTORE_IsItemRegistered(14) ) {
+			//skeleton
+			itemName = "Skeleton";
+			itemID = 14;
+		}else if( random <= 3875 && RXGSTORE_IsItemRegistered(6) ) {
 			//pumpkin
 			itemName = "Pumpkin Bomb";
 			itemID = 6;
-		} else {
-		
-			cashDropped = GetRandomInt(50, 150);
-			
+		}else {
+			cashDropped = GetRandomInt(100, 200);
 			if( !RXGSTORE_AddCash( client,  cashDropped) ) {
 				LogError("Tried to give %s %i cash. Failed.", clientName, cashDropped);
 				return false;
