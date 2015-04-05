@@ -20,7 +20,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.4.0",
+    version     = "2.5.0",
     url         = "www.mukunda.com"
 };
 
@@ -105,6 +105,7 @@ public APLRes:AskPluginLoad2( Handle:myself, bool:late, String:error[], err_max 
 	
 	CreateNative( "RXGSTORE_RegisterItem", Native_RegisterItem );
 	CreateNative( "RXGSTORE_UnregisterItem", Native_UnregisterItem );
+	CreateNative( "RXGSTORE_IsItemRegistered", Native_IsItemRegistered );
 	CreateNative( "RXGSTORE_ItemCount", Native_ItemCount );
 	CreateNative( "RXGSTORE_GetCash", Native_GetCash );
 	CreateNative( "RXGSTORE_AddCash", Native_AddCash );
@@ -944,6 +945,12 @@ public Native_UnregisterItem( Handle:plugin, numParams ) {
 	}
 	SetTrieValue( item_trie, item_names[slot], -1 );
 	return true;
+}
+
+//-----------------------------------------------------------------------------
+public Native_IsItemRegistered( Handle:plugin, numParams ) {
+	new itemid = GetNativeCell(1);
+	return ( item_map[itemid] != 0 );
 }
 
 //-----------------------------------------------------------------------------

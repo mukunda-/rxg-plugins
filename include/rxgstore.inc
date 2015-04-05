@@ -25,6 +25,11 @@ native RXGSTORE_RegisterItem( const String:name[], itemid, const String:fullname
 native RXGSTORE_UnregisterItem( itemid );
 
 //-------------------------------------------------------------------------------------------------
+// Checks if the item is registered with the given item_id
+//
+native RXGSTORE_IsItemRegistered( itemid );
+
+//-------------------------------------------------------------------------------------------------
 // get how much item a client has
 //
 native RXGSTORE_ItemCount( client, itemid );
