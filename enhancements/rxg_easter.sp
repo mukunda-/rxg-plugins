@@ -14,7 +14,7 @@ public Plugin myinfo = {
 	name = "Reflex Easter Egg Hunt",
 	author = "Roker",
 	description = "Pickup dem eggs",
-	version = "1.2.0",
+	version = "1.3.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -35,8 +35,15 @@ char item_color[24];
 char initial_space[24];
 
 Handle sm_easter_egg_scale;
+Handle sm_easter_egg_chance;
+Handle sm_easter_eggs_per_round;
 
 float c_easter_egg_scale;
+float c_easter_egg_chance;
+int c_easter_eggs_per_round;
+
+Handle kv;
+int spawn_count;
 
 int GAME;
 
@@ -46,6 +53,8 @@ int GAME;
 //-------------------------------------------------------------------------------------------------
 RecacheConvars() {
 	c_easter_egg_scale = GetConVarFloat( sm_easter_egg_scale );
+	c_easter_egg_chance = GetConVarFloat( sm_easter_egg_chance );
+	c_easter_eggs_per_round = GetConVarInt( sm_easter_eggs_per_round );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -77,15 +86,96 @@ public OnPluginStart() {
 	HookEvent("player_death", Event_Player_Death, EventHookMode_Pre);
 	
 	sm_easter_egg_scale = CreateConVar( "sm_easter_egg_scale", "1", "Scale of easter egg model.", FCVAR_PLUGIN, true, 0.1 );
+	sm_easter_egg_chance = CreateConVar( "sm_easter_egg_chance", "0.2", "Chance for an easter egg to drop.", FCVAR_PLUGIN, true, 0.05 );
+	sm_easter_eggs_per_round = CreateConVar( "sm_easter_eggs_per_round", "5", "Number of eggs to randomly spawn each round.", FCVAR_PLUGIN, true, 1.0 );
 	
 	HookConVarChange( sm_easter_egg_scale, OnConVarChanged );
+	HookConVarChange( sm_easter_egg_chance, OnConVarChanged );
+	HookConVarChange( sm_easter_eggs_per_round, OnConVarChanged );
 	RecacheConvars();
 	
+	RegServerCmd( "sm_easter_reload_config", Command_ReloadConfig );
 	RegAdminCmd( "sm_spawnegg", Command_SpawnEgg, ADMFLAG_SLAY );
+	RegAdminCmd( "sm_geteggpos", Command_GetEgggPosition, ADMFLAG_SLAY );
 	
 	if( GAME == GAME_CSGO ) {
 		HookEvent( "player_use", OnPlayerUse );
+		HookEvent( "round_start", Event_RoundStart );
 	}
+	
+	LoadConfigFile();
+}
+
+//-----------------------------------------------------------------------------
+public LoadConfigFile() {
+	
+	if( kv != INVALID_HANDLE ) {
+		CloseHandle( kv );
+	}
+	
+	char filepath[128];
+	BuildPath( Path_SM, filepath, sizeof(filepath), "configs/easter_egg_spawns.txt" );
+	
+	kv = CreateKeyValues( "EggSpawns" );
+	
+	if( !FileExists( filepath ) ) {
+		CloseHandle( kv );
+		kv = INVALID_HANDLE;
+		return;
+	}
+	
+	if( !FileToKeyValues( kv, filepath ) ) {
+		CloseHandle( kv );
+		kv = INVALID_HANDLE;
+		return;
+	}
+	
+	KvRewind( kv );
+	KvGotoFirstSubKey( kv );
+	
+	spawn_count = 0;
+	
+	do {
+		spawn_count++;
+	} while( KvGotoNextKey( kv ) );
+}
+
+//-----------------------------------------------------------------------------
+public Action Command_ReloadConfig( args ) {
+	LoadConfigFile();
+}
+
+//-----------------------------------------------------------------------------
+public Event_RoundStart( Handle event, const char[] name, bool dontBroadcast ) {
+	if( kv == INVALID_HANDLE ) {
+		return;
+	}
+	
+	for( int i = 0; i < c_easter_eggs_per_round; i++ ) {
+		SpawnRandomEgg();
+	}
+	
+	PrintToChatAll( "\x01 \x04%i easter eggs have spawned this round. Go find them!", c_easter_eggs_per_round );
+}
+
+//-----------------------------------------------------------------------------
+public GetRandomSpawn( float pos[3], float ang[3] ) {
+	int spawn_index = GetRandomInt(1, spawn_count);
+	char spawn_string[8];
+	IntToString( spawn_index, spawn_string, sizeof spawn_string );
+	
+	KvRewind( kv );
+	KvJumpToKey( kv, spawn_string );
+	KvGetVector( kv, "pos", pos );
+	KvGetVector( kv, "ang", ang );
+}
+
+//-----------------------------------------------------------------------------
+public SpawnRandomEgg() {
+	float pos[3];
+	float ang[3];
+	GetRandomSpawn( pos, ang );
+	SpawnEgg( pos, ang );
 }
 
 //-----------------------------------------------------------------------------
@@ -118,10 +208,60 @@ public Action Event_Player_Death( Handle event, const char[] name, bool dontBroa
 	int client = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	
 	if( killer != client && GetClientCount() > 6 ) {
-		if( GetRandomInt(0, 5) == 1 ) {
+		if( GetRandomFloat(0.0, 1.0) < c_easter_egg_chance ) {
 			DropEgg(client);
 		}
 	}
+}
+
+//-----------------------------------------------------------------------------
+public Action Command_GetEgggPosition( client, args ) {
+
+	float start[3];
+	float angle[3];
+	float end[3];
+	GetClientEyePosition( client, start );
+	GetClientEyeAngles( client, angle );
+	
+	TR_TraceRayFilter( start, angle, CONTENTS_SOLID, RayType_Infinite, TraceFilter_Egg );
+
+	if( TR_DidHit() ) {
+		float norm[3];
+		float norm_angles[3];
+		TR_GetPlaneNormal( INVALID_HANDLE, norm );
+		GetVectorAngles( norm, norm_angles );
+		
+		int ent = TR_GetEntityIndex();
+		
+		TR_GetEndPosition( end );
+		
+		char entname[64];
+		GetEntPropString( ent, Prop_Data, "m_iName", entname, sizeof(entname) );
+		
+		if ( !StrEqual( entname, "RXG_EGG" ) ) {
+			PrintToChat( client, "no egg found" );
+			return Plugin_Handled;
+		}
+		
+		float egg_position[3];
+		float egg_angle[3];
+		GetEntPropVector( ent, Prop_Data, "m_vecAbsOrigin", egg_position );
+		GetEntPropVector( ent, Prop_Data, "m_angAbsRotation", egg_angle );
+		
+		PrintToChat( client, "\"pos\" \"%f %f %f\"", egg_position[0], egg_position[1], egg_position[2] );
+		PrintToConsole( client, "\"pos\" \"%f %f %f\"", egg_position[0], egg_position[1], egg_position[2] );
+		PrintToChat( client, "\"ang\" \"%f %f %f\"", egg_angle[0], egg_angle[1], egg_angle[2] );
+		PrintToConsole( client, "\"ang\" \"%f %f %f\"", egg_angle[0], egg_angle[1], egg_angle[2] );
+	}
+	
+	return Plugin_Handled;
+}
+
+//-----------------------------------------------------------------------------
+public bool TraceFilter_Egg( int entity, int contentsMask ) {
+	char entname[64];
+	GetEntPropString( entity, Prop_Data, "m_iName", entname, sizeof(entname) );
+	return ( StrEqual( entname, "RXG_EGG" ) );
 }
 
 //-----------------------------------------------------------------------------
@@ -139,6 +279,14 @@ public Action Command_SpawnEgg( client, args ) {
 //-----------------------------------------------------------------------------
 public DropEgg( int client ) {
 
+	float pos[3];
+	GetClientEyePosition( client, pos );
+	SpawnEgg( pos, NULL_VECTOR );
+}
+
+//-----------------------------------------------------------------------------
+public SpawnEgg( float pos[3], float ang[3] ) {
+	
 	int ent = CreateEntityByName( "prop_physics_override" );
 	DispatchKeyValue( ent, "targetname", "RXG_EGG" );
 	SetEntityModel( ent, egg_model );
@@ -147,15 +295,11 @@ public DropEgg( int client ) {
 		SetEntPropFloat( ent, Prop_Data, "m_flModelScale", c_easter_egg_scale );
 	}
 	
-	float pos[3];
-	GetClientEyePosition( client, pos );
-	
-	
 	DispatchKeyValue( ent, "spawnflags", "256" );
 	SetEntProp( ent, Prop_Send, "m_CollisionGroup", 2 );
 	DispatchSpawn( ent );
 	
-	TeleportEntity( ent, pos, NULL_VECTOR, NULL_VECTOR );
+	TeleportEntity( ent, pos, ang, NULL_VECTOR );
 	
 	if( GAME == GAME_TF2 ) {
 		AddTrigger( ent );
@@ -249,19 +393,23 @@ bool givePrize( client ) {
 			//nuke
 			itemName = "Nuke";
 			itemID = 5;
-		} else if( random <= 150 && RXGSTORE_IsItemRegistered(3) ) {
+		} else if( random <= 250 && RXGSTORE_IsItemRegistered(13) ) {
+			//negev
+			itemName = "AWP";
+			itemID = 13;
+		} else if( random <= 500 && RXGSTORE_IsItemRegistered(3) ) {
 			//negev
 			itemName = "Negev";
 			itemID = 3;
-		} else if( random <= 600 && RXGSTORE_IsItemRegistered(2) ) {
+		} else if( random <= 1000 && RXGSTORE_IsItemRegistered(2) ) {
 			//radio
 			itemName = "Disposable Radio";
 			itemID = 2;
-		} else if( random <= 1050 && RXGSTORE_IsItemRegistered(4) ) {
+		} else if( random <= 2500 && RXGSTORE_IsItemRegistered(4) ) {
 			//cookie
 			itemName = "Cookie";
 			itemID = 4;
-		} else if( random <= 3300 && RXGSTORE_IsItemRegistered(7) ) {
+		} else if( random <= 3500 && RXGSTORE_IsItemRegistered(7) ) {
 			//chicken
 			itemName = "Chicken";
 			itemID = 7;
