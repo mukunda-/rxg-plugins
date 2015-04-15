@@ -1,140 +1,188 @@
-#pragma semicolon 1
-
 #include <sourcemod>
 #include <sdktools>
 
-public Plugin:myinfo = {
-	name = "flashmod",
-	author = "mukunda",
+#pragma newdecls required
+#pragma semicolon 1
+
+//-----------------------------------------------------------------------------
+public Plugin myinfo = {
+	name        = "flashmod",
+	author      = "mukunda",
 	description = "Flashbang messages and forwards",
-	version = "1.1.1",
-	url = "www.mukunda.com"
+	version     = "1.3.0",
+	url         = "www.mukunda.com"
 };
- 
-new bool:player_flashed[MAXPLAYERS+1];
-//new Float:player_flash_alpha[MAXPLAYERS+1];
-//new Float:player_flash_duration[MAXPLAYERS+1];
 
-new Handle:flashmod_forward;
-new Handle:flashmod_stats_forward;
-new Handle:flashmod_teamflash_forward;
- 
+//-----------------------------------------------------------------------------
+// the flash source for OnPlayerBlind
+int   g_flasher = 0;
 
+int   g_teamflashes;
+float g_teamflash_total;
+int   g_enemyflashes;
+float g_enemyflash_total;
 
+// forwards
+Handle g_forward;
+Handle g_stats_forward;
+Handle g_teamflash_forward;
+
+// thresholds for a flash to be considered offensive
 #define DURATION_LIMIT 2.0
-#define ALPHA_LIMIT 255.0
+#define ALPHA_LIMIT    255.0
 
-public OnPluginStart()
-{
-	flashmod_forward = CreateGlobalForward("Flashmod_OnPlayerFlashed", ET_Event, Param_Cell, Param_Cell, Param_FloatByRef, Param_FloatByRef );
-	flashmod_teamflash_forward = CreateGlobalForward("Flashmod_OnPlayerTeamflash", ET_Ignore, Param_Cell, Param_Cell  );
-	flashmod_stats_forward = CreateGlobalForward( "Flashmod_FlashbangStats", ET_Ignore, Param_Cell, Param_Cell, Param_Cell, Param_Float, Param_Float );
-	HookEvent( "player_blind", Event_PlayerBlind );
+//-----------------------------------------------------------------------------
+public void OnPluginStart() {
+	
+	g_forward = CreateGlobalForward( "Flashmod_OnPlayerFlashed", 
+			ET_Event, Param_Cell, Param_Cell, 
+			Param_FloatByRef, Param_FloatByRef );
+			
+	g_teamflash_forward = CreateGlobalForward( "Flashmod_OnPlayerTeamflash", 
+			ET_Ignore, Param_Cell, Param_Cell  );
+			
+	g_stats_forward = CreateGlobalForward( "Flashmod_FlashbangStats", 
+			ET_Ignore, Param_Cell, Param_Cell, 
+			Param_Cell, Param_Float, Param_Float );
+			
+	HookEvent( "player_blind",       Event_PlayerBlind );
 	HookEvent( "flashbang_detonate", Event_FlashbangDetonate );
 }
 
-/* Called when a player is blinded by a flashbang */
-public Event_PlayerBlind(Handle:event, const String:name[], bool:dontBroadcast)
-{
-	/* The client that was blinded */
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+//-----------------------------------------------------------------------------
+public void Event_PlayerBlind( Handle event, const char[] name, bool db ) {
 	
-	// flag player
-	player_flashed[client] = true;
-}
-
-/* Called when a flashbang has detonated (after the players have already been blinded) */
-public Event_FlashbangDetonate(Handle:event, const String:name[], bool:dontBroadcast)
-{
-	/* The number of flashed players, and the player that threw the flashbang */
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
-	new teamflash = 0;
-	new Float:teamflash_total = 0.0;
-	new enemyflash = 0;
-	new Float:enemyflash_total = 0.0;
-	/* Loop through all flashed players to check if they are on the same team */
-	for (new i = 1; i <= MaxClients; i++)
-	{
-		/* Flash player found */
-		if (player_flashed[i] == true)
-		{
-			new bool:alive = IsPlayerAlive(i);
-			new Float:alpha, Float:duration;
-			alpha = GetEntPropFloat( i, Prop_Send, "m_flFlashMaxAlpha" );
-			duration = GetEntPropFloat( i, Prop_Send, "m_flFlashDuration" );
-			if (GetClientTeam(i) == GetClientTeam(client) && alive)  {
-				teamflash++;
-				teamflash_total += duration;
-			} else if( alive ) {
-				enemyflash++;
-				enemyflash_total += duration;
-			}
-			
-			new Action:result;
-			//call forward
-			Call_StartForward(flashmod_forward);
-			Call_PushCell( client );
-			Call_PushCell( i );
- 			Call_PushFloatRef( alpha );
-			Call_PushFloatRef( duration );
- 			Call_Finish(_:result);
+	// the client that was blinded
+	int victim = GetClientOfUserId( GetEventInt( event, "userid" ));
+	
+	bool  alive = IsPlayerAlive( victim );
+	
+	float alpha, duration;
+	
+	alpha    = GetEntPropFloat( victim, Prop_Send, "m_flFlashMaxAlpha" );
+	duration = GetEntPropFloat( victim, Prop_Send, "m_flFlashDuration" );
+	/*
+	if( GetClientTeam( g_flasher ) == GetClientTeam( victim ) && alive ) {
 		
-			if( result != Plugin_Continue ) {
-				SetEntPropFloat( i, Prop_Send, "m_flFlashMaxAlpha", alpha );
-				SetEntPropFloat( i, Prop_Send, "m_flFlashDuration", duration );
-			}
-			//SetEntPropFloat( i, Prop_Send, "m_flFlashMaxAlpha",255.0 );
-			//SetEntPropFloat( i, Prop_Send, "m_flFlashDuration",1.0 );
+	} else if( alive ) {
+		
+	}
+	*/
+	Action result;
+	
+	// pass to plugins
+	Call_StartForward( g_forward );
+	
+	Call_PushCell    ( g_flasher );
+	Call_PushCell    ( victim    );
+	Call_PushFloatRef( alpha     );
+	Call_PushFloatRef( duration  );
+	
+	Call_Finish( result );
+
+	if( result != Plugin_Continue ) {
+		// flash result was modified by a plugin.
+		SetEntPropFloat( victim, Prop_Send, "m_flFlashMaxAlpha", alpha );
+		SetEntPropFloat( victim, Prop_Send, "m_flFlashDuration", duration );
+	}
+	 
+	if( alpha >= ALPHA_LIMIT && duration >= DURATION_LIMIT ) {
+		
+		char flash_duration[8];
+		Format( flash_duration, sizeof flash_duration, "%.2f", duration );
+
+		if( g_flasher == victim ) {
 			
-			if( alpha >= ALPHA_LIMIT && duration >= DURATION_LIMIT ) {
-
-				/* Format the flashed time to be 2 decimal places */
-				decl String:sFlash[8];
-				Format( sFlash, sizeof(sFlash), "%.2f", duration );
-
+			// flashed themselves, ignore.
 			
-				/* Did the player flash an alive teammate? */
-				if( i == client ) {
-				} else if (GetClientTeam(i) == GetClientTeam(client) && alive)
-				{
-					decl String:flashedName[32], String:flasherName[32];
-					GetClientName(i, flashedName, sizeof(flashedName));
-					GetClientName(client, flasherName, sizeof(flasherName));
+		} else if( GetClientTeam(g_flasher) == GetClientTeam(victim) && alive ) {
+			
+			char flashed_name[32], flasher_name[32];
+			
+			GetClientName( victim, flashed_name, sizeof flashed_name );
+			GetClientName( g_flasher, flasher_name, sizeof flasher_name );
 
-					PrintToChat(i, "\x01 \x02You were flashed by %s for %s seconds!", flasherName, sFlash);
-					PrintToChat(client, "\x01 \x02You flashed %s for %s seconds!", flashedName, sFlash);
-					teamflash++;
-				}
-				else if( alive ) 
-				{
-					// todo: translations for foreign bitches
-					//PrintToChat( i, "\x01 \x02 You were flashed by %N (enemy) for %s seconds!", client, sFlash );
-					
-					enemyflash++;
-				}
-			}
-
-			// clear flag
-			player_flashed[i] = false;
+			PrintToChat( victim, "\x01 \x02You were flashed by %s for %s seconds!", 
+				flasher_name, flash_duration );
+				
+			PrintToChat( g_flasher, "\x01 \x02You flashed %s for %s seconds!", 
+				flashed_name, flash_duration );
+				
+			g_teamflashes++;
+			g_teamflash_total += duration;
+			
+		} else if( alive )  {
+			// no message
+			
+			g_enemyflashes++;
+			g_enemyflash_total += duration;
 		}
 	}
-	if( teamflash ) {
-		new Action:result;
-		Call_StartForward(flashmod_teamflash_forward);
-		Call_PushCell( client );
-		Call_PushCell( teamflash );
- 		Call_Finish(_:result);
+ 
+}
+
+//-----------------------------------------------------------------------------
+public void Event_FlashbangDetonate( Handle event, 
+									 const char[] name, bool db ) {
+	
+	// The number of flashed players, and the player that threw the flashbang
+	int   client = GetClientOfUserId( GetEventInt( event, "userid" ));
+	
+	if( g_flasher == 0 ) {
+		
+		CreateTimer( 0.1, ProcessFlashResultsDelayed );
+		
+	} else {
+		
+		// we are processing a new flashbang now, finish up the last one
+		
+		// ...unless of course one person 
+		// threw two flashbangs at the same time??
+		ProcessFlashResults();
+		g_flasher = 0;
 	}
 	
-	if( teamflash||enemyflash ) {
-		new Action:result;
-		Call_StartForward(flashmod_stats_forward);
-		Call_PushCell( client );
-		Call_PushCell( enemyflash );
-		Call_PushCell( teamflash );
-		Call_PushFloat( enemyflash_total );
-		Call_PushFloat( teamflash_total );
- 		Call_Finish(_:result);
+	// set flasher and reset stats.
+	g_flasher          = client; 
+	g_teamflashes      = 0;
+	g_teamflash_total  = 0.0;
+	g_enemyflashes     = 0;
+	g_enemyflash_total = 0.0; 
+}
+
+//-----------------------------------------------------------------------------
+public Action ProcessFlashResultsDelayed( Handle timer ) {
+	ProcessFlashResults();
+	return Plugin_Handled;
+}
+
+//-----------------------------------------------------------------------------
+void ProcessFlashResults() {
+	
+	// pass data to forwards
+	
+	if( g_teamflashes != 0 ) {
+		Call_StartForward( g_teamflash_forward );
 		
+		Call_PushCell( g_flasher    );
+		Call_PushCell( g_teamflashes );
+		
+ 		Call_Finish();
 	}
+	
+	if( g_teamflashes != 0 || g_enemyflashes != 0 ) {
+
+		Call_StartForward( g_stats_forward );
+		
+		Call_PushCell ( g_flasher          );
+		Call_PushCell ( g_enemyflashes     );
+		Call_PushCell ( g_teamflashes      );
+		Call_PushFloat( g_enemyflash_total );
+		Call_PushFloat( g_teamflash_total  );
+		
+ 		Call_Finish();
+	}
+	
+	// reset flasher for next event
+	g_flasher = 0;
 }
