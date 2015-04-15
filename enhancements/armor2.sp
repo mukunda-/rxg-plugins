@@ -1,39 +1,40 @@
-
-
 #include <sourcemod>
 #include <sdktools>
+
+#pragma semicolon 1
+#pragma newdecls required
 
 // 1.0.2
 //   halftime fix
 // 1.0.1
 //   remove defuser from pistol round
  
-//-------------------------------------------------------------------------------------------------
-public Plugin:myinfo = {
-//-------------------------------------------------------------------------------------------------
-	name = "freearmor2",
-	author = "mukunda",
+//-----------------------------------------------------------------------------
+public Plugin myinfo = {
+
+	name        = "freearmor2",
+	author      = "mukunda",
 	description = "freearmor2",
-	version = "1.0.2",
-	url="Pow!"
+	version     = "1.1.0",
+	url         = "www.mukunda.com"
 };
  
-//-------------------------------------------------------------------------------------------------
-public OnPluginStart() { 
+//-----------------------------------------------------------------------------
+public void OnPluginStart() { 
 	HookEvent( "player_spawn", OnPlayerSpawn );
 	HookEvent( "round_start", OnRoundStart, EventHookMode_PostNoCopy );
 }
 
-//-------------------------------------------------------------------------------------------------
-public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
-	CreateTimer( 0.25, poopdick );
-
-
+//-----------------------------------------------------------------------------
+public void OnRoundStart( Handle event, const char[] name, bool db ) {
+	CreateTimer( 0.25, PoopDick );
 }
 
-public Action:poopdick( Handle:timer ) {
+//-----------------------------------------------------------------------------
+public Action PoopDick( Handle timer ) {
+
 	// why i have to do this, is dumb
-	for( new client = 1; client <= MaxClients; client++ ) {
+	for( int client = 1; client <= MaxClients; client++ ) {
 		if( !IsClientInGame( client ) ) continue;
 		if( GetEntProp( client, Prop_Send, "m_iAccount" ) >= 1000 ) {
 				
@@ -47,9 +48,9 @@ public Action:poopdick( Handle:timer ) {
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
-public OnPlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast ) {
-	new client = GetClientOfUserId( GetEventInt( event, "userid" ) );
+//-----------------------------------------------------------------------------
+public void OnPlayerSpawn( Handle event, const char[] name, bool db ) {
+	int client = GetClientOfUserId( GetEventInt( event, "userid" ));
 	if( client == 0 ) return;
 	if( GetEntProp( client, Prop_Send, "m_iAccount" ) >= 1000 ) {
 		// refresh armor
