@@ -401,8 +401,8 @@ AddGroupsToMenu(Handle:menu, client)
 }
 AddWeaponsToMenu(Handle:menu, client)
 {
-	new int = _:WeaponID;
-	decl String:weaponArray[int][WEAPONARRAYSIZE];
+	new shit = _:WeaponID;
+	decl String:weaponArray[shit][WEAPONARRAYSIZE];
 	new size;
 	
 	for(new i = 0; i < _:WeaponID; i++)

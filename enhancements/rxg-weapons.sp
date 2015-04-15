@@ -518,6 +518,12 @@ void GivePlayerWeapon( int client, CSWeaponID id ) {
 		ClientCommand( client, "buy taser 34" );
 		return;
 	}
+	
+	if( id == CSWeapon_SAWEDOFF ) { // hack number 3 and counting because this game is a heap of shit.
+		ClientCommand(client, "buy sawedoff 22");
+		return;
+	}
+	
 	ClientCommand( client, "buy %s", weaponNames[id] ); 
 }
 
