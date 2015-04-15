@@ -1,8 +1,8 @@
 "Radio" {
-	"permap"	"5"	//how many songs to load each map
-	"change"	"3"	//change every 3 rounds
-	"spawnonmap"	"1"	
-	"maphealth"	"400"
+	"permap"     "5"   // how many songs to load each map
+	"change"     "3"   // change every 3 rounds
+	"spawnonmap" "1"   // spawn a radio on the map, must have mapspawn defined
+	"maphealth"  "400" // amount of health the map spawned radio has
 
 	"mapspawns" {
 		"cs_office" "2170.5 -159.7 -114.96"

@@ -466,8 +466,8 @@ bool:TryTakeCash( client, cash, Handle:plugin, TakeCashCB:cb, any:data ) {
 	WritePackCell( pack, GetClientUserId(client) );
 	WritePackCell( pack, cash );
 	WritePackCell( pack, g_client_data_account[client] );
-	WritePackCell( pack, _:plugin );
-	WritePackCell( pack, _:cb );
+	WritePackCell( pack, plugin );
+	WritePackCell( pack, cb );
 	WritePackCell( pack, data );
 	
 	DBRELAY_TQuery( OnTakeCash, query, pack );

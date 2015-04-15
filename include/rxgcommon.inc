@@ -5,36 +5,38 @@
 #define _rxgcommon_included
 
 //-----------------------------------------------------------------------------
-stock bool:IsValidClient( client ) {
+stock bool IsValidClient( client ) {
 	return ( client > 0 && client <= MaxClients && IsClientInGame(client) );
 }
 
 //-----------------------------------------------------------------------------
-stock WritePackHandle( Handle:pack, Handle:hndl ) {
+stock WritePackHandle( Handle pack, Handle hndl ) {
 	WritePackCell( pack, hndl );
 }
 
 //-----------------------------------------------------------------------------
-stock Handle:ReadPackHandle( Handle:pack ) {
-	return Handle:ReadPackCell( pack );
+stock Handle ReadPackHandle( Handle pack ) {
+	return view_as<Handle>ReadPackCell( pack );
 }
 
 //-----------------------------------------------------------------------------
-stock CopyVector( Float:source[3], Float:destination[3] ) {
+stock void CopyVector( float source[3], float destination[3] ) {
 	destination[0] = source[0];
 	destination[1] = source[1];
 	destination[2] = source[2];
 }
 
 //-----------------------------------------------------------------------------
-stock FormatNumberInt(value, String:buffer[], size, separator=',') {
-    decl String:helper[size];
+stock void FormatNumberInt( int value, char[] buffer, int size, 
+                            int separator = ',') {
+                            
+    char[] helper = new char[size];
     IntToString(value, helper, size);
     strcopy(buffer, size, helper);
 
-    new length = strlen(helper);
+    int length = strlen(helper);
 
-    new n_helper;
+    int n_helper;
 
     if (helper[0] == '-') {
         n_helper += ((length-1) % 3) + 1;
@@ -51,7 +53,7 @@ stock FormatNumberInt(value, String:buffer[], size, separator=',') {
         }
     }
 
-    new n_buffer = n_helper;
+    int n_buffer = n_helper;
 
     while (n_helper < length) {
         buffer[n_buffer] = separator;
@@ -61,3 +63,13 @@ stock FormatNumberInt(value, String:buffer[], size, separator=',') {
         n_helper += 3;
     }
 }  
+
+//-----------------------------------------------------------------------------
+stock int intmin( int a, int b ) {
+	return a < b ? a : b;
+}
+
+//-----------------------------------------------------------------------------
+stock int intmax( int a, int b ) {
+	return a > b ? a : b; 
+}
