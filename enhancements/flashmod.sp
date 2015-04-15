@@ -61,13 +61,7 @@ public void Event_PlayerBlind( Handle event, const char[] name, bool db ) {
 	
 	alpha    = GetEntPropFloat( victim, Prop_Send, "m_flFlashMaxAlpha" );
 	duration = GetEntPropFloat( victim, Prop_Send, "m_flFlashDuration" );
-	/*
-	if( GetClientTeam( g_flasher ) == GetClientTeam( victim ) && alive ) {
-		
-	} else if( alive ) {
-		
-	}
-	*/
+	 
 	Action result;
 	
 	// pass to plugins
