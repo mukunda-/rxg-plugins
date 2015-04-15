@@ -73,3 +73,9 @@ stock int intmin( int a, int b ) {
 stock int intmax( int a, int b ) {
 	return a > b ? a : b; 
 }
+
+stock int GetCmdArgInt( int index ) {
+	char number[16];
+	GetCmdArg( index, number, sizeof number );
+	return StringToInt( number );
+}
