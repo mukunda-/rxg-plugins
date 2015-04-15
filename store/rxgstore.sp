@@ -21,7 +21,7 @@ public Plugin myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.5.0",
+    version     = "2.5.2",
     url         = "www.mukunda.com"
 };
 
@@ -414,7 +414,7 @@ void CommitItemChange( int client, int item, int amount ) {
 	int userid = GetClientUserId( client );
 	int account = g_client_data_account[client];
 	
-	DataPack pack = CreateDataPack();
+	DataPack pack = new DataPack();
 	 
 	pack.WriteCell( userid  );
 	pack.WriteCell( item    ); 
@@ -475,7 +475,7 @@ bool CommitCashChange( int client, int cash ) {
 		cash > 0 ? "+":"-",
 		cash );
 		
-	DataPack pack = CreateDataPack();
+	DataPack pack = new DataPack();
 	
 	pack.WriteCell( GetClientUserId(client)       );
 	pack.WriteCell( cash                          );
@@ -598,7 +598,7 @@ bool LoadClientData( int client, bool chain = false ) {
 	int account = GetSteamAccountID( client );
 	g_client_data_account[client] = account;
 	
-	DataPack pack = CreateDataPack();
+	DataPack pack = new DataPack();
 	pack.WriteCell( GetClientUserId(client) );
 	pack.WriteCell( account                 );
 	pack.WriteCell( client                  );
@@ -1274,7 +1274,6 @@ public void ShowStorePage( int client, int id, int token ) {
 	delete kv;
 }
 
-//-----------------------------------------------------------------------------
 public void OnQuickAuthSave( Handle owner, Handle hndl, const char[] error, 
                              DataPack data ) {
 	if( !hndl ) {
@@ -1289,7 +1288,6 @@ public void OnQuickAuthSave( Handle owner, Handle hndl, const char[] error,
 //-----------------------------------------------------------------------------
 public void OnQuickAuthFetch( Handle owner, Handle hndl, const char[] error, 
                               DataPack data ) {
-	
 	if( !hndl ) {
 		delete data;
 		LogError( "SQL error fetching QuickAuth ID ::: %s", error );
