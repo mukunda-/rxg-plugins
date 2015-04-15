@@ -104,8 +104,7 @@ enum UpdateMethod {
 UpdateMethod g_update_method;
 float        g_last_update; // game time of the last update
 
-#define MIN_UPDATE_PERIOD 30.0
-  
+#define MIN_UPDATE_PERIOD     30.0
 #define UPDATE_TIMED_INTERVAL 50.0
 
 //-----------------------------------------------------------------------------
