@@ -180,6 +180,7 @@ new BuyTeams[_:WeaponID] =
 // 1 ALL
 // 2 CSS
 // 3 CSGO
+#pragma unused AllowedGame
 new const AllowedGame[_:WeaponID] = 
 {
 	-1,				2,				1,				2,		

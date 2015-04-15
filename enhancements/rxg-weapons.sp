@@ -8,22 +8,25 @@
 #include <dropgrenade>
 
 #pragma semicolon 1
+#pragma newdecls required
 
 //-----------------------------------------------------------------------------
-public Plugin:myinfo = {
-	name = "rxg-weapons",
-	author = "REFLEX",
+public Plugin myinfo = {
+	name        = "rxg-weapons",
+	author      = "REFLEX",
 	description = "Weapon purchasing management.",
-	version = "1.2.0",
-	url = "www.reflex-gamers.com"
+	version     = "1.3.0",
+	url         = "www.reflex-gamers.com"
 };
 
-//-----------------------------------------------------------------------------
-// a trie that maps similar weapons from the opposite team
-// e.g. "m4a1" -> "ak47", "mp9" -> "mac10", etc and vice versa
-new Handle:g_weapon_opposites;
+// ----------------------------------------------------------------------------
 
-// definitions for the player ammo table
+// A trie that maps similar weapons from the opposite team
+// e.g. "m4a1" -> "ak47", "mp9" -> "mac10", etc and vice versa
+//
+Handle g_weapon_opposites = null;
+
+// Player ammo table indexes.
 //
 enum {
 	AMMO_INDEX_HE=14,
@@ -33,24 +36,27 @@ enum {
 	AMMO_INDEX_DECOY
 };
 
-/** ---------------------------------------------------------------------------
- * Grenades get locked after a player throws one. When locked they cannot
- * purchase any more.
- */
-new g_nades_locked[MAXPLAYERS+1];
+// Grenades get locked after a player throws one. When locked they cannot
+// purchase any more.
+//
+int g_nades_locked[MAXPLAYERS+1];
 
-new g_nades_graceperiod;
+// Time before the grenade lock becomes activated
+int g_nades_graceperiod;
 
-new Handle:ammo_grenade_limit_default;
-new Handle:ammo_grenade_limit_flashbang;
-new Handle:ammo_grenade_limit_total;
-new Handle:mp_buytime;
-new Handle:rxg_auto_rebuy;
+// convar handles
+Handle ammo_grenade_limit_default;
+Handle ammo_grenade_limit_flashbang;
+Handle ammo_grenade_limit_total;
+Handle mp_buytime;
+Handle rxg_auto_rebuy;
 
-new c_ammo_grenade_limit_default;
-new c_ammo_grenade_limit_flashbang;
-new c_ammo_grenade_limit_total;
-  
+// cached convar values
+int c_ammo_grenade_limit_default;
+int c_ammo_grenade_limit_flashbang;
+int c_ammo_grenade_limit_total;
+
+// indexes for the rebuy data
 enum {
 	REBUY_MAIN,			// MAIN WEAPON	  (id) updated on buy primary
 	REBUY_PISTOL,		// PISTOL WEAPON  (id) updated on buy pistol
@@ -63,20 +69,21 @@ enum {
 	REBUY_COUNT
 };
 
-new CSWeaponID:RebuyGrenadeIDs[] = { 
+// this maps a rebuy data index to a grenade id
+CSWeaponID RebuyGrenadeIDs[] = { 
 	CSWeapon_NONE, CSWeapon_NONE, CSWeapon_NONE,
 	CSWeapon_HEGRENADE, CSWeapon_FLASHBANG, CSWeapon_SMOKEGRENADE,
 	CSWeapon_MOLOTOV, CSWeapon_DECOY
 };
 
 // saved player loadouts 
-new g_rebuy_data[MAXPLAYERS+1][REBUY_COUNT]; 
+int g_rebuy_data[MAXPLAYERS+1][REBUY_COUNT]; 
 
 // if they used rebuy this round yet
-new g_rebuy_used[MAXPLAYERS+1];
+bool g_rebuy_used[MAXPLAYERS+1];
 
 // price of each weapon
-new WeaponPrices[_:CSWeaponID] = {
+int WeaponPrices[CSWeaponID] = {
 	0,200,200,1700,300,2000,0,1050,
 	3300,300,500,500,1200,3300,2000,
 	2250,200,4750,1700,5200,1200,3100,
@@ -89,24 +96,27 @@ new WeaponPrices[_:CSWeaponID] = {
 };
 
 // if they are using rebuy (and g_rebuy_data should not be updated.)
-new bool:g_rebuy_in_progress[MAXPLAYERS+1]; 
+bool g_rebuy_in_progress[MAXPLAYERS+1]; 
 
 //-----------------------------------------------------------------------------
-public OnPluginStart() {
+public void OnPluginStart() {
 	InitOppositeMap();
 	
-	HookEvent( "round_start", OnRoundStart );
-	HookEvent( "round_freeze_end", OnFreezeEnd );
-	//HookEvent( "round_end", OnRoundEnd );
-	//HookEvent( "player_death", OnPlayerDeath );
+	HookEvent( "round_start",      OnRoundStart );
+	HookEvent( "round_freeze_end", OnFreezeEnd ); 
+	
+	// hook the rebuy command
 	RegConsoleCmd( "rebuy", Command_Rebuy );
+	
 	
 	ammo_grenade_limit_default   = FindConVar( "ammo_grenade_limit_default" );
 	ammo_grenade_limit_flashbang = FindConVar( "ammo_grenade_limit_flashbang" );
 	ammo_grenade_limit_total     = FindConVar( "ammo_grenade_limit_total" );
+	
 	rxg_auto_rebuy = CreateConVar( "rxg_auto_rebuy", "1", 
 		"Auto-rebuy for players who afk during the buy period.", 
 		FCVAR_PLUGIN );
+		
 	mp_buytime = FindConVar( "mp_buytime" );
 	  
 	HookConVarChange( ammo_grenade_limit_default,   OnCVarChanged );
@@ -115,19 +125,20 @@ public OnPluginStart() {
 	
 	CacheCVars();
 	
-	for( new i = 1; i <= MaxClients; i++ ) {
+	// hook existing clients for late load
+	for( int i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i) ) continue;
 		SDKHook( i, SDKHook_WeaponDropPost, OnWeaponDrop );
 	}
 }
 
 //-----------------------------------------------------------------------------
-bool:IsValidClient( client ) {
-	return (client > 0 && client <= MaxClients && IsClientInGame(client));
+bool IsValidClient( int client ) {
+	return ( client > 0 && client <= MaxClients && IsClientInGame(client) );
 }
 
 //-----------------------------------------------------------------------------
-CacheCVars() {
+void CacheCVars() {
 	c_ammo_grenade_limit_default   = GetConVarInt( ammo_grenade_limit_default );
 	c_ammo_grenade_limit_flashbang = GetConVarInt( ammo_grenade_limit_flashbang );
 	c_ammo_grenade_limit_total     = GetConVarInt( ammo_grenade_limit_total );
@@ -135,8 +146,8 @@ CacheCVars() {
 }
 
 //-----------------------------------------------------------------------------
-public OnCVarChanged( Handle:convar, const String:oldValue[], 
-						const String:newValue[] ) {
+public void OnCVarChanged( Handle convar, const char[] oldValue, 
+						   const char[] newValue ) {
 	CacheCVars();
 }
 
@@ -146,21 +157,21 @@ public OnCVarChanged( Handle:convar, const String:oldValue[],
  * @param weapon1 Weapon ID to map.
  * @param weapon2 Weapon ID to map to, and vice versa.
  */
-MapOpposite( CSWeaponID:weapon1, CSWeaponID:weapon2 ) {
+void MapOpposite( CSWeaponID weapon1, CSWeaponID weapon2 ) {
 	
-	decl String:str[64];
+	char str[64];
 	
 	FormatEx( str, sizeof str, "%s", weapon1 );
-	SetTrieValue( g_weapon_opposites, str, _:weapon2 );
+	SetTrieValue( g_weapon_opposites, str, weapon2 );
 	
 	FormatEx( str, sizeof str, "%s", weapon2 );
-	SetTrieValue( g_weapon_opposites, str, _:weapon1 );
+	SetTrieValue( g_weapon_opposites, str, weapon1 );
 }
 
 /** ---------------------------------------------------------------------------
  * Build the opposite weapons map.
  */
-InitOppositeMap() {
+void InitOppositeMap() {
 	g_weapon_opposites = CreateTrie();
 	
 	MapOpposite( CSWeapon_AUG,        CSWeapon_SG556    );
@@ -179,14 +190,14 @@ InitOppositeMap() {
 /** ---------------------------------------------------------------------------
  * Clear the rebuy data for a client (for when they connect)
  */
-ResetRebuyData( client ) {
-	for( new i = 0; i < REBUY_COUNT; i++ ) {
+void ResetRebuyData( int client ) {
+	for( int i = 0; i < REBUY_COUNT; i++ ) {
 		g_rebuy_data[client][i] = 0;
 	}
 }
 
 //-----------------------------------------------------------------------------
-public OnClientPutInServer( client ) {
+public void OnClientPutInServer( int client ) {
 	ResetRebuyData( client );
 	g_nades_locked[client] = false;
 	g_rebuy_used[client] = true;
@@ -204,22 +215,22 @@ public OnClientPutInServer( client ) {
  *          it was not purchasable on his team, or CSWeapon_NONE if the
  *          weapon is not purchasable and there is no similar mapping.
  */
-CSWeaponID:TranslateWeaponForTeam( client, CSWeaponID:from ) {
-	new team = GetClientTeam( client );
-	new canbuy = BuyTeams[from] == team || BuyTeams[from] == BOTHTEAMS;
+CSWeaponID TranslateWeaponForTeam( int client, CSWeaponID from ) {
+	int team = GetClientTeam( client );
+	bool canbuy = BuyTeams[from] == team || BuyTeams[from] == BOTHTEAMS;
 	
 	if( !canbuy ) {
 		// try to find similar
-		decl String:from_string[64];
+		char from_string[64];
 		FormatEx( from_string, sizeof from_string, "%s", from );
-		new similar;
+		int similar;
 		if( !GetTrieValue( g_weapon_opposites, from_string, similar )) {
 		
 			// no similar mapped. cannot buy.
 			return CSWeapon_NONE;
 		}
 		
-		return CSWeaponID:similar;
+		return view_as<CSWeaponID>similar;
 	} else {
 	
 		// already purchasable 
@@ -230,7 +241,7 @@ CSWeaponID:TranslateWeaponForTeam( client, CSWeaponID:from ) {
 /** ---------------------------------------------------------------------------
  * @returns The total number of grenades a player has.	
  */
-TotalGrenades( client ) {
+int TotalGrenades( int client ) {
 	if( !IsClientInGame( client )) return 0;
 
 	return GetEntProp( client, Prop_Send, "m_iAmmo", _, AMMO_INDEX_HE    )
@@ -243,7 +254,7 @@ TotalGrenades( client ) {
 /** ---------------------------------------------------------------------------
  * @returns The game's ammo index for a grenade weapon ID.
  */
-AmmoIndexForID( CSWeaponID:id ) {
+int AmmoIndexForID( CSWeaponID id ) {
 	if( id == CSWeapon_HEGRENADE    ) return AMMO_INDEX_HE   ;
 	if( id == CSWeapon_FLASHBANG    ) return AMMO_INDEX_FLASH;
 	if( id == CSWeapon_MOLOTOV      ) return AMMO_INDEX_FIRE ;
@@ -264,16 +275,16 @@ AmmoIndexForID( CSWeaponID:id ) {
  * @returns true if the player can purchase this grenade type. false if the
  *          player has too many total or cannot carry any more of that type.
  */
-bool:CanBuyGrenade( client, CSWeaponID:id ) {
-	new WeaponType:type = weaponGroups[ _:id ];
+bool CanBuyGrenade( int client, CSWeaponID id ) {
+	WeaponType type = weaponGroups[ id ];
 	if( type != WeaponTypeGrenade ) return true;
 	
 	if( TotalGrenades( client ) >= c_ammo_grenade_limit_total ) {
 		return false;
 	}
 	
-	new ammo_index = AmmoIndexForID( id );
-	new limit = id == CSWeapon_FLASHBANG ? c_ammo_grenade_limit_flashbang 
+	int ammo_index = AmmoIndexForID( id );
+	int limit = id == CSWeapon_FLASHBANG ? c_ammo_grenade_limit_flashbang 
 	                                     : c_ammo_grenade_limit_default;
 	
 	if( GetEntProp( client, Prop_Send, "m_iAmmo", _, ammo_index ) >= limit ) {
@@ -292,7 +303,7 @@ bool:CanBuyGrenade( client, CSWeaponID:id ) {
  * 
  * @returns true if the player should be blocked from buying the weapon.
  */
-bool:GrenadeLimited( client, CSWeaponID:id ) {
+bool GrenadeLimited( int client, CSWeaponID id ) {
 	
 	if( g_nades_locked[client] && weaponGroups[id] == WeaponTypeGrenade ) {
 		
@@ -306,7 +317,7 @@ bool:GrenadeLimited( client, CSWeaponID:id ) {
 }
 
 //-----------------------------------------------------------------------------
-public Action:CS_OnBuyCommand( client, const String:weapon[] ) {
+public Action CS_OnBuyCommand( int client, const char[] weapon ) {
 	if( !IsValidClient( client )) return Plugin_Continue;
 	
 	if( !GetEntProp( client, Prop_Send, "m_bInBuyZone" )) {
@@ -314,14 +325,14 @@ public Action:CS_OnBuyCommand( client, const String:weapon[] ) {
 	}
 	
 	// get the weapon ID
-	decl String:real_name[64];
+	char real_name[64];
 	CS_GetTranslatedWeaponAlias( weapon, real_name, sizeof real_name );
 
 	// SPECIAL FIXES
 	if( StrEqual( real_name, "cutters" ) ) real_name = "defuser"; 
-	if( StrEqual( real_name, "cz75a" ) ) real_name = "tec9"; //tec9 because fivseven has problems.
+	if( StrEqual( real_name, "cz75a" ) )   real_name = "tec9"; // tec9 because fivseven has problems.
 	
-	new CSWeaponID:id = CS_AliasToWeaponID( real_name );
+	CSWeaponID id = CS_AliasToWeaponID( real_name );
 	
 	// catch invalid weapon name.
 	if( id == CSWeapon_NONE ) return Plugin_Continue;
@@ -368,20 +379,19 @@ public Action:CS_OnBuyCommand( client, const String:weapon[] ) {
 }
 
 //-----------------------------------------------------------------------------
-public OnWeaponDrop( client, weapon ) {
-	if( !IsPlayerAlive(client) ) return;
+public void OnWeaponDrop( int client, int weapon ) {
+	if( !IsPlayerAlive( client )) return;
 	
-	decl String:name[64];
+	char name[32];
 	GetEntityClassname( weapon, name, sizeof name );
 	if( strncmp( name, "weapon_", 7 ) != 0 ) return;
 	
-	decl String:real_name[64];
+	char real_name[32];
 	CS_GetTranslatedWeaponAlias( name[7], real_name, sizeof real_name );
 	
-	new CSWeaponID:id = CS_AliasToWeaponID( real_name );
+	CSWeaponID id = CS_AliasToWeaponID( real_name );
 	if( id == CSWeapon_NONE ) return;
 	
-		
 	if( weaponGroups[id] == WeaponTypeGrenade ) {
 	
 		if( !DropGrenadeCheck() && !g_nades_graceperiod ) {
@@ -389,81 +399,28 @@ public OnWeaponDrop( client, weapon ) {
 		}
 	}
 }
-
-//-----------------------------------------------------------------------------
-public OnPlayerDroppedGrenade( client, CSWeaponID:id, amount ) {
-	if( !IsPlayerAlive(client) ) return;
-	
-	/*
-	// dropgrenade.smx allows players to drop grenades
-	// restore allowed special grenade purchases
-	if( id == CSWeapon_FLASHBANG ) {
-		g_can_buy_flash[client] += amount;
-	}
-	
-	if( id == CSWeapon_MOLOTOV || id == CSWeapon_INCGRENADE ) {
-		g_can_buy_fire[client]++;
-	}
-	
-	if( id == CSWeapon_SMOKEGRENADE ) g_can_buy_smoke[client]++;
-	
-	new Handle:data;
-	CreateDataTimer( 0.1, UpdateLoadoutDelayed, data, TIMER_FLAG_NO_MAPCHANGE );
-	WritePackCell( data, GetClientUserId( client ));
-	WritePackCell( data, _:id );*/
-}
-/*
-//-----------------------------------------------------------------------------
-public Action:UpdateLoadoutDelayed( Handle:timer, any:data ) {
-	ResetPack( data );
-	new client = GetClientOfUserId( ReadPackCell( data ));
-	if( client == 0 ) return Plugin_Handled;
-	new CSWeaponID:id = CSWeaponID:ReadPackCell( data );
-	
-	if( !IsPlayerAlive(client) ) return Plugin_Handled;
-	UpdateLoadout( client, id, true );
-	
-	return Plugin_Handled;
-}*/
-
+ 
 /** ---------------------------------------------------------------------------
  * Scan the grenades a player has equipped and save them in the
  * rebuy data.
  */
-SaveClientGrenades( client ) {
+void SaveClientGrenades( int client ) {
 	if( !IsClientInGame( client )) return;
 
-	for( new i = 0; i < 5; i++ ) {
+	for( int i = 0; i < 5; i++ ) {
 		g_rebuy_data[client][REBUY_HE+i] = 
 			GetEntProp( client, Prop_Send, "m_iAmmo", _, AMMO_INDEX_HE+i );
 	}
 }
-
-//#define ITEM_CZ75A 63
-/*
-//-----------------------------------------------------------------------------
-CSWeaponID:WeaponIDfromEntity( ent ) {
-	if( ent == -1 ) return CSWeapon_NONE;
-	decl String:classname[64];
-	GetEntityClassname( ent, classname, sizeof(classname) );
-	ReplaceString( classname, sizeof(classname), "weapon_", "" );
-	
-	if( GetEntProp(ent, Prop_Send, "m_iItemDefinitionIndex") == ITEM_CZ75A ) {
-		// this is not a p250, its a fucking cz.
-		return CSWeapon_TEC9;
-	}
-
-	return CS_AliasToWeaponID( classname );
-}*/
-
+ 
 /** ---------------------------------------------------------------------------
  * Update a client's loadout for next round.
  *
  * @param client  Index of client.
  * @param id      ID of weapon that they bought.
  */
-UpdateLoadout( client, CSWeaponID:id ) {
-	new WeaponType:weapon_type = weaponGroups[id];
+void UpdateLoadout( int client, CSWeaponID id ) {
+	WeaponType weapon_type = weaponGroups[id];
 	
 	if( !g_rebuy_used[client] ) {
 		g_rebuy_used[client] = true;
@@ -477,7 +434,7 @@ UpdateLoadout( client, CSWeaponID:id ) {
 	} else if( weapon_type == WeaponTypeGrenade ) {
 		
 		if( id == CSWeapon_INCGRENADE ) id = CSWeapon_MOLOTOV;
-		new ammo_index = AmmoIndexForID( id );
+		int ammo_index = AmmoIndexForID( id );
 		SaveClientGrenades( client );
 		
 		// grenade data is currently set to what they have equipped
@@ -498,18 +455,18 @@ UpdateLoadout( client, CSWeaponID:id ) {
 			return;
 		}
 		
-		g_rebuy_data[client][REBUY_MAIN] = _:id;
+		g_rebuy_data[client][REBUY_MAIN] = view_as<int>(id);
 		
 	} else if( weapon_type == WeaponTypePistol ) {
 	
-		g_rebuy_data[client][REBUY_PISTOL] = _:id;
+		g_rebuy_data[client][REBUY_PISTOL] = view_as<int>(id);
 	}
 }
 
 //-----------------------------------------------------------------------------
-public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
+public void OnRoundStart( Handle event, const char[] name, bool db ) {
 	
-	for( new i = 1; i <= MaxClients; i++ ) {
+	for( int i = 1; i <= MaxClients; i++ ) {
 		g_rebuy_used[i] = false;
 		g_nades_locked[i] = false;
 	}
@@ -523,8 +480,8 @@ public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
 }
 
 //-----------------------------------------------------------------------------
-public Action:DoAutoRebuy( Handle:timer ) {
-	for( new i = 1; i <= MaxClients; i++ ) {
+public Action DoAutoRebuy( Handle timer ) {
+	for( int i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i)   // is connected
 			|| IsFakeClient(i)   // is not a bot
 			|| !IsPlayerAlive(i) // is alive
@@ -540,91 +497,38 @@ public Action:DoAutoRebuy( Handle:timer ) {
 }
 
 //-----------------------------------------------------------------------------
-public OnFreezeEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
+public void OnFreezeEnd( Handle event, const char[] name, bool db ) {
 	g_nades_graceperiod = true;
 	CreateTimer( 5.0, EndGracePeriod );
 }
 
 //-----------------------------------------------------------------------------
-public Action:EndGracePeriod( Handle:timer ) {
+public Action EndGracePeriod( Handle timer ) {
 	g_nades_graceperiod = false;
 	return Plugin_Handled;
 }
- /*
-//-----------------------------------------------------------------------------
-public Action:RebuyPlayerLoadouts( Handle:timer ) {
-	
-	// get a list of clients
-	new clients[MAXPLAYERS+1];
-	new count = 0;
-	for( new i = 1; i <= MaxClients; i++ ) {
-		if( IsClientInGame(i) && !IsFakeClient(i) && IsPlayerAlive(i) ) {
-			clients[count] = i;
-			count++;
-		}
-	}
-	 
-	ResetSpecialGrenadeCounters( INVALID_HANDLE ); 
-	  
-	for( new i = 0; i < count; i++ ) {
-		RebuyPlayerLoadout( clients[i] );
-	}
-	
-	CreateTimer( 0.1, ResetSpecialGrenadeCounters, _, 
-	                         TIMER_FLAG_NO_MAPCHANGE );
-	
-	g_rebuy_in_progress = false;
-	
-	return Plugin_Handled;
-}*/
-/*
-//-----------------------------------------------------------------------------
-public Action:ResetSpecialGrenadeCounters( Handle:timer ) {
-	for( new i = 1; i <= MaxClients; i++ ) {
-		if( !IsClientInGame(i) ) continue;
-		
-		// if a player has a special grenade, dont allow them to buy more.
-		new ammo;
-		ammo = GetEntProp( i, Prop_Send, "m_iAmmo", _, AMMO_INDEX_FLASH );
-		ammo = c_ammo_grenade_limit_flashbang - ammo;
-		if( ammo < 0 ) ammo = 0;
-		g_can_buy_flash[i] = ammo;
-		
-		ammo = GetEntProp( i, Prop_Send, "m_iAmmo", _, AMMO_INDEX_SMOKE );
-		ammo = 1 - ammo;
-		if( ammo < 0 ) ammo = 0;
-		g_can_buy_smoke[i] = ammo;
-		
-		ammo = GetEntProp( i, Prop_Send, "m_iAmmo", _, AMMO_INDEX_FIRE );
-		ammo = 1 - ammo;
-		if( ammo < 0 ) ammo = 0;
-		g_can_buy_fire[i] = ammo;
-	}
-	
-	return Plugin_Handled;
-}*/
-
+   
 /** ---------------------------------------------------------------------------
  * Give a player an item by weapon ID.
  */
-GivePlayerWeapon( client, CSWeaponID:id ) { 
+void GivePlayerWeapon( int client, CSWeaponID id ) { 
 	if( id == CSWeapon_FIVESEVEN ) id = CSWeapon_TEC9; // hacks
 	
 	if( id == CSWeapon_TASER ) { // hack number 2
 		ClientCommand( client, "buy taser 34" );
 		return;
 	}
-	ClientCommand( client, "buy %s", weaponNames[WeaponID:id] ); 
+	ClientCommand( client, "buy %s", weaponNames[id] ); 
 }
 
 //-----------------------------------------------------------------------------
-public Action:ResetRebuyInProgress( Handle:timer, any:client ) {
+public Action ResetRebuyInProgress( Handle timer, int client ) {
 	g_rebuy_in_progress[client] = false;
 	return Plugin_Handled;
 }
 
 //-----------------------------------------------------------------------------
-public RebuyPlayerLoadout( client ) {
+public void RebuyPlayerLoadout( int client ) {
 	if( !IsClientInGame(client) 
 	    || IsFakeClient(client) 
 		|| !IsPlayerAlive(client) ) return;
@@ -632,14 +536,14 @@ public RebuyPlayerLoadout( client ) {
 	g_rebuy_in_progress[client] = true;
 	CreateTimer( 0.1, ResetRebuyInProgress, client, TIMER_FLAG_NO_MAPCHANGE );
 	
-	new team = GetClientTeam( client ); 
-	new cash = GetEntProp( client, Prop_Send, "m_iAccount" );
+	int team = GetClientTeam( client ); 
+	int cash = GetEntProp( client, Prop_Send, "m_iAccount" );
 	if( cash < 1000 ) return; // no rebuy on pistol round.
 	
 	// give a primary only if they dont have one
-	if( GetPlayerWeaponSlot( client, _:SlotPrimmary ) == -1 ) {
+	if( GetPlayerWeaponSlot( client, view_as<int>(SlotPrimmary) ) == -1 ) {
 		
-		new CSWeaponID:weap = CSWeaponID:g_rebuy_data[client][REBUY_MAIN];
+		CSWeaponID weap = view_as<CSWeaponID>(g_rebuy_data[client][REBUY_MAIN]);
 		weap = TranslateWeaponForTeam( client, weap );
 		
 		if( weap != CSWeapon_NONE ) {
@@ -649,12 +553,12 @@ public RebuyPlayerLoadout( client ) {
 	}
 	
 	// pistol
-	new pistol = GetPlayerWeaponSlot( client, int:SlotPistol );
-	new bool:buy_pistol;
+	int pistol = GetPlayerWeaponSlot( client, view_as<int>(SlotPistol) );
+	bool buy_pistol;
 	if( pistol == -1 ) {
 		buy_pistol = true;
 	} else {
-		decl String:classname[64];
+		char classname[32];
 		GetEntityClassname( pistol, classname, sizeof classname );
 		
 		if( team == 2 ) {
@@ -665,26 +569,22 @@ public RebuyPlayerLoadout( client ) {
 	}
 	
 	if( buy_pistol ) {
-		new CSWeaponID:weap = CSWeaponID:g_rebuy_data[client][REBUY_PISTOL];
+		CSWeaponID weap = view_as<CSWeaponID>(g_rebuy_data[client][REBUY_PISTOL]);
 		weap = TranslateWeaponForTeam( client, weap );
 		
 		if( weap != CSWeapon_NONE ) {
-			// dont need to do this nemore
-			//if( pistol != -1 ) {
-			//	CS_DropWeapon( client, pistol, false );
-			//}
-			
+		 
 			GivePlayerWeapon( client, weap );
 		}
 	}
 	
 	// give grenades
-	for( new i = REBUY_HE; i <= REBUY_DECOY; i++ ) {
+	for( int i = REBUY_HE; i <= REBUY_DECOY; i++ ) {
 		if( g_rebuy_data[client][i] ) {
-			new CSWeaponID:nadeid = RebuyGrenadeIDs[i];
+			CSWeaponID nadeid = RebuyGrenadeIDs[i];
 			nadeid = TranslateWeaponForTeam( client, nadeid );
 			
-			for( new j = 0; j < g_rebuy_data[client][i]; j++ ) {
+			for( int j = 0; j < g_rebuy_data[client][i]; j++ ) {
 				GivePlayerWeapon( client, nadeid );
 				// this might fuck up, but meh 
 			}
@@ -703,17 +603,17 @@ public RebuyPlayerLoadout( client ) {
 }
 
 //-----------------------------------------------------------------------------
-public Action:Command_Rebuy( client, args ) {
+public Action Command_Rebuy( int client, int args ) {
 	if( client == 0 ) return Plugin_Handled;
-	if( !IsPlayerAlive(client) ) return Plugin_Handled;
+	if( !IsPlayerAlive( client )) return Plugin_Handled;
 	
 	if( !GetEntProp( client, Prop_Send, "m_bInBuyZone" )) {
 		return Plugin_Continue;
 	}
 	
 	if( g_rebuy_used[client] ) return Plugin_Handled;
-	
 	g_rebuy_used[client] = true;
+	
 	RebuyPlayerLoadout( client );
 	
 	return Plugin_Handled;
