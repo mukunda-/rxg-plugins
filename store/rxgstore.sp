@@ -20,7 +20,7 @@ public Plugin:myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.5.0",
+    version     = "2.5.1",
     url         = "www.mukunda.com"
 };
 
@@ -1096,19 +1096,20 @@ public ShowStorePage( client, id, token ) {
 //-----------------------------------------------------------------------------
 public OnQuickAuthSave( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	
-	DBRELAY_TQuery( OnQuickAuthFetch, "SELECT LAST_INSERT_ID()", data );
-	
 	if( !hndl ) {
 		CloseHandle(data);
 		LogError( "SQL error saving QuickAuth token ::: %s", error );
 		return;
 	}
+	
+	DBRELAY_TQuery( OnQuickAuthFetch, "SELECT LAST_INSERT_ID()", data );
 }
 
 //-----------------------------------------------------------------------------
 public OnQuickAuthFetch( Handle:owner, Handle:hndl, const String:error[], any:data ) {
 	
 	if( !hndl ) {
+		CloseHandle(data);
 		LogError( "SQL error fetching QuickAuth ID ::: %s", error );
 		return;
 	}
