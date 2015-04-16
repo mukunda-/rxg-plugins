@@ -7,7 +7,7 @@
 #pragma semicolon 1
 
 //-----------------------------------------------------------------------------
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = "Explosive Headshot",
 	author = "Roker",
 	description = "Creates explosions on headshot.",
@@ -17,11 +17,11 @@ public Plugin:myinfo = {
 
 #define WEAPON_INDEX 402
 
-new Handle:sm_explosiveheadshot_damage;
-new Handle:sm_explosiveheadshot_radius;
+Handle sm_explosiveheadshot_damage;
+Handle sm_explosiveheadshot_radius;
 
-new c_radius;
-new c_damage;
+int c_radius;
+int c_damage;
 
 
 //-----------------------------------------------------------------------------
@@ -45,33 +45,33 @@ RecacheConvars() {
 	c_damage = GetConVarInt( sm_explosiveheadshot_damage );
 }
 //-----------------------------------------------------------------------------
-public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[] ) {
+public OnConVarChanged( Handle cvar, const String:oldval[], const String:intval[] ) {
 	RecacheConvars();
 }
 //-----------------------------------------------------------------------------
-public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBroadcast ) {
+public Action:Event_Player_Death( Handle event, const String:name[], bool dontBroadcast ) {
 	
-	new victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
-	new shooter_id = GetEventInt( event, "attacker" );
-	new shooter = GetClientOfUserId( shooter_id );
+	int victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
+	int shooter_id = GetEventInt( event, "attacker" );
+	int shooter = GetClientOfUserId( shooter_id );
 	
 	if( !IsValidClient(shooter) || !IsPlayerAlive(shooter) ) {
 		return Plugin_Continue;
 	}
 
-	new weapon = GetPlayerWeaponSlot( shooter, TFWeaponSlot_Primary );
-	new index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
+	int weapon = GetPlayerWeaponSlot( shooter, TFWeaponSlot_Primary );
+	int index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	
-	new bool:isHeadshot = GetEventInt( event, "customkill" ) == TF_CUSTOM_HEADSHOT;
+	bool isHeadshot = GetEventInt( event, "customkill" ) == TF_CUSTOM_HEADSHOT;
 	
 	if( !isHeadshot || index != WEAPON_INDEX ) {
 		return Plugin_Continue;
 	}
 	
-	new Handle:data;
+	Handle data;
 	CreateDataTimer( 0.0, Timer_createExplosion, data);
 	
-	decl Float:location[3];
+	float location[3];
 	GetClientEyePosition(victim,location);
 	WritePackCell(data, shooter_id);
 	WritePackFloat(data, location[0]);
@@ -84,7 +84,7 @@ public Action:Event_Player_Death( Handle:event, const String:name[], bool:dontBr
 public Action:Timer_createExplosion(Handle:timer, Handle:data){
 
 	ResetPack(data);
-	new shooter_index = GetClientOfUserId( ReadPackCell(data) );
+	int shooter_index = GetClientOfUserId( ReadPackCell(data) );
 	
 	if( shooter_index == 0 ) {
 		// invalid client
@@ -100,7 +100,7 @@ public Action:Timer_createExplosion(Handle:timer, Handle:data){
 	
 	EmitAmbientSound("ambient/explosions/explode_8.wav", location, SOUND_FROM_WORLD, SNDLEVEL_NORMAL);
 	
-	new ent = CreateEntityByName("env_explosion");	 
+	int ent = CreateEntityByName("env_explosion");	 
 	
 	SetEntPropEnt( ent, Prop_Data, "m_hOwnerEntity", shooter_index );
 	DispatchSpawn(ent);

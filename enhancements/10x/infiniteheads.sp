@@ -29,7 +29,7 @@ public Action Event_Round_End( Handle event, const char[] name, bool dontBroadca
 	for(int i=1;i<=MaxClients;i++){
 		if( !IsValidClient(i) ) continue;
 		if( !IsPlayerAlive(i))  continue;
-		if(GetEntProp(i, Prop_Send, "m_iDecapitations") > 0){
+		if(extra_stats[i]){
 			removeStats(i);
 		}
 	}
@@ -54,14 +54,17 @@ public Action Event_Player_Death( Handle event, const char[] name, bool dontBroa
 		return Plugin_Continue;
 	}
 	int heads = GetEntProp(killer, Prop_Send, "m_iDecapitations");
-	heads+=1;
+	if(heads < 8){
+		heads+=1;
+	}
 	SetEntProp(killer, Prop_Send, "m_iDecapitations",heads);
 	if(heads > 4){
-		heads -= 4;
+		heads-=4;
 		TF2Attrib_SetByDefIndex(weapon,107,1.0 + 0.06*heads);
 		TF2Attrib_SetByDefIndex(weapon,26,15.0*heads);
-		extra_stats[killer] = true;
-	}	
+	}
+	
+	extra_stats[killer] = true;
 	return Plugin_Continue;
 }
 //-----------------------------------------------------------------------------

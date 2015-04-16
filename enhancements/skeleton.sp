@@ -14,15 +14,23 @@ public Plugin myinfo = {
 };
 
 Handle sm_skeleton_max_summon_distance;
+Handle sm_skeletons_cooldown_period;
 Handle sm_skeletons_broadcast_cooldown;
 
 float c_max_summon_distance;
+float c_cooldown_period;
 float c_broadcast_cooldown;
 
 float g_last_broadcast[MAXPLAYERS+1];
+int g_client_userid[MAXPLAYERS+1];
+int g_spawn_count[MAXPLAYERS+1];
+
+bool timerExists = false;
+
 
 public void OnPluginStart(){
 	sm_skeleton_max_summon_distance = CreateConVar( "sm_skeleton_max_summon_distance", "750", "The maximum distance you may summon a Skeleton away from yourself. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
+	sm_skeletons_cooldown_period = CreateConVar( "sm_skeletons_cooldown_period", "60", "How often users regain a skeleton spawn.", FCVAR_PLUGIN, true, 0.0 );
 	sm_skeletons_broadcast_cooldown = CreateConVar( "sm_skeletons_broadcast_cooldown", "30", "How frequently to broadcast that a player is spawning skeletons.", FCVAR_PLUGIN, true, 0.0 );
 	RegAdminCmd("sm_spawnskeleton", Command_SpawnSkeleton, ADMFLAG_RCON);
 	RegAdminCmd("sm_slayskeletons", Command_SlaySkeletons, ADMFLAG_RCON);
@@ -33,13 +41,14 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 	CreateNative( "SKEL_SpawnSkeleton", Native_SpawnSkeleton );
 	RegPluginLibrary("skeleton");
 }
-//-------------------------------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------	----------
 public OnConVarChanged( Handle cvar, const char[] oldval, const char[] newval) {
 	RecacheConvars();
 }
 //-------------------------------------------------------------------------------------------------
 void RecacheConvars(){
 	c_max_summon_distance = GetConVarFloat(sm_skeleton_max_summon_distance);
+	c_cooldown_period = GetConVarFloat(sm_skeletons_cooldown_period);
 	c_broadcast_cooldown = GetConVarFloat(sm_skeletons_broadcast_cooldown);
 }
 //-----------------------------------------------------------------------------
@@ -49,6 +58,21 @@ public OnMapStart() {
 		Format( sound, sizeof sound, "misc/halloween/skeletons/skelly_medium_0%i.wav", i );
 		PrecacheSound(sound,true );
 	}
+}
+//-----------------------------------------------------------------------------
+public Action Timer_Lower_Count(Handle timer){
+	bool active = false;
+	for( new i = 1; i <= MaxClients; i++ ) {
+		if(g_spawn_count[i] > 0){
+			g_spawn_count[i]--;
+			active = true;
+		}
+	}
+	if(!active){
+		timerExists = false;
+		return Plugin_Stop;
+	}
+	return Plugin_Continue;
 }
 //-------------------------------------------------------------------------------------------------
 public Action:Command_SpawnSkeleton( client, args ) {
@@ -133,6 +157,24 @@ bool SpawnSkeleton(int client, team){
 			PrintToChat( client, "\x07FFD800This Map has not yet been prepped for skeletons. Contact an administrator to get this fixed." );
 			return false;
 		}
+		//check if index is the same user
+		int userid = GetClientUserId(client);
+		if( g_client_userid[client] != userid ) {
+			//Client index changed hands
+			g_client_userid[client] = userid;
+			g_spawn_count[client] = 0;
+		}
+		//check if they've spawned too many
+		if(g_spawn_count[client] >= 10){
+			PrintToChat( client, "\x07FFD800You have summoned too many skeletons recently." );
+			return false;
+		}
+		//spawn restriction stuff
+		g_spawn_count[client]++;
+		if(!timerExists){
+			CreateTimer(c_cooldown_period, Timer_Lower_Count, _, TIMER_REPEAT);
+			timerExists = true;
+		}
 		
 		char team_color[7];
 		char player_name[64];
@@ -149,7 +191,7 @@ bool SpawnSkeleton(int client, team){
 	
 		float time = GetGameTime();
 		if( time >= g_last_broadcast[client] + c_broadcast_cooldown ) {
-			PrintToChatAll( "\x07%s%s \x07FFD800is spawning skeletons!", team_color, player_name );
+			PrintToChatAll( "\x07%s%s \x07FFD800is summoning skeletons!", team_color, player_name );
 			g_last_broadcast[client] = time;
 		}
 	}else{
