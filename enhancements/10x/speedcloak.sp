@@ -61,7 +61,7 @@ public checkSpeed(client)
 	int weapon = GetPlayerWeaponSlot( client, 4 );
 	int index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	
-	if (!IsValidWeapon(index)) { return; }
+	if (!IntArrayContains(index, validWeapons, sizeof(validWeapons))) { return; }
 	
 	if (!TF2_IsPlayerInCondition(client, TFCond_Cloaked)) { return; }
 	
@@ -72,13 +72,4 @@ public checkSpeed(client)
 	SetEntPropFloat(client, Prop_Data, "m_flMaxspeed", baseSpeed[client]*1.3);
 	TF2Attrib_SetByName(client, "increased jump height", 1.5);
 	modified[client] = true;
-}
-//-----------------------------------------------------------------------------
-bool IsValidWeapon(int index){
-	for (int i = 0; i < sizeof(validWeapons);i++){
-		if(index == validWeapons[i]){
-			return true;
-		}
-	}
-	return false;
 }
