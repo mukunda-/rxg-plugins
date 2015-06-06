@@ -73,9 +73,18 @@ stock int intmin( int a, int b ) {
 stock int intmax( int a, int b ) {
 	return a > b ? a : b; 
 }
-
+//-----------------------------------------------------------------------------
 stock int GetCmdArgInt( int index ) {
 	char number[16];
 	GetCmdArg( index, number, sizeof number );
 	return StringToInt( number );
+}
+//-----------------------------------------------------------------------------
+bool IntArrayContains(int val, int[] array, int arraySize){
+	for (int i = 0; i < arraySize;i++){
+		if(val == array[i]){
+			return true;
+		}
+	}
+	return false;
 }
