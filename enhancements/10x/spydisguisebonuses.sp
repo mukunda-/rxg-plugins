@@ -6,7 +6,8 @@
 #include <tf2_stocks>
 #include <tf2attributes>
 
-#define WEAPON_INDEX 225
+int validWeapons[] =  { 574, 225 };
+
 public Plugin myinfo = 
 {
 	name = "Spy Disguise Bonuses",
@@ -30,7 +31,7 @@ public checkSpeed(client)
 	int weapon = GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
 	int index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	
-	if (index != WEAPON_INDEX) { return;}
+	if (IsValidWeapon(index)) { return;}
 	
 	TFClassType dclass = TFClassType:GetEntProp(client, Prop_Send, "m_nDisguiseClass");
 	
@@ -40,4 +41,13 @@ public checkSpeed(client)
 	}else if(dclass == TFClass_Scout){
 		SetEntPropFloat(client, Prop_Data, "m_flMaxspeed", 320.0);
 	}
+}
+//-----------------------------------------------------------------------------
+bool IsValidWeapon(int index){
+	for (int i = 0; i < sizeof(validWeapons);i++){
+		if(index == validWeapons[i]){
+			return true;
+		}
+	}
+	return false;
 }

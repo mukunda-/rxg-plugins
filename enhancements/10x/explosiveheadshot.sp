@@ -45,11 +45,11 @@ RecacheConvars() {
 	c_damage = GetConVarInt( sm_explosiveheadshot_damage );
 }
 //-----------------------------------------------------------------------------
-public OnConVarChanged( Handle cvar, const String:oldval[], const String:intval[] ) {
+public OnConVarChanged( Handle cvar, const char[] oldval, const char[] intval ) {
 	RecacheConvars();
 }
 //-----------------------------------------------------------------------------
-public Action:Event_Player_Death( Handle event, const String:name[], bool dontBroadcast ) {
+public Action Event_Player_Death( Handle event, const char[] name, bool dontBroadcast ) {
 	
 	int victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	int shooter_id = GetEventInt( event, "attacker" );
@@ -81,7 +81,7 @@ public Action:Event_Player_Death( Handle event, const String:name[], bool dontBr
 	return Plugin_Continue;
 }
 //-----------------------------------------------------------------------------
-public Action:Timer_createExplosion(Handle:timer, Handle:data){
+public Action Timer_createExplosion(Handle timer, Handle data){
 
 	ResetPack(data);
 	int shooter_index = GetClientOfUserId( ReadPackCell(data) );
@@ -92,7 +92,7 @@ public Action:Timer_createExplosion(Handle:timer, Handle:data){
 		return Plugin_Handled;
 	}
 	
-	decl Float:location[3];
+	float location[3];
 	location[0]  = ReadPackFloat(data);
 	location[1]  = ReadPackFloat(data);
 	location[2]  = ReadPackFloat(data);
