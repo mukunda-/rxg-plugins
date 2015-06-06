@@ -25,13 +25,14 @@ int validWeapons[] =  { 30, 212, 297, 947 };
 public OnPluginStart() {
 	HookEvent( "player_spawn", Event_Player_Spawn);
 	HookEvent( "player_death", Event_Player_Death);
-	//RecacheConvars();
 }
-public Action:Event_Player_Spawn( Handle event, const String:name[], bool dontBroadcast ) {
+//-----------------------------------------------------------------------------
+public Action Event_Player_Spawn( Handle event, const char[] name, bool dontBroadcast ) {
 	int client = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	baseSpeed[client] = GetEntPropFloat(client, Prop_Data, "m_flMaxspeed");
 }
-public Action:Event_Player_Death( Handle event, const String:name[], bool dontBroadcast ) {
+//-----------------------------------------------------------------------------
+public Action Event_Player_Death( Handle event, const char[] name, bool dontBroadcast ) {
 	int client = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	if(modified[client]){
 		TF2Attrib_RemoveByName(client, "increased jump height");
@@ -42,6 +43,7 @@ public OnClientPutInServer(client)
 {
 	SDKHook(client, SDKHook_PreThink, checkSpeed);
 }
+//-----------------------------------------------------------------------------
 public TF2_OnConditionRemoved(client, TFCond:condition){
 	if(condition == TFCond_Cloaked){
 		if(modified[client]){
@@ -71,6 +73,7 @@ public checkSpeed(client)
 	TF2Attrib_SetByName(client, "increased jump height", 1.5);
 	modified[client] = true;
 }
+//-----------------------------------------------------------------------------
 bool IsValidWeapon(int index){
 	for (int i = 0; i < sizeof(validWeapons);i++){
 		if(index == validWeapons[i]){
