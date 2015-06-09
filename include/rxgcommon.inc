@@ -80,7 +80,7 @@ stock int GetCmdArgInt( int index ) {
 	return StringToInt( number );
 }
 //-----------------------------------------------------------------------------
-bool IntArrayContains(int val, int[] array, int arraySize){
+stock bool IntArrayContains(int val, int[] array, int arraySize){
 	for (int i = 0; i < arraySize;i++){
 		if(val == array[i]){
 			return true;
