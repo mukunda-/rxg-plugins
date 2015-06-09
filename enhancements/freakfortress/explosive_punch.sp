@@ -5,15 +5,15 @@
 #include <freak_fortress_2_subplugin>
 
 
-new bool:punchReady = false;
-new boss = -1;
+bool punchReady = false;
+int boss = -1;
 
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = "Freak Fortress 2: Explosive Punch",
 	author = "Roker",
 };
 
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max)
 {
 	
 	return APLRes_Success;
@@ -25,7 +25,7 @@ public OnPluginStart2()
 	HookEvent( "player_hurt", Event_Player_Hurt);
 }
 
-public Action:FF2_OnAbility2(client,const String:plugin_name[],const String:ability_name[],action)
+public Action FF2_OnAbility2(client,const char[] plugin_name,const char[] ability_name,action)
 {
 	if (!strcmp(ability_name,"explosive_punch")){
 		boss=GetClientOfUserId(FF2_GetBossUserId(client));
@@ -38,14 +38,14 @@ public OnMapStart(){
 	PrecacheSound("ambient/explosions/explode_8.wav", true);
 }
 //-----------------------------------------------------------------------------
-public Action:Event_Player_Hurt( Handle:event, const String:name[], bool:dontBroadcast ) {
-	new attacker_id = GetEventInt( event, "attacker" );
-	new attacker = GetClientOfUserId( attacker_id );
-	new victim = GetClientOfUserId( GetEventInt( event, "userid" ));
+public Action Event_Player_Hurt( Handle event, const char[] name, bool dontBroadcast ) {
+	int attacker_id = GetEventInt( event, "attacker" );
+	int attacker = GetClientOfUserId( attacker_id );
+	int victim = GetClientOfUserId( GetEventInt( event, "userid" ));
 	if(punchReady && boss == attacker){
-		new Handle:data;
+		Handle data;
 		CreateDataTimer( 0.0, Timer_createExplosion, data);
-		decl Float:location[3];
+		float location[3];
 		GetClientEyePosition(victim,location);
 		WritePackCell(data, attacker_id);
 		WritePackFloat(data, location[0]);
@@ -55,9 +55,9 @@ public Action:Event_Player_Hurt( Handle:event, const String:name[], bool:dontBro
 	}
 }
 //-----------------------------------------------------------------------------
-public Action:Timer_createExplosion(Handle:timer, Handle:data){
+public Action Timer_createExplosion(Handle timer, Handle data){
 	ResetPack(data);
-	new attacker = GetClientOfUserId( ReadPackCell(data) );
+	int attacker = GetClientOfUserId( ReadPackCell(data) );
 	
 	if( attacker == 0 ) {
 		// invalid client
@@ -65,7 +65,7 @@ public Action:Timer_createExplosion(Handle:timer, Handle:data){
 		return Plugin_Handled;
 	}
 	
-	decl Float:location[3];
+	float location[3];
 	location[0]  = ReadPackFloat(data);
 	location[1]  = ReadPackFloat(data);
 	location[2]  = ReadPackFloat(data);
@@ -73,17 +73,17 @@ public Action:Timer_createExplosion(Handle:timer, Handle:data){
 	
 	EmitAmbientSound("ambient/explosions/explode_8.wav", location, SOUND_FROM_WORLD, SNDLEVEL_NORMAL);
 	
-	new ent = CreateEntityByName("env_explosion");	 
+	int ent = CreateEntityByName("env_explosion");	 
 	
 	SetEntPropEnt( ent, Prop_Data, "m_hOwnerEntity", attacker );
 	DispatchSpawn(ent);
 	ActivateEntity(ent);
 	
-	new Float:damageFloat=FF2_GetAbilityArgumentFloat(boss, this_plugin_name, "explosive_punch", 1, 500.0);
-	new Float:radiusFloat=FF2_GetAbilityArgumentFloat(boss, this_plugin_name, "explosive_punch", 2, 400.0);
+	float damageFloat=FF2_GetAbilityArgumentFloat(boss, this_plugin_name, "explosive_punch", 1, 500.0);
+	float radiusFloat=FF2_GetAbilityArgumentFloat(boss, this_plugin_name, "explosive_punch", 2, 400.0);
 	
-	new damage = RoundToNearest(damageFloat);
-	new radius = RoundToNearest(radiusFloat);
+	int damage = RoundToNearest(damageFloat);
+	int radius = RoundToNearest(radiusFloat);
 	
 	SetEntProp(ent, Prop_Data, "m_iMagnitude", damage); 
 	SetEntProp(ent, Prop_Data, "m_iRadiusOverride", radius); 
