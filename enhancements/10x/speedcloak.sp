@@ -56,12 +56,11 @@ public checkSpeed(client)
 {
 	if (!IsValidClient(client)) { return; }
 	if (!IsPlayerAlive(client)) { return; }
-	if (TF2_GetPlayerClass(client) != TFClass_Spy) { return;}
 	
 	int weapon = GetPlayerWeaponSlot( client, 4 );
 	int index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	
-	if (!IntArrayContains(index, validWeapons, sizeof(validWeapons))) { return; }
+	if (!IntArrayContains(index, validWeapons, sizeof(validWeapons))) {return;}
 	
 	if (!TF2_IsPlayerInCondition(client, TFCond_Cloaked)) { return; }
 	

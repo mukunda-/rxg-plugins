@@ -26,7 +26,7 @@ public OnMapStart(){
 	PrecacheSound("ambient/explosions/explode_8.wav", true);
 }
 //-----------------------------------------------------------------------------
-public Action:Event_Object_Destroyed( Handle event, const String:name[], bool dontBroadcast ) {
+public Action Event_Object_Destroyed( Handle event, const char[] name, bool dontBroadcast ) {
 	
 	int client = GetClientOfUserId( GetEventInt( event, "attacker" ) );
 	int building = GetEventInt(event, "index");
@@ -49,7 +49,7 @@ public Action:Event_Object_Destroyed( Handle event, const String:name[], bool do
 	return Plugin_Continue;
 }
 //-----------------------------------------------------------------------------
-public Action:Timer_createExplosion(Handle:timer, Handle:data){
+public Action Timer_createExplosion(Handle timer, Handle data){
 
 	ResetPack(data);
 	int shooter = ReadPackCell(data);
@@ -60,7 +60,7 @@ public Action:Timer_createExplosion(Handle:timer, Handle:data){
 		return Plugin_Handled;
 	}
 	
-	decl Float:location[3];
+	float location[3];
 	location[0]  = ReadPackFloat(data);
 	location[1]  = ReadPackFloat(data);
 	location[2]  = ReadPackFloat(data);
