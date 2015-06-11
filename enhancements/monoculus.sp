@@ -3,11 +3,12 @@
 #include <sdktools>
 #include <tf2>
 #include <rxgstore>
+#include <tf2_stocks>
 
 #pragma semicolon 1
 
 //-------------------------------------------------------------------------------------------------
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = "Spawn Monoculus",
 	author = "WhiteThunder",
 	description = "Spawnable Monoculus",
@@ -16,27 +17,27 @@ public Plugin:myinfo = {
 };
 
 //-------------------------------------------------------------------------------------------------
-new Handle:sm_monoculus_max_summon_distance;
-new Handle:sm_monoculus_min_distance_player_spawn;
-new Handle:sm_monoculus_max_spectrals_per_team;
-new Handle:sm_monoculus_boss_base_health;
-new Handle:sm_monoculus_boss_health_per_player_above_threshold;
-new Handle:sm_monoculus_boss_health_player_threshold;
-new Handle:sm_monoculus_boss_max_duration;
-new Handle:sm_monoculus_spectral_summon_cooldown;
-new Handle:sm_monoculus_boss_team_summon_cooldown;
-new Handle:sm_monoculus_boss_enemy_summon_cooldown;
+Handle sm_monoculus_max_summon_distance;
+Handle sm_monoculus_min_distance_player_spawn;
+Handle sm_monoculus_max_spectrals_per_team;
+Handle sm_monoculus_boss_base_health;
+Handle sm_monoculus_boss_health_per_player_above_threshold;
+Handle sm_monoculus_boss_health_player_threshold;
+Handle sm_monoculus_boss_max_duration;
+Handle sm_monoculus_spectral_summon_cooldown;
+Handle sm_monoculus_boss_team_summon_cooldown;
+Handle sm_monoculus_boss_enemy_summon_cooldown;
 
-new Float:c_max_summon_distance;
-new Float:c_min_distance_player_spawn;
-new c_max_spectrals_per_team;
-new c_boss_base_health;
-new c_boss_health_per_player_above_threshold;
-new c_boss_health_player_threshold;
-new Float:c_boss_max_duration;
-new Float:c_spectral_summon_cooldown;
-new Float:c_boss_team_summon_cooldown;
-new Float:c_boss_enemy_summon_cooldown;
+float c_max_summon_distance;
+float c_min_distance_player_spawn;
+int c_max_spectrals_per_team;
+int c_boss_base_health;
+int c_boss_health_per_player_above_threshold;
+int c_boss_health_player_threshold;
+float c_boss_max_duration;
+float c_spectral_summon_cooldown;
+float c_boss_team_summon_cooldown;
+float c_boss_enemy_summon_cooldown;
 
 #define TEAM_BOSS 5
 #define VERTICAL_OFFSET 50.0
@@ -44,20 +45,20 @@ new Float:c_boss_enemy_summon_cooldown;
 #define SPECTRAL_FIXED_DURATION 20.0 //This value does not affect the duration
 #define SUMMON_SOUND_COOLDOWN 10.0
 
-new Float:g_client_last_spectral_summon[MAXPLAYERS+1];
-new Float:g_red_boss_last_summon;
-new Float:g_blu_boss_last_summon;
-new Float:g_last_summon;
-new g_red_spectral_count;
-new g_blu_spectral_count;
+float g_client_last_spectral_summon[MAXPLAYERS+1];
+float g_red_boss_last_summon;
+float g_blu_boss_last_summon;
+float g_last_summon;
+int g_red_spectral_count;
+int g_blu_spectral_count;
 
-new g_client_userid[MAXPLAYERS+1];
+int g_client_userid[MAXPLAYERS+1];
 
-new g_spawn_count;
-new Float:g_player_spawns[100][3];
+int g_spawn_count;
+float g_player_spawns[100][3];
 
 //-------------------------------------------------------------------------------------------------
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max) {
+public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
 	CreateNative( "MONO_SpawnMonoculus", Native_SpawnMonoculus );
 	RegPluginLibrary("monoculus");
 }
@@ -77,7 +78,7 @@ RecacheConvars() {
 }
 
 //-------------------------------------------------------------------------------------------------
-public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[] ) {
+public OnConVarChanged( Handle cvar, const char[] oldval, const char[] newval ) {
 	RecacheConvars();
 }
 
@@ -117,7 +118,7 @@ public OnMapStart() {
 	PrecacheMonoculus();
 	findSpawnPoints();
 	
-	for( new i = 1; i <= MaxClients; i++ ) {
+	for( int i = 1; i <= MaxClients; i++ ) {
 		g_client_last_spectral_summon[i] = -c_spectral_summon_cooldown;
 	}
 	
@@ -129,7 +130,7 @@ public OnMapStart() {
 }
 //-------------------------------------------------------------------------------------------------
 findSpawnPoints() {
-	new ent = -1;
+	int ent = -1;
 	g_spawn_count = 0;
 	while( (ent = FindEntityByClassname(ent, "info_player_teamspawn")) != -1){
 		GetEntPropVector( ent, Prop_Send, "m_vecOrigin", g_player_spawns[g_spawn_count]);
@@ -138,13 +139,13 @@ findSpawnPoints() {
 }
 
 //-------------------------------------------------------------------------------------------------
-bool:NearSpawn( Float:end[3]){
-	new Float:target[3];
+bool NearSpawn( float end[3]){
+	float target[3];
 	target[0] = end[0];
 	target[1] = end[1];
-	for( new i = 0; i < g_spawn_count; i++ ) {
+	for( int i = 0; i < g_spawn_count; i++ ) {
 		target[2] = end[2] + (end[2] - g_player_spawns[i][2])*2;
-		new Float:distance = GetVectorDistance(g_player_spawns[i],target,true);
+		float distance = GetVectorDistance(g_player_spawns[i],target,true);
 		if(distance < c_min_distance_player_spawn*c_min_distance_player_spawn){
 			return true;
 		}
@@ -158,12 +159,12 @@ bool:NearSpawn( Float:end[3]){
 	}
 	return false;
 }
-bool:SpawnMonoculus( client, TFTeam:team ) {
+bool SpawnMonoculus( client, TFTeam team ) {
 
-	new Float:time = GetGameTime();
-	new TFTeam:client_team = TFTeam:GetClientTeam(client);
+	float time = GetGameTime();
+	TFTeam client_team = TFTeam:GetClientTeam(client);
 
-	decl String:team_color[7];
+	char team_color[7];
 	
 	if( client_team == TFTeam_Red ){
 		team_color = "ff3d3d";
@@ -173,10 +174,11 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 		team_color = "874fad";
 	}
 	
+	
 	if( team == TFTeam:TEAM_BOSS ) {
 		
-		new Float:team_next_summon; //Time your team can next summon as a result of your team's recent summon
-		new Float:enemy_next_summon; //Time your team can next summon as a result of a recent enemy summon
+		float team_next_summon; //Time your team can next summon as a result of your team's recent summon
+		float enemy_next_summon; //Time your team can next summon as a result of a recent enemy summon
 		
 		if( client_team == TFTeam_Red ) {
 			team_next_summon = g_red_boss_last_summon + c_boss_team_summon_cooldown;
@@ -186,7 +188,7 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 			enemy_next_summon = g_red_boss_last_summon + c_boss_enemy_summon_cooldown;
 		}
 		
-		new Float:next_summon = (team_next_summon > enemy_next_summon) ? team_next_summon : enemy_next_summon;
+		float next_summon = (team_next_summon > enemy_next_summon) ? team_next_summon : enemy_next_summon;
 		
 		if( time < team_next_summon && team_next_summon >= enemy_next_summon ) {
 			
@@ -203,7 +205,7 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 	
 	} else {
 	
-		new userid = GetClientUserId(client);
+		int userid = GetClientUserId(client);
 		
 		if( g_client_userid[client] != userid ) {
 			//Client index changed hands
@@ -213,7 +215,7 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 		
 		if( time < g_client_last_spectral_summon[client] + c_spectral_summon_cooldown ) {
 		
-			new Float:timeleft = g_client_last_spectral_summon[client] + c_spectral_summon_cooldown - time;
+			float timeleft = g_client_last_spectral_summon[client] + c_spectral_summon_cooldown - time;
 			
 			PrintToChat( client, "\x07FFD800Please wait \x073EFF3E%d \x07FFD800seconds before summoning another \x07%sSpectral Monoculus.", RoundToCeil(timeleft), team_color );
 			RXGSTORE_ShowUseItemMenu(client);
@@ -230,7 +232,23 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 		}
 	}
 	
-	decl Float:start[3], Float:angle[3], Float:end[3], Float:feet[3];
+	if( !IsPlayerAlive(client) ){
+		PrintToChat( client, "\x07FFD800Cannot summon when dead." );
+		return false;
+	}
+	if( TF2_IsPlayerInCondition(client, TFCond_Cloaked ) ){
+		PrintToChat( client, "\x07FFD800Cannot summon when cloaked." );
+		return false;
+	}
+	if( TF2_IsPlayerInCondition(client, TFCond_Disguised ) ){
+		PrintToChat( client, "\x07FFD800Cannot summon when disguised." );
+		return false;
+	}
+	
+	float start[3];
+	float angle[3];
+	float end[3];
+	float feet[3];
 	GetClientEyePosition( client, start );
 	GetClientEyeAngles( client, angle );
 	GetClientAbsOrigin( client, feet );
@@ -238,12 +256,13 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 	TR_TraceRayFilter( start, angle, CONTENTS_SOLID, RayType_Infinite, TraceFilter_All );
 	
 	if( TR_DidHit() ) {
-		decl Float:norm[3], Float:norm_angles[3];
+		float norm[3];
+		float norm_angles[3];
 		TR_GetPlaneNormal( INVALID_HANDLE, norm );
 		GetVectorAngles( norm, norm_angles );
 		TR_GetEndPosition( end );
 
-		new Float:distance = GetVectorDistance( feet, end, true );
+		float distance = GetVectorDistance( feet, end, true );
 
 		if( c_max_summon_distance != 0 && distance > c_max_summon_distance * c_max_summon_distance ) {
 			PrintToChat( client, "\x07FFD800Cannot summon that far away." );
@@ -268,7 +287,7 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 		end[2] += VERTICAL_OFFSET;
 	}
 	
-	new ent = CreateEntityByName("eyeball_boss");
+	int ent = CreateEntityByName("eyeball_boss");
 	SetEntProp( ent, Prop_Data, "m_iTeamNum", team );
 	SetEntPropEnt( ent, Prop_Send, "m_hOwnerEntity", client );
 	
@@ -280,8 +299,8 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 		
 		CreateTimer( BOSS_COLLISION_DELAY, Timer_ActivateBossCollision, ent );
 	
-		new player_count = GetClientCount();
-		new boss_hp = c_boss_base_health;
+		int player_count = GetClientCount();
+		int boss_hp = c_boss_base_health;
 		if( player_count > c_boss_health_player_threshold ) {
 			boss_hp += (player_count - 10) * c_boss_health_per_player_above_threshold;
 		}
@@ -290,7 +309,7 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 		SetEntProp( ent, Prop_Data, "m_iHealth", boss_hp );
 	}
 	
-	decl String:name[32];
+	char name[32];
 	GetClientName( client, name, sizeof name );
 	
 	if( team == TFTeam:TEAM_BOSS ) {
@@ -329,7 +348,7 @@ bool:SpawnMonoculus( client, TFTeam:team ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Timer_LowerMonoculusCount( Handle:timer, any:team ) {
+public Action Timer_LowerMonoculusCount( Handle timer, any team ) {
 	if( team == TFTeam_Red ) {
 		g_red_spectral_count--;
 	} else if( team == TFTeam_Blue ) {
@@ -341,7 +360,7 @@ public Action:Timer_LowerMonoculusCount( Handle:timer, any:team ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Timer_KillExpiredBossMonoculus( Handle:timer, any:boss ) {
+public Action Timer_KillExpiredBossMonoculus( Handle timer, any boss ) {
 	if( IsValidEntity(boss) ) {
 		// sometimes they don't go away when they should or we want to kill them early
 		AcceptEntityInput( boss, "Kill" );
@@ -350,7 +369,7 @@ public Action:Timer_KillExpiredBossMonoculus( Handle:timer, any:boss ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Timer_ActivateBossCollision( Handle:timer, any:boss ) {
+public Action Timer_ActivateBossCollision( Handle timer, any boss ) {
 	if( IsValidEntity(boss) ) {
 		SetEntProp( boss, Prop_Send, "m_CollisionGroup", 0 );
 	}
@@ -358,20 +377,20 @@ public Action:Timer_ActivateBossCollision( Handle:timer, any:boss ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Native_SpawnMonoculus( Handle:plugin, numParams ) {
-	new client = GetNativeCell(1);
-	new TFTeam:team = GetNativeCell(2);
+public Native_SpawnMonoculus( Handle plugin, numParams ) {
+	int client = GetNativeCell(1);
+	TFTeam team = GetNativeCell(2);
 	return SpawnMonoculus( client, team );
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Command_SpawnMonoculus( client, args ) {
+public Action Command_SpawnMonoculus( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	
-	new team;
+	int team;
 	
 	if( args > 0 ) {
-		new String:team_arg[12];
+		char team_arg[12];
 		GetCmdArg( 1, team_arg, sizeof team_arg );
 		team = StringToInt(team_arg);
 	} else {
@@ -383,7 +402,7 @@ public Action:Command_SpawnMonoculus( client, args ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public bool:TraceFilter_All( entity, contentsMask ) {
+public bool TraceFilter_All( entity, contentsMask ) {
 	return false;
 }
 

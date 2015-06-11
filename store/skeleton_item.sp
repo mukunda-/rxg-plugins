@@ -3,6 +3,7 @@
 #include <sdktools>
 #include <skeleton>
 #include <rxgstore>
+#include <tf2_stocks>
 
 #pragma semicolon 1
 
@@ -39,7 +40,6 @@ public OnPluginEnd() {
 
 //-------------------------------------------------------------------------------------------------
 public RXGSTORE_OnUse( client ) {
-	if( !IsPlayerAlive(client) ) return false;
 	if(!SKEL_SpawnSkeleton( client, GetClientTeam(client) )){
 		RXGSTORE_ShowUseItemMenu(client);
 		return false;

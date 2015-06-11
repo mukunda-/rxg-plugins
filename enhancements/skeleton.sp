@@ -1,6 +1,7 @@
 #include <sourcemod>
 #include <sdktools>
 #include <tf2>
+#include <tf2_stocks>
 
 #pragma semicolon 1
 
@@ -75,7 +76,7 @@ public Action Timer_Lower_Count(Handle timer){
 	return Plugin_Continue;
 }
 //-------------------------------------------------------------------------------------------------
-public Action:Command_SpawnSkeleton( client, args ) {
+public Action Command_SpawnSkeleton( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	
 	int team;
@@ -91,7 +92,7 @@ public Action:Command_SpawnSkeleton( client, args ) {
 	return Plugin_Handled;
 }
 //-------------------------------------------------------------------------------------------------
-public Action:Command_SlaySkeletons( client, args ) {
+public Action Command_SlaySkeletons( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	SlaySkeletons( client );
 	return Plugin_Handled;
@@ -118,6 +119,19 @@ void SlaySkeletons(int client){
 }
 //-------------------------------------------------------------------------------------------------
 bool SpawnSkeleton(int client, team){
+	if( !IsPlayerAlive(client) ){
+		PrintToChat( client, "\x07FFD800Cannot summon when dead." );
+		return false;
+	}
+	if( TF2_IsPlayerInCondition(client, TFCond_Cloaked ) ){
+		PrintToChat( client, "\x07FFD800Cannot summon when cloaked." );
+		return false;
+	}
+	if( TF2_IsPlayerInCondition(client, TFCond_Disguised ) ){
+		PrintToChat( client, "\x07FFD800Cannot summon when disguised." );
+		return false;
+	}
+	
 	float start[3];
 	float angle[3];
 	float end[3];
@@ -136,7 +150,7 @@ bool SpawnSkeleton(int client, team){
 		TR_GetEndPosition( end );
 
 		float distance = GetVectorDistance( feet, end, true );
-
+		
 		if( c_max_summon_distance != 0 && distance > c_max_summon_distance * c_max_summon_distance ) {
 			PrintToChat( client, "\x07FFD800Cannot summon that far away." );
 			return false;
@@ -198,7 +212,7 @@ bool SpawnSkeleton(int client, team){
 		return false;
 	}
 	
-	new ent = CreateEntityByName("tf_zombie");
+	int ent = CreateEntityByName("tf_zombie");
 	SetEntProp( ent, Prop_Data, "m_iTeamNum", team );
 	if(team == GetClientTeam(client)){ //SKELETON DIES IF OWNER IS NOT THE SAME TEAM
 		SetEntPropEnt( ent, Prop_Send, "m_hOwnerEntity", client );

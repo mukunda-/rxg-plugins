@@ -4,11 +4,12 @@
 #include <sdkhooks>
 #include <tf2>
 #include <rxgstore>
+#include <tf2_stocks>
 
 #pragma semicolon 1
 
 //-------------------------------------------------------------------------------------------------
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = "pumpkin item",
 	author = "WhiteThunder",
 	description = "plantable pumpkin bombs",
@@ -19,27 +20,27 @@ public Plugin:myinfo = {
 #define PUMPKIN_PLANT_SOUND "items/pumpkin_drop.wav"
 #define PUMPKIN_ARM_SOUND "misc/doomsday_warhead.wav"
 
-new Handle:sm_pumpkins_max_per_player;
-new Handle:sm_pumpkins_max_plant_distance;
-new Handle:sm_pumpkins_broadcast_cooldown;
-new Handle:sm_pumpkins_arm_delay;
-new Handle:sm_pumpkins_arm_solid;
+Handle sm_pumpkins_max_per_player;
+Handle sm_pumpkins_max_plant_distance;
+Handle sm_pumpkins_broadcast_cooldown;
+Handle sm_pumpkins_arm_delay;
+Handle sm_pumpkins_arm_solid;
 
-new c_max_per_player;
-new Float:c_max_plant_distance;
-new Float:c_broadcast_cooldown;
-new Float:c_arm_delay;
-new bool:c_arm_solid;
+int c_max_per_player;
+float c_max_plant_distance;
+float c_broadcast_cooldown;
+float c_arm_delay;
+bool c_arm_solid;
 
 #define MAXENTITIES 2048
 
-new g_pumpkin_userid[MAXENTITIES];
-new bool:g_pumpkin_taking_damage[MAXENTITIES];
-new Float:g_pumpkin_spawn_time[MAXENTITIES];
+int g_pumpkin_userid[MAXENTITIES];
+bool g_pumpkin_taking_damage[MAXENTITIES];
+float g_pumpkin_spawn_time[MAXENTITIES];
 
-new g_client_userid[MAXPLAYERS+1];
-new g_client_pumpkins[MAXPLAYERS+1];
-new Float:g_last_broadcast[MAXPLAYERS+1];
+int g_client_userid[MAXPLAYERS+1];
+int g_client_pumpkins[MAXPLAYERS+1];
+float g_last_broadcast[MAXPLAYERS+1];
 
 #define ITEM_NAME "pumpkin"
 #define ITEM_FULLNAME "pumpkin"
@@ -55,7 +56,7 @@ RecacheConvars() {
 }
 
 //-------------------------------------------------------------------------------------------------
-public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[] ) {
+public OnConVarChanged( Handle cvar, const char[] oldval, const char[] intval ) {
 	RecacheConvars();
 }
 
@@ -82,7 +83,7 @@ public OnPluginStart() {
 }
 
 //-------------------------------------------------------------------------------------------------
-public OnLibraryAdded( const String:name[] ) {
+public OnLibraryAdded( const char[] name ) {
 	if( StrEqual( name, "rxgstore" ) ) {
 		RXGSTORE_RegisterItem( ITEM_NAME, ITEMID, ITEM_FULLNAME );
 	}
@@ -95,7 +96,7 @@ public OnPluginEnd() {
 
 //-------------------------------------------------------------------------------------------------
 public OnMapStart() {
-	for( new i = 1; i <= MaxClients; i++ ) {
+	for( int i = 1; i <= MaxClients; i++ ) {
 		g_last_broadcast[i] = -c_broadcast_cooldown;
 	}
 	PrecacheSound( PUMPKIN_PLANT_SOUND );
@@ -103,23 +104,23 @@ public OnMapStart() {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Event_RoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
-	for( new i = 1; i <= MaxClients; i++ ) {
+public Event_RoundStart( Handle event, const char[] name, bool dontBroadcast ) {
+	for( int i = 1; i <= MaxClients; i++ ) {
 		g_client_pumpkins[i] = 0;
 	}
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Command_spawnpumpkin( client, args ) {
+public Action Command_spawnpumpkin( client, args ) {
 	if( client == 0 ) return Plugin_Continue;
 	SpawnPumpkin(client);
 	return Plugin_Handled;
 }
 
 //-------------------------------------------------------------------------------------------------
-bool:SpawnPumpkin( client ) {
+bool SpawnPumpkin( client ) {
 	
-	new userid = GetClientUserId(client);
+	int userid = GetClientUserId(client);
 	
 	if( g_client_userid[client] != userid ) {
 	
@@ -134,7 +135,23 @@ bool:SpawnPumpkin( client ) {
 		return false;
 	}
 	
-	decl Float:start[3], Float:angle[3], Float:end[3], Float:feet[3];
+	if( !IsPlayerAlive(client) ){
+		PrintToChat( client, "\x07FFD800Cannot plant when dead." );
+		return false;
+	}
+	if( TF2_IsPlayerInCondition(client, TFCond_Cloaked ) ){
+		PrintToChat( client, "\x07FFD800Cannot plant when cloaked." );
+		return false;
+	}
+	if( TF2_IsPlayerInCondition(client, TFCond_Disguised ) ){
+		PrintToChat( client, "\x07FFD800Cannot plant when disguised." );
+		return false;
+	}
+	
+	float start[3];
+	float angle[3];
+	float end[3];
+	float feet[3];
 	GetClientEyePosition( client, start );
 	GetClientEyeAngles( client, angle );
 	GetClientAbsOrigin( client, feet );
@@ -142,12 +159,14 @@ bool:SpawnPumpkin( client ) {
 	TR_TraceRayFilter( start, angle, CONTENTS_SOLID, RayType_Infinite, TraceFilter_All );
 
 	if( TR_DidHit() ) {
-		decl Float:norm[3], Float:norm_angles[3];
+		float norm[3]; 
+		float norm_angles[3];
+		
 		TR_GetPlaneNormal( INVALID_HANDLE, norm );
 		GetVectorAngles( norm, norm_angles );
 		TR_GetEndPosition( end );
 
-		new Float:distance = GetVectorDistance( feet, end, true );
+		float distance = GetVectorDistance( feet, end, true );
 
 		if ( c_max_plant_distance != 0 && distance > c_max_plant_distance * c_max_plant_distance ) {
 			PrintToChat( client, "\x07FFD800Cannot plant that far away." );
@@ -162,7 +181,7 @@ bool:SpawnPumpkin( client ) {
 		}
 	}
 	
-	new ent = CreateEntityByName( "tf_pumpkin_bomb" );
+	int ent = CreateEntityByName( "tf_pumpkin_bomb" );
 	
 	SetEntProp( ent, Prop_Send, "m_CollisionGroup", 2 );
 	SetEntityRenderColor( ent, 255, 255, 255, 128 );
@@ -183,8 +202,8 @@ bool:SpawnPumpkin( client ) {
 	}
 	CreateTimer( c_arm_delay, Timer_ArmPumpkin, EntIndexToEntRef(ent) );
 	
-	decl String:team_color[7];
-	new TFTeam:client_team = TFTeam:GetClientTeam(client);
+	char team_color[7];
+	TFTeam client_team = TFTeam:GetClientTeam(client);
 	
 	if( client_team == TFTeam_Red ){
 		team_color = "ff3d3d";
@@ -194,11 +213,11 @@ bool:SpawnPumpkin( client ) {
 		team_color = "874fad";
 	}
 	
-	decl String:player_name[32];
+	char player_name[32];
 	GetClientName(client, player_name, sizeof player_name);
 	
 	//Throttle broadcasts
-	new Float:time = GetGameTime();
+	float time = GetGameTime();
 	if( time >= g_last_broadcast[client] + c_broadcast_cooldown ) {
 		PrintToChatAll( "\x07%s%s \x07FFD800is planting \x07FF6600Pumpkin Bombs!", team_color, player_name );
 		g_last_broadcast[client] = time;
@@ -208,7 +227,7 @@ bool:SpawnPumpkin( client ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Timer_PumpkinFlashFaster( Handle:timer, any:pumpkin ) {
+public Action Timer_PumpkinFlashFaster( Handle timer, any pumpkin ) {
 	if( IsValidEntity(pumpkin) ) {
 		SetEntityRenderFx( pumpkin, RENDERFX_STROBE_FASTER );
 	}
@@ -216,7 +235,7 @@ public Action:Timer_PumpkinFlashFaster( Handle:timer, any:pumpkin ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:Timer_ArmPumpkin( Handle:timer, any:pumpkin ) {
+public Action Timer_ArmPumpkin( Handle timer, any pumpkin ) {
 	if( IsValidEntity(pumpkin) ) {
 		if( c_arm_solid ) {
 			SetEntProp( pumpkin, Prop_Send, "m_CollisionGroup", 0 );
@@ -229,7 +248,7 @@ public Action:Timer_ArmPumpkin( Handle:timer, any:pumpkin ) {
 }
 
 //-------------------------------------------------------------------------------------------------
-public Action:OnPumpkinHit( pumpkin, &attacker, &inflictor, &Float:damage, &damagetype ) {
+public Action OnPumpkinHit( pumpkin, &attacker, &inflictor, float &damage, &damagetype ) {
 	
 	if( g_pumpkin_taking_damage[pumpkin] ) return Plugin_Continue;
 	
@@ -239,8 +258,8 @@ public Action:OnPumpkinHit( pumpkin, &attacker, &inflictor, &Float:damage, &dama
 	
 	g_pumpkin_taking_damage[pumpkin] = true;
 	
-	new userid = g_pumpkin_userid[pumpkin];
-	new client = GetClientOfUserId(userid);
+	int userid = g_pumpkin_userid[pumpkin];
+	int client = GetClientOfUserId(userid);
 	
 	//Attribute damage to pumpkin owner if still in server
 	if( client != 0 ) {
@@ -253,7 +272,7 @@ public Action:OnPumpkinHit( pumpkin, &attacker, &inflictor, &Float:damage, &dama
 }
 
 //-------------------------------------------------------------------------------------------------
-public bool:TraceFilter_All( entity, contentsMask ) {
+public bool TraceFilter_All( entity, contentsMask ) {
 	return false;
 }
 
