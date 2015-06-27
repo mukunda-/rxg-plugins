@@ -22,10 +22,10 @@ bool extra_stats[MAXPLAYERS+1];
 //-----------------------------------------------------------------------------
 public void OnPluginStart(){
 	HookEvent( "player_death", Event_Player_Death);
-	HookEvent( "teamplay_round_win", Event_Round_End );
+	HookEvent( "teamplay_round_start", Event_Round_Start );
 }
 //-----------------------------------------------------------------------------
-public Action Event_Round_End( Handle event, const char[] name, bool dontBroadcast ) {
+public Action Event_Round_Start( Handle event, const char[] name, bool dontBroadcast ) {
 	for(int i=1;i<=MaxClients;i++){
 		if( !IsValidClient(i) ) continue;
 		if( !IsPlayerAlive(i))  continue;
