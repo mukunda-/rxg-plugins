@@ -35,12 +35,13 @@ Updated by Wliu, Chris, Lawd, and Carge after Powerlord quit FF2
 
 #define MAJOR_REVISION "1"
 #define MINOR_REVISION "10"
-#define STABLE_REVISION "3"
-#define DEV_REVISION "Beta"
+#define STABLE_REVISION "5"
+//#define DEV_REVISION "Beta"
+#define BUILD_NUMBER "manual"  //This gets automagically updated by Jenkins
 #if !defined DEV_REVISION
-	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION  //1.10.3
+	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION  //1.10.5
 #else
-	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION
+	#define PLUGIN_VERSION MAJOR_REVISION..."."...MINOR_REVISION..."."...STABLE_REVISION..." "...DEV_REVISION..." (build "...BUILD_NUMBER...")"
 #endif
 
 #define UPDATE_URL "http://ff2.50dkp.com/updater/ff2-official/update.txt"
@@ -87,7 +88,6 @@ new Damage[MAXPLAYERS+1];
 new curHelp[MAXPLAYERS+1];
 new uberTarget[MAXPLAYERS+1];
 new shield[MAXPLAYERS+1];
-new isClientRocketJumping[MAXPLAYERS+1];
 new detonations[MAXPLAYERS+1];
 
 new FF2flags[MAXPLAYERS+1];
@@ -98,13 +98,13 @@ new BossHealth[MAXPLAYERS+1];
 new BossHealthLast[MAXPLAYERS+1];
 new BossLives[MAXPLAYERS+1];
 new BossLivesMax[MAXPLAYERS+1];
+new BossRageDamage[MAXPLAYERS+1];
 new Float:BossCharge[MAXPLAYERS+1][8];
 new Float:Stabbed[MAXPLAYERS+1];
 new Float:Marketed[MAXPLAYERS+1];
 new Float:KSpreeTimer[MAXPLAYERS+1];
 new KSpreeCount[MAXPLAYERS+1];
 new Float:GlowTimer[MAXPLAYERS+1];
-new TFClassType:LastClass[MAXPLAYERS+1];
 new shortname[MAXPLAYERS+1];
 new bool:emitRageSound[MAXPLAYERS+1];
 
@@ -117,7 +117,8 @@ new Handle:cvarEnabled;
 new Handle:cvarAliveToEnable;
 new Handle:cvarPointType;
 new Handle:cvarCrits;
-new Handle:cvarFirstRound;
+new Handle:cvarFirstRound;  //DEPRECATED
+new Handle:cvarArenaRounds;
 new Handle:cvarCircuitStun;
 new Handle:cvarSpecForceBoss;
 new Handle:cvarCountdownPlayers;
@@ -154,7 +155,8 @@ new Float:Announce=120.0;
 new AliveToEnable=5;
 new PointType;
 new bool:BossCrits=true;
-//new Float:circuitStun;
+new arenaRounds;
+new Float:circuitStun;
 new countdownPlayers=1;
 new countdownTime=120;
 new countdownHealth=2000;
@@ -172,7 +174,6 @@ new Handle:BossInfoTimer[MAXPLAYERS+1][2];
 new Handle:DrawGameTimer;
 new Handle:doorCheckTimer;
 
-new RoundCounter;
 new botqueuepoints;
 new Float:HPTime;
 new String:currentmap[99];
@@ -184,7 +185,6 @@ new tf_arena_use_queue;
 new mp_teams_unbalance_limit;
 new tf_arena_first_blood;
 new mp_forcecamera;
-new Float:tf_scout_hype_pep_max;
 new Handle:cvarNextmap;
 new bool:areSubPluginsEnabled;
 
@@ -255,7 +255,13 @@ static const String:ff2versiontitles[][]=
 	"1.10.3",
 	"1.10.3",
 	"1.10.3",
-	"1.10.3"
+	"1.10.3",
+	"1.10.4",
+	"1.10.4",
+	"1.10.4",
+	"1.10.4",
+	"1.10.4",
+	"1.10.5"
 };
 
 static const String:ff2versiondates[][]=
@@ -313,13 +319,70 @@ static const String:ff2versiondates[][]=
 	"November 6, 2014",	//1.10.3
 	"November 6, 2014",	//1.10.3
 	"November 6, 2014",	//1.10.3
-	"November 6, 2014"	//1.10.3
+	"November 6, 2014",	//1.10.3
+	"March 1, 2015",	//1.10.4
+	"March 1, 2015",	//1.10.4
+	"March 1, 2015",	//1.10.4
+	"March 1, 2015",	//1.10.4
+	"March 1, 2015",	//1.10.4
+	"March 13, 2015"	//1.10.5
 };
 
 stock FindVersionData(Handle:panel, versionIndex)
 {
 	switch(versionIndex)
 	{
+		case 59:  //1.10.5
+		{
+			DrawPanelText(panel, "1) Fixed slow-mo being extremely buggy (Wliu from various)");
+			DrawPanelText(panel, "2) Fixed the Festive SMG not getting crits (Wliu from Dalix)");
+			DrawPanelText(panel, "3) Fixed teleport sounds not being played (Wliu from Dalix)");
+			DrawPanelText(panel, "4) !ff2_stop_music can now target specific clients (Wliu)");
+			DrawPanelText(panel, "5) [Server] Fixed multiple sounds not working after TF2 changed the default sound extension type (Wliu)");
+			DrawPanelText(panel, "6) [Dev] Fixed rage damage not resetting after using FF2_SetBossRageDamage (Wliu from WildCard65)");
+		}
+		case 58:  //1.10.4
+		{
+			DrawPanelText(panel, "1) Fixed players getting overheal after winning as a boss (Wliu/FlaminSarge)");
+			DrawPanelText(panel, "2) Rebalanced the Baby Face's Blaster (Shadow)");
+			DrawPanelText(panel, "3) Fixed the Baby Face's Blaster being unusable when FF2 was disabled (Wliu from Curtgust)");
+			DrawPanelText(panel, "4) Fixed the Darwin's Danger Shield getting replaced by the SMG (Wliu)");
+			DrawPanelText(panel, "5) Added the Tide Turner and new festive weapons to the weapon whitelist (Wliu)");
+			DrawPanelText(panel, "See next page (press 1");
+		}
+		case 57:  //1.10.4
+		{
+			DrawPanelText(panel, "6) Fixed Market Gardener backstabs (Wliu)");
+			DrawPanelText(panel, "7) Improved class switching after you finish the round as a boss (Wliu)");
+			DrawPanelText(panel, "8) Fixed the !ff2 command again (Wliu)");
+			DrawPanelText(panel, "9) Fixed bosses not ducking when teleporting (CapnDev)");
+			DrawPanelText(panel, "10) Prevented dead companion bosses from becoming clones (Wliu)");
+			DrawPanelText(panel, "See next page (press 1)");
+		}
+		case 56:  //1.10.4
+		{
+			DrawPanelText(panel, "11) [Server] Fixed 'ff2_alive' never being shown (Wliu from various)");
+			DrawPanelText(panel, "12) [Server] Fixed invalid healthbar errors (Wliu from ClassicGuzzi)");
+			DrawPanelText(panel, "13) [Server] Fixed OnTakeDamage errors from spell Monoculuses (Wliu from ClassicGuzzi)");
+			DrawPanelText(panel, "14) [Server] Added 'ff2_arena_rounds' and deprecated 'ff2_first_round' (Wliu from Spyper)");
+			DrawPanelText(panel, "15) [Server] Added 'ff2_base_jumper_stun' to disable the parachute on stun (Wliu from Shadow)");
+			DrawPanelText(panel, "See next page (press 1)");
+		}
+		case 55:  //1.10.4
+		{
+			DrawPanelText(panel, "16) [Server] Prevented FF2 from loading if it gets loaded in the /plugins/freaks/ directory (Wliu)");
+			DrawPanelText(panel, "17) [Dev] Fixed 'sound_fail' (Wliu from M76030)");
+			DrawPanelText(panel, "18) [Dev] Allowed companions to emit 'sound_nextlife' if they have it (Wliu from M76030)");
+			DrawPanelText(panel, "19) [Dev] Added 'sound_last_life' (Wliu from WildCard65)");
+			DrawPanelText(panel, "20) [Dev] Added FF2_OnAlivePlayersChanged and deprecated FF2_Get{Alive|Boss}Players (Wliu from Shadow)");
+			DrawPanelText(panel, "See next page (press 1)");
+		}
+		case 54:  //1.10.4
+		{
+			DrawPanelText(panel, "21) [Dev] Fixed AIOOB errors in FF2_GetBossUserId (Wliu)");
+			DrawPanelText(panel, "22) [Dev] Improved FF2_OnSpecialSelected so that only part of a boss name is needed (Wliu)");
+			DrawPanelText(panel, "23) [Dev] Added FF2_{Get|Set}BossRageDamage (Wliu from WildCard65)");
+		}
 		case 53:  //1.10.3
 		{
 			DrawPanelText(panel, "1) Fixed bosses appearing to be overhealed (War3Evo/Wliu)");
@@ -353,12 +416,12 @@ stock FindVersionData(Handle:panel, versionIndex)
 			DrawPanelText(panel, "17) [Server] Fixed a bug related to 'cvar_countdown_players' and the countdown timer (Wliu from Spyper)");
 			DrawPanelText(panel, "18) [Server] Fixed 'nextmap_charset' VFormat errors (Wliu from BBG_Theory)");
 			DrawPanelText(panel, "19) [Server] Fixed errors when Monoculus was attacking (Wliu from ClassicGuzzi)");
-			DrawPanelText(panel, "20) [Dev] Added \"sound_first_blood\" (Wliu from Mr-Bro)");
+			DrawPanelText(panel, "20) [Dev] Added 'sound_first_blood' (Wliu from Mr-Bro)");
 			DrawPanelText(panel, "See next page for more (press 1)");
 		}
 		case 49:  //1.10.3
 		{
-			DrawPanelText(panel, "21) [Dev] Added \"pickups\" to set what the boss can pick up (Wliu)");
+			DrawPanelText(panel, "21) [Dev] Added 'pickups' to set what the boss can pick up (Wliu)");
 			DrawPanelText(panel, "22) [Dev] Added FF2FLAG_ALLOW_{HEALTH|AMMO}_PICKUPS (Powerlord)");
 			DrawPanelText(panel, "23) [Dev] Added FF2_GetFF2Version (Wliu)");
 			DrawPanelText(panel, "24) [Dev] Added FF2_ShowSync{Hud}Text wrappers (Wliu)");
@@ -773,7 +836,7 @@ stock FindVersionData(Handle:panel, versionIndex)
 	}
 }
 
-static const maxVersion=(sizeof(ff2versiontitles)-1);
+static const maxVersion=sizeof(ff2versiontitles)-1;
 
 new Specials;
 new Handle:BossKV[MAXSPECIALS];
@@ -785,10 +848,11 @@ new Handle:OnSpecialSelected;
 new Handle:OnAddQueuePoints;
 new Handle:OnLoadCharacterSet;
 new Handle:OnLoseLife;
+new Handle:OnAlivePlayersChanged;
 
 new bool:bBlockVoice[MAXSPECIALS];
 new Float:BossSpeed[MAXSPECIALS];
-new Float:BossRageDamage[MAXSPECIALS];
+//new Float:BossRageDamage[MAXSPECIALS];
 
 new String:ChancesString[512];
 new chances[MAXSPECIALS];
@@ -804,6 +868,14 @@ public Plugin:myinfo=
 
 public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
+	decl String:plugin[PLATFORM_MAX_PATH];
+	GetPluginFilename(myself, plugin, sizeof(plugin));
+	if(!StrContains(plugin, "freaks/"))  //Prevent plugins/freaks/freak_fortress_2.ff2 from loading if it exists -.-
+	{
+		strcopy(error, err_max, "There is a duplicate copy of Freak Fortress 2 inside the /plugins/freaks folder.  Please remove it");
+		return APLRes_Failure;
+	}
+
 	CreateNative("FF2_IsFF2Enabled", Native_IsEnabled);
 	CreateNative("FF2_GetFF2Version", Native_FF2Version);
 	CreateNative("FF2_GetBossUserId", Native_GetBoss);
@@ -820,6 +892,8 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("FF2_SetBossMaxLives", Native_SetBossMaxLives);
 	CreateNative("FF2_GetBossCharge", Native_GetBossCharge);
 	CreateNative("FF2_SetBossCharge", Native_SetBossCharge);
+	CreateNative("FF2_GetBossRageDamage", Native_GetBossRageDamage);
+	CreateNative("FF2_SetBossRageDamage", Native_SetBossRageDamage);
 	CreateNative("FF2_GetClientDamage", Native_GetDamage);
 	CreateNative("FF2_GetRoundState", Native_GetRoundState);
 	CreateNative("FF2_GetSpecialKV", Native_GetSpecialKV);
@@ -837,18 +911,19 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 	CreateNative("FF2_SetQueuePoints", Native_SetQueuePoints);
 	CreateNative("FF2_GetClientGlow", Native_GetClientGlow);
 	CreateNative("FF2_SetClientGlow", Native_SetClientGlow);
-	CreateNative("FF2_GetAlivePlayers", Native_GetAlivePlayers);
-	CreateNative("FF2_GetBossPlayers", Native_GetBossPlayers);
+	CreateNative("FF2_GetAlivePlayers", Native_GetAlivePlayers);  //TODO: Deprecated, remove in 2.0.0
+	CreateNative("FF2_GetBossPlayers", Native_GetBossPlayers);  //TODO: Deprecated, remove in 2.0.0
 	CreateNative("FF2_Debug", Native_Debug);
 
 	PreAbility=CreateGlobalForward("FF2_PreAbility", ET_Hook, Param_Cell, Param_String, Param_String, Param_Cell, Param_CellByRef);
 	OnAbility=CreateGlobalForward("FF2_OnAbility", ET_Hook, Param_Cell, Param_String, Param_String, Param_Cell);
 	OnMusic=CreateGlobalForward("FF2_OnMusic", ET_Hook, Param_String, Param_FloatByRef);
 	OnTriggerHurt=CreateGlobalForward("FF2_OnTriggerHurt", ET_Hook, Param_Cell, Param_Cell, Param_FloatByRef);
-	OnSpecialSelected=CreateGlobalForward("FF2_OnSpecialSelected", ET_Hook, Param_Cell, Param_CellByRef, Param_String);
+	OnSpecialSelected=CreateGlobalForward("FF2_OnSpecialSelected", ET_Hook, Param_Cell, Param_CellByRef, Param_String);  //Boss, character index, character name
 	OnAddQueuePoints=CreateGlobalForward("FF2_OnAddQueuePoints", ET_Hook, Param_Array);
 	OnLoadCharacterSet=CreateGlobalForward("FF2_OnLoadCharacterSet", ET_Hook, Param_CellByRef, Param_String);
-	OnLoseLife=CreateGlobalForward("FF2_OnLoseLife", ET_Hook, Param_Cell, Param_CellByRef, Param_Cell);  //Client, lives left, max lives
+	OnLoseLife=CreateGlobalForward("FF2_OnLoseLife", ET_Hook, Param_Cell, Param_CellByRef, Param_Cell);  //Boss, lives left, max lives
+	OnAlivePlayersChanged=CreateGlobalForward("FF2_OnAlivePlayersChanged", ET_Hook, Param_Cell, Param_Cell);  //Players, bosses
 
 	RegPluginLibrary("freak_fortress_2");
 
@@ -875,7 +950,8 @@ public OnPluginStart()
 	cvarAnnounce=CreateConVar("ff2_announce", "120", "Amount of seconds to wait until FF2 info is displayed again.  0 to disable", FCVAR_PLUGIN, true, 0.0);
 	cvarEnabled=CreateConVar("ff2_enabled", "1", "0-Disable FF2 (WHY?), 1-Enable FF2", FCVAR_PLUGIN|FCVAR_DONTRECORD, true, 0.0, true, 1.0);
 	cvarCrits=CreateConVar("ff2_crits", "1", "Can Boss get crits?", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	cvarFirstRound=CreateConVar("ff2_first_round", "0", "0-Make the first round arena so that more people can join, 1-Make all rounds FF2", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	cvarFirstRound=CreateConVar("ff2_first_round", "-1", "This cvar is deprecated.  Please use 'ff2_arena_rounds' instead by setting this cvar to -1", FCVAR_PLUGIN, true, -1.0, true, 1.0);  //DEPRECATED
+	cvarArenaRounds=CreateConVar("ff2_arena_rounds", "1", "Number of rounds to make arena before switching to FF2 (helps for slow-loading players)", FCVAR_PLUGIN, true, 0.0);
 	cvarCircuitStun=CreateConVar("ff2_circuit_stun", "2", "Amount of seconds the Short Circuit stuns the boss for.  0 to disable", FCVAR_PLUGIN, true, 0.0);
 	cvarCountdownPlayers=CreateConVar("ff2_countdown_players", "1", "Amount of players until the countdown timer starts (0 to disable)", FCVAR_PLUGIN, true, 0.0);
 	cvarCountdownTime=CreateConVar("ff2_countdown", "120", "Amount of seconds until the round ends in a stalemate", FCVAR_PLUGIN);
@@ -883,8 +959,8 @@ public OnPluginStart()
 	cvarCountdownResult=CreateConVar("ff2_countdown_result", "0", "0-Kill players when the countdown ends, 1-End the round in a stalemate", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	cvarSpecForceBoss=CreateConVar("ff2_spec_force_boss", "0", "0-Spectators are excluded from the queue system, 1-Spectators are counted in the queue system", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	cvarEnableEurekaEffect=CreateConVar("ff2_enable_eureka", "0", "0-Disable the Eureka Effect, 1-Enable the Eureka Effect", FCVAR_PLUGIN, true, 0.0, true, 1.0);
-	cvarForceBossTeam=CreateConVar("ff2_force_team", "0", "0-Boss team depends on FF2 logic, 1-Boss is on a random team each round, 2-Boss is always on Red, 3-Boss is always on Blu", FCVAR_PLUGIN, true, 0.0, true, 3.0);
-	cvarHealthBar=CreateConVar("ff2_health_bar", "1", "0-Disable the health bar, 1-Show the health bar", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	cvarForceBossTeam=CreateConVar("ff2_force_team", "0", "0 and 3-Boss is always on Blu, 1-Boss is on a random team each round, 2-Boss is always on Red", FCVAR_PLUGIN, true, 0.0, true, 3.0);
+	cvarHealthBar=CreateConVar("ff2_health_bar", "0", "0-Disable the health bar, 1-Show the health bar", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	cvarLastPlayerGlow=CreateConVar("ff2_last_player_glow", "1", "0-Don't outline the last player, 1-Outline the last player alive", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	cvarBossTeleporter=CreateConVar("ff2_boss_teleporter", "0", "-1 to disallow all bosses from using teleporters, 0 to use TF2 logic, 1 to allow all bosses", FCVAR_PLUGIN, true, -1.0, true, 1.0);
 	cvarBossSuicide=CreateConVar("ff2_boss_suicide", "0", "Allow the boss to suicide after the round starts?", FCVAR_PLUGIN, true, 0.0, true, 1.0);
@@ -896,7 +972,9 @@ public OnPluginStart()
 	cvarUpdater=CreateConVar("ff2_updater", "1", "0-Disable Updater support, 1-Enable automatic updating (recommended, requires Updater)", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 	cvarDebug=CreateConVar("ff2_debug", "0", "0-Disable FF2 debug output, 1-Enable debugging (not recommended)", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 
+	//The following are used in various subplugins
 	CreateConVar("ff2_oldjump", "0", "Use old Saxton Hale jump equations", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	CreateConVar("ff2_base_jumper_stun", "0", "Whether or not the Base Jumper should be disabled when a player gets stunned", FCVAR_PLUGIN, true, 0.0, true, 1.0);
 
 	HookEvent("teamplay_round_start", event_round_start);
 	HookEvent("teamplay_round_win", event_round_end);
@@ -944,8 +1022,8 @@ public OnPluginStart()
 	RegConsoleCmd("ff2hp", Command_GetHPCmd);
 	RegConsoleCmd("ff2_next", QueuePanelCmd);
 	RegConsoleCmd("ff2next", QueuePanelCmd);
-	RegConsoleCmd("ff2_classinfo", HelpPanel2Cmd);
-	RegConsoleCmd("ff2classinfo", HelpPanel2Cmd);
+	RegConsoleCmd("ff2_classinfo", Command_HelpPanelClass);
+	RegConsoleCmd("ff2classinfo", Command_HelpPanelClass);
 	RegConsoleCmd("ff2_new", NewPanelCmd);
 	RegConsoleCmd("ff2new", NewPanelCmd);
 	RegConsoleCmd("ff2music", MusicTogglePanelCmd);
@@ -960,8 +1038,8 @@ public OnPluginStart()
 	RegConsoleCmd("halehp", Command_GetHPCmd);
 	RegConsoleCmd("hale_next", QueuePanelCmd);
 	RegConsoleCmd("halenext", QueuePanelCmd);
-	RegConsoleCmd("hale_classinfo", HelpPanel2Cmd);
-	RegConsoleCmd("haleclassinfo", HelpPanel2Cmd);
+	RegConsoleCmd("hale_classinfo", Command_HelpPanelClass);
+	RegConsoleCmd("haleclassinfo", Command_HelpPanelClass);
 	RegConsoleCmd("hale_new", NewPanelCmd);
 	RegConsoleCmd("halenew", NewPanelCmd);
 	RegConsoleCmd("halemusic", MusicTogglePanelCmd);
@@ -1024,6 +1102,14 @@ public OnPluginStart()
 
 	#if defined _steamtools_included
 	steamtools=LibraryExists("SteamTools");
+	#endif
+
+	#if defined _goomba_included
+	goomba=LibraryExists("goomba");
+	#endif
+
+	#if defined _tf2attributes_included
+	tf2attributes=LibraryExists("tf2attributes");
 	#endif
 }
 
@@ -1128,7 +1214,6 @@ public OnConfigsExecuted()
 	mp_teams_unbalance_limit=GetConVarInt(FindConVar("mp_teams_unbalance_limit"));
 	tf_arena_first_blood=GetConVarInt(FindConVar("tf_arena_first_blood"));
 	mp_forcecamera=GetConVarInt(FindConVar("mp_forcecamera"));
-	tf_scout_hype_pep_max=GetConVarFloat(FindConVar("tf_scout_hype_pep_max"));
 
 	if(IsFF2Map() && GetConVarBool(cvarEnabled))
 	{
@@ -1151,7 +1236,6 @@ public OnMapStart()
 {
 	HPTime=0.0;
 	MusicTimer=INVALID_HANDLE;
-	RoundCounter=0;
 	doorCheckTimer=INVALID_HANDLE;
 	RoundCount=0;
 	for(new client; client<=MaxClients; client++)
@@ -1179,7 +1263,6 @@ public OnMapEnd()
 		SetConVarInt(FindConVar("mp_teams_unbalance_limit"), mp_teams_unbalance_limit);
 		SetConVarInt(FindConVar("tf_arena_first_blood"), tf_arena_first_blood);
 		SetConVarInt(FindConVar("mp_forcecamera"), mp_forcecamera);
-		SetConVarFloat(FindConVar("tf_scout_hype_pep_max"), tf_scout_hype_pep_max);
 		#if defined _steamtools_included
 		if(steamtools)
 		{
@@ -1226,7 +1309,15 @@ public EnableFF2()
 	canBossRTD=GetConVarBool(cvarBossRTD);
 	AliveToEnable=GetConVarInt(cvarAliveToEnable);
 	BossCrits=GetConVarBool(cvarCrits);
-	//circuitStun=GetConVarFloat(cvarCircuitStun);
+	if(GetConVarInt(cvarFirstRound)!=-1)
+	{
+		arenaRounds=GetConVarInt(cvarFirstRound) ? 0 : 1;
+	}
+	else
+	{
+		arenaRounds=GetConVarInt(cvarArenaRounds);
+	}
+	circuitStun=GetConVarFloat(cvarCircuitStun);
 	countdownHealth=GetConVarInt(cvarCountdownHealth);
 	countdownPlayers=GetConVarInt(cvarCountdownPlayers);
 	countdownTime=GetConVarInt(cvarCountdownTime);
@@ -1240,7 +1331,6 @@ public EnableFF2()
 	SetConVarInt(FindConVar("mp_teams_unbalance_limit"), 0);
 	SetConVarInt(FindConVar("tf_arena_first_blood"), 0);
 	SetConVarInt(FindConVar("mp_forcecamera"), 0);
-	SetConVarFloat(FindConVar("tf_scout_hype_pep_max"), 100.0);
 
 	new Float:time=Announce;
 	if(time>1.0)
@@ -1285,7 +1375,6 @@ public DisableFF2()
 	SetConVarInt(FindConVar("mp_teams_unbalance_limit"), mp_teams_unbalance_limit);
 	SetConVarInt(FindConVar("tf_arena_first_blood"), tf_arena_first_blood);
 	SetConVarInt(FindConVar("mp_forcecamera"), mp_forcecamera);
-	SetConVarFloat(FindConVar("tf_scout_hype_pep_max"), tf_scout_hype_pep_max);
 
 	if(doorCheckTimer!=INVALID_HANDLE)
 	{
@@ -1441,15 +1530,15 @@ public FindCharacters()  //TODO: Investigate KvGotoFirstSubKey; KvGotoNextKey
 
 	AddFileToDownloadsTable("sound/saxton_hale/9000.wav");
 	PrecacheSound("saxton_hale/9000.wav", true);
-	PrecacheSound("vo/announcer_am_capincite01.wav", true);
-	PrecacheSound("vo/announcer_am_capincite03.wav", true);
-	PrecacheSound("vo/announcer_am_capenabled01.wav", true);
-	PrecacheSound("vo/announcer_am_capenabled02.wav", true);
-	PrecacheSound("vo/announcer_am_capenabled03.wav", true);
-	PrecacheSound("vo/announcer_am_capenabled04.wav", true);
+	PrecacheSound("vo/announcer_am_capincite01.mp3", true);
+	PrecacheSound("vo/announcer_am_capincite03.mp3", true);
+	PrecacheSound("vo/announcer_am_capenabled01.mp3", true);
+	PrecacheSound("vo/announcer_am_capenabled02.mp3", true);
+	PrecacheSound("vo/announcer_am_capenabled03.mp3", true);
+	PrecacheSound("vo/announcer_am_capenabled04.mp3", true);
 	PrecacheSound("weapons/barret_arm_zap.wav", true);
-	PrecacheSound("vo/announcer_ends_5min.wav", true);
-	PrecacheSound("vo/announcer_ends_2min.wav", true);
+	PrecacheSound("vo/announcer_ends_5min.mp3", true);
+	PrecacheSound("vo/announcer_ends_2min.mp3", true);
 	PrecacheSound("player/doubledonk.wav", true);
 	isCharSetSelected=false;
 }
@@ -1557,7 +1646,7 @@ public LoadCharacter(const String:character[])
 	KvGetString(BossKV[Specials], "name", config, PLATFORM_MAX_PATH);
 	bBlockVoice[Specials]=bool:KvGetNum(BossKV[Specials], "sound_block_vo", 0);
 	BossSpeed[Specials]=KvGetFloat(BossKV[Specials], "maxspeed", 340.0);
-	BossRageDamage[Specials]=KvGetFloat(BossKV[Specials], "ragedamage", 1900.0);
+	//BossRageDamage[Specials]=KvGetFloat(BossKV[Specials], "ragedamage", 1900.0);
 	KvGotoFirstSubKey(BossKV[Specials]);
 
 	while(KvGotoNextKey(BossKV[Specials]))
@@ -1691,9 +1780,20 @@ public CvarChange(Handle:convar, const String:oldValue[], const String:newValue[
 	{
 		BossCrits=bool:StringToInt(newValue);
 	}
+	else if(convar==cvarFirstRound)  //DEPRECATED
+	{
+		if(StringToInt(newValue)!=-1)
+		{
+			arenaRounds=StringToInt(newValue) ? 0 : 1;
+		}
+	}
+	else if(convar==cvarArenaRounds)
+	{
+		arenaRounds=StringToInt(newValue);
+	}
 	else if(convar==cvarCircuitStun)
 	{
-		//circuitStun=StringToFloat(newValue);
+		circuitStun=StringToFloat(newValue);
 	}
 	else if(convar==cvarCountdownPlayers)
 	{
@@ -1961,56 +2061,36 @@ public Action:event_round_start(Handle:event, const String:name[], bool:dontBroa
 		DeleteFile("bNextMapToFF2");
 	}
 
-	new bool:bBluBoss;
+	new bool:blueBoss;
 	switch(GetConVarInt(cvarForceBossTeam))
 	{
 		case 1:
 		{
-			bBluBoss=GetRandomInt(0, 1)==1;
+			blueBoss=bool:GetRandomInt(0, 1);
 		}
 		case 2:
 		{
-			bBluBoss=false;
-		}
-		case 3:
-		{
-			bBluBoss=true;
+			blueBoss=false;
 		}
 		default:
 		{
-			if(!StrContains(currentmap, "vsh_") || !StrContains(currentmap, "zf_"))
-			{
-				bBluBoss=true;
-			}
-			else if(RoundCounter>=3 && GetRandomInt(0, 1))
-			{
-				bBluBoss=(BossTeam!=3);
-				RoundCounter=0;
-			}
-			else
-			{
-				bBluBoss=(BossTeam==3);
-			}
+			blueBoss=true;
 		}
 	}
 
-	if(bBluBoss)
+	if(blueBoss)
 	{
-		new score1=GetTeamScore(OtherTeam);
-		new score2=GetTeamScore(BossTeam);
-		SetTeamScore(2, score1);
-		SetTeamScore(3, score2);
-		OtherTeam=2;
-		BossTeam=3;
+		SetTeamScore(_:TFTeam_Red, GetTeamScore(OtherTeam));
+		SetTeamScore(_:TFTeam_Blue, GetTeamScore(BossTeam));
+		OtherTeam=_:TFTeam_Red;
+		BossTeam=_:TFTeam_Blue;
 	}
 	else
 	{
-		new score1=GetTeamScore(BossTeam);
-		new score2=GetTeamScore(OtherTeam);
-		SetTeamScore(2, score1);
-		SetTeamScore(3, score2);
-		BossTeam=2;
-		OtherTeam=3;
+		SetTeamScore(_:TFTeam_Red, GetTeamScore(BossTeam));
+		SetTeamScore(_:TFTeam_Blue, GetTeamScore(OtherTeam));
+		OtherTeam=_:TFTeam_Blue;
+		BossTeam=_:TFTeam_Red;
 	}
 
 	playing=0;
@@ -2018,7 +2098,6 @@ public Action:event_round_start(Handle:event, const String:name[], bool:dontBroa
 	{
 		Damage[client]=0;
 		uberTarget[client]=-1;
-		isClientRocketJumping[client]=false;
 		emitRageSound[client]=true;
 		if(IsValidClient(client) && GetClientTeam(client)>_:TFTeam_Spectator)
 		{
@@ -2026,7 +2105,7 @@ public Action:event_round_start(Handle:event, const String:name[], bool:dontBroa
 		}
 	}
 
-	if(GetClientCount()<=1 || playing<=1)
+	if(GetClientCount()<=1 || playing<=1)  //Not enough players D:
 	{
 		CPrintToChatAll("{olive}[FF2]{default} %t", "needmoreplayers");
 		Enabled=false;
@@ -2034,9 +2113,9 @@ public Action:event_round_start(Handle:event, const String:name[], bool:dontBroa
 		SetControlPoint(true);
 		return Plugin_Continue;
 	}
-	else if(!RoundCount && !GetConVarBool(cvarFirstRound))
+	else if(RoundCount<arenaRounds)  //We're still in arena mode
 	{
-		CPrintToChatAll("{olive}[FF2]{default} %t", "first_round");
+		CPrintToChatAll("{olive}[FF2]{default} %t", "arena_round", arenaRounds-RoundCount);
 		Enabled=false;
 		DisableSubPlugins();
 		SetArenaCapEnableTime(60.0);
@@ -2082,35 +2161,35 @@ public Action:event_round_start(Handle:event, const String:name[], bool:dontBroa
 	EnableSubPlugins();
 	CheckArena();
 
-	new bool:isBoss[MAXPLAYERS+1];
-	Boss[0]=FindBosses(isBoss);
-	isBoss[Boss[0]]=true;
+	new bool:omit[MaxClients+1];
+	Boss[0]=GetClientWithMostQueuePoints(omit);
+	omit[Boss[0]]=true;
 
-	new bool:teamHasPlayers[2];
-	for(new client=1; client<=MaxClients; client++)
+	new bool:teamHasPlayers[TFTeam];
+	for(new client=1; client<=MaxClients; client++)  //Find out if each time has at least one player on it
 	{
 		if(IsValidClient(client))
 		{
 			new TFTeam:team=TFTeam:GetClientTeam(client);
-			if(!teamHasPlayers[0] && team==TFTeam_Blue)
+			if(!teamHasPlayers[TFTeam_Blue] && team==TFTeam_Blue)
 			{
-				teamHasPlayers[0]=true;
+				teamHasPlayers[TFTeam_Blue]=true;
 			}
-			else if(!teamHasPlayers[1] && team==TFTeam_Red)
+			else if(!teamHasPlayers[TFTeam_Red] && team==TFTeam_Red)
 			{
-				teamHasPlayers[1]=true;
+				teamHasPlayers[TFTeam_Red]=true;
 			}
 
-			if(teamHasPlayers[0] && teamHasPlayers[1])
+			if(teamHasPlayers[TFTeam_Blue] && teamHasPlayers[TFTeam_Red])
 			{
 				break;
 			}
 		}
 	}
 
-	if(!teamHasPlayers[0] || !teamHasPlayers[1])
+	if(!teamHasPlayers[TFTeam_Blue] || !teamHasPlayers[TFTeam_Red])  //If there's an empty team make sure it gets populated
 	{
-		if(IsValidClient(Boss[0]))
+		if(IsValidClient(Boss[0]) && GetClientTeam(Boss[0])!=BossTeam)
 		{
 			SetEntProp(Boss[0], Prop_Send, "m_lifeState", 2);
 			ChangeClientTeam(Boss[0], BossTeam);
@@ -2118,14 +2197,10 @@ public Action:event_round_start(Handle:event, const String:name[], bool:dontBroa
 			TF2_RespawnPlayer(Boss[0]);
 		}
 
-		for(new client; client<=MaxClients; client++)
+		for(new client=1; client<=MaxClients; client++)
 		{
-			if(IsValidClient(client) && !IsBoss(client) && GetClientTeam(client)>_:TFTeam_Spectator)
+			if(IsValidClient(client) && !IsBoss(client) && GetClientTeam(client)!=OtherTeam)
 			{
-				SetEntProp(client, Prop_Send, "m_lifeState", 2);
-				ChangeClientTeam(client, OtherTeam);
-				SetEntProp(client, Prop_Send, "m_lifeState", 0);
-				TF2_RespawnPlayer(client);
 				CreateTimer(0.1, MakeNotBoss, GetClientUserId(client));
 			}
 		}
@@ -2140,64 +2215,26 @@ public Action:event_round_start(Handle:event, const String:name[], bool:dontBroa
 	}
 
 	KvRewind(BossKV[Special[0]]);
+	BossRageDamage[0]=KvGetNum(BossKV[Special[0]], "ragedamage", 1900);
+	if(BossRageDamage[0]<=0)
+	{
+		decl String:bossName[64];
+		KvGetString(BossKV[Special[0]], "name", bossName, sizeof(bossName));
+		PrintToServer("[FF2 Bosses] Warning: Boss %s's rage damage is below 0, setting to 1900", bossName);
+		BossRageDamage[0]=1900;
+	}
+
 	BossLivesMax[0]=KvGetNum(BossKV[Special[0]], "lives", 1);
 	if(BossLivesMax[0]<=0)
 	{
-		PrintToServer("[FF2 Bosses] Warning: Boss %s has an invalid amount of lives, setting to 1", Special[0]);
+		decl String:bossName[64];
+		KvGetString(BossKV[Special[0]], "name", bossName, sizeof(bossName));
+		PrintToServer("[FF2 Bosses] Warning: Boss %s has an invalid amount of lives, setting to 1", bossName);
 		BossLivesMax[0]=1;
 	}
 
-	if(LastClass[Boss[0]]==TFClass_Unknown)
-	{
-		LastClass[Boss[0]]=TF2_GetPlayerClass(Boss[0]);
-	}
+	FindCompanion(0, playing, omit);  //Find companions for the boss!
 
-	if(playing>2)
-	{
-		decl String:companionName[64];
-		for(new client=1; client<=MaxClients; client++)
-		{
-			KvRewind(BossKV[Special[client-1]]);
-			KvGetString(BossKV[Special[client-1]], "companion", companionName, sizeof(companionName));
-			if(StrEqual(companionName, ""))
-			{
-				break;
-			}
-
-			new companion=FindBosses(isBoss);
-			if(!IsValidClient(companion))
-			{
-				break;
-			}
-			Boss[client]=companion;
-
-			if(PickCharacter(client, client-1))
-			{
-				KvRewind(BossKV[Special[client]]);
-				for(new tries; Boss[client]==Boss[client-1] && tries<100; tries++)
-				{
-					Boss[client]=FindBosses(isBoss);
-				}
-				isBoss[Boss[client]]=true;
-
-				BossLivesMax[client]=KvGetNum(BossKV[Special[client]], "lives", 1);
-				if(BossLivesMax[client]<=0)
-				{
-					PrintToServer("[FF2 Bosses] Warning: Boss %s has an invalid amount of lives, setting to 1", Special[client]);
-					BossLivesMax[client]=1;
-				}
-
-				if(LastClass[Boss[client]]==TFClass_Unknown)
-				{
-					LastClass[Boss[client]]=TF2_GetPlayerClass(Boss[client]);
-				}
-			}
-			else
-			{
-				Boss[client]=0;
-			}
-		}
-	}
 	CreateTimer(0.2, Timer_GogoBoss, _, TIMER_FLAG_NO_MAPCHANGE);
 	CreateTimer(3.5, StartResponseTimer, _, TIMER_FLAG_NO_MAPCHANGE);
 	CreateTimer(9.1, StartBossTimer, _, TIMER_FLAG_NO_MAPCHANGE);
@@ -2381,20 +2418,23 @@ public Action:event_round_end(Handle:event, const String:name[], bool:dontBroadc
 		return Plugin_Continue;
 	}
 
-	decl String:sound[PLATFORM_MAX_PATH];
+	decl String:sound[PLATFORM_MAX_PATH], String:text[128];
 	new bool:bossWin=false;
 	executed=false;
 	executed2=false;
 	if((GetEventInt(event, "team")==BossTeam))
 	{
-		if(RandomSound("sound_win", sound, PLATFORM_MAX_PATH))
+		//Debug("Oogle boogle");
+		bossWin=true;
+		if(RandomSound("sound_win", sound, sizeof(sound)))
 		{
-			EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, sound, _, _, SNDLEVEL_TRAFFIC, _, _, 100, Boss[0], _, _, false);
-			EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, sound, _, _, SNDLEVEL_TRAFFIC, _, _, 100, Boss[0], _, _, false);
+			//Debug("Even more oogle boogles");
+			EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, sound, _, _, _, _, _, _, Boss[0], _, _, false);
+			EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, sound, _, _, _, _, _, _, Boss[0], _, _, false);
 		}
 	}
 
-	Native_StopMusic(INVALID_HANDLE, 0);
+	StopMusic();
 	if(MusicTimer!=INVALID_HANDLE)
 	{
 		KillTimer(MusicTimer);
@@ -2408,10 +2448,10 @@ public Action:event_round_end(Handle:event, const String:name[], bool:dontBroadc
 		if(IsValidClient(Boss[client]))
 		{
 			SetClientGlow(client, 0.0, 0.0);
+			SDKUnhook(client, SDKHook_GetMaxHealth, OnGetMaxHealth);  //Temporary:  Used to prevent boss overheal
 			if(IsPlayerAlive(Boss[client]))
 			{
 				isBossAlive=true;
-				boss=client;
 			}
 
 			for(new slot=1; slot<8; slot++)
@@ -2436,37 +2476,31 @@ public Action:event_round_end(Handle:event, const String:name[], bool:dontBroadc
 		}
 	}
 
-	strcopy(sound, 2, "");
 	if(isBossAlive)
 	{
 		decl String:bossName[64], String:lives[4];
-		for(new client; Boss[client]; client++)
+		for(new target; target<=MaxClients; target++)
 		{
-			KvRewind(BossKV[Special[client]]);
-			KvGetString(BossKV[Special[client]], "name", bossName, 64, "=Failed name=");
-			if(BossLives[client]>1)
+			if(IsBoss(target))
 			{
-				Format(lives, 4, "x%client", BossLives[client]);
+				boss=Boss[target];
+				KvRewind(BossKV[Special[boss]]);
+				KvGetString(BossKV[Special[boss]], "name", bossName, sizeof(bossName), "=Failed name=");
+				BossLives[boss]>1 ? Format(lives, 4, "x%i", BossLives[boss]) : strcopy(lives, 2, "");
+				Format(text, sizeof(text), "%s\n%t", text, "ff2_alive", bossName, target, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), BossHealthMax[boss], lives);
 			}
-			else
-			{
-				strcopy(lives, 2, "");
-			}
-			Format(sound, PLATFORM_MAX_PATH, "%s\n%t", sound, "ff2_alive", bossName, BossHealth[client]-BossHealthMax[client]*(BossLives[client]-1), BossHealthMax[client], lives);
 		}
 
-		if(RandomSound("sound_fail", sound, PLATFORM_MAX_PATH, boss))
+		if(RandomSound("sound_fail", sound, sizeof(sound), boss))
 		{
 			EmitSoundToAll(sound);
 			EmitSoundToAll(sound);
 		}
-		bossWin=true;
 	}
 
 	new top[3];
-	strcopy(sound, 2, "");
 	Damage[0]=0;
-	for(new client; client<=MaxClients; client++)
+	for(new client=1; client<=MaxClients; client++)
 	{
 		if(Damage[client]<=0 || IsBoss(client))
 		{
@@ -2511,6 +2545,7 @@ public Action:event_round_end(Handle:event, const String:name[], bool:dontBroadc
 
 	SetHudTextParams(-1.0, 0.2, 10.0, 255, 255, 255, 255);
 	PrintCenterTextAll("");
+
 	for(new client; client<=MaxClients; client++)
 	{
 		if(IsValidClient(client))
@@ -2519,11 +2554,11 @@ public Action:event_round_end(Handle:event, const String:name[], bool:dontBroadc
 			//TODO:  Clear HUD text here
 			if(IsBoss(client))
 			{
-				FF2_ShowSyncHudText(client, infoHUD, "%s\n%t:\n1) %i-%s\n2) %i-%s\n3) %i-%s\n\n%t", sound, "top_3", Damage[top[0]], leaders[0], Damage[top[1]], leaders[1], Damage[top[2]], leaders[2], (bossWin ? "boss_win" : "boss_lose"));
+				FF2_ShowSyncHudText(client, infoHUD, "%s\n%t:\n1) %i-%s\n2) %i-%s\n3) %i-%s\n\n%t", text, "top_3", Damage[top[0]], leaders[0], Damage[top[1]], leaders[1], Damage[top[2]], leaders[2], (bossWin ? "boss_win" : "boss_lose"));
 			}
 			else
 			{
-				FF2_ShowSyncHudText(client, infoHUD, "%s\n%t:\n1) %i-%s\n2) %i-%s\n3) %i-%s\n\n%t\n%t", sound, "top_3", Damage[top[0]], leaders[0], Damage[top[1]], leaders[1], Damage[top[2]], leaders[2], "damage_fx", Damage[client], "scores", RoundFloat(Damage[client]/600.0));
+				FF2_ShowSyncHudText(client, infoHUD, "%s\n%t:\n1) %i-%s\n2) %i-%s\n3) %i-%s\n\n%t\n%t", text, "top_3", Damage[top[0]], leaders[0], Damage[top[1]], leaders[1], Damage[top[2]], leaders[2], "damage_fx", Damage[client], "scores", RoundFloat(Damage[client]/600.0));
 			}
 		}
 	}
@@ -2535,23 +2570,18 @@ public Action:event_round_end(Handle:event, const String:name[], bool:dontBroadc
 
 public Action:Timer_NineThousand(Handle:timer)
 {
-	EmitSoundToAll("saxton_hale/9000.wav", _, _, SNDLEVEL_TRAFFIC, _, 1.0, 100, _, _, _, false);
-	EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, "saxton_hale/9000.wav", _, SNDCHAN_VOICE, SNDLEVEL_TRAFFIC, _, 1.0, 100, _, _, _, false);
-	EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, "saxton_hale/9000.wav", _, _, SNDLEVEL_TRAFFIC, _, 1.0, 100, _, _, _, false);
+	EmitSoundToAll("saxton_hale/9000.wav", _, _, _, _, _, _, _, _, _, false);
+	EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, "saxton_hale/9000.wav", _, SNDCHAN_VOICE, _, _, _, _, _, _, _, false);
+	EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, "saxton_hale/9000.wav", _, SNDCHAN_VOICE, _, _, _, _, _, _, _, false);
 	return Plugin_Continue;
 }
 
 public Action:Timer_CalcQueuePoints(Handle:timer)
 {
-	CalcQueuePoints();
-}
-
-stock CalcQueuePoints()
-{
 	new damage;
 	botqueuepoints+=5;
-	new add_points[MAXPLAYERS+1];
-	new add_points2[MAXPLAYERS+1];
+	new add_points[MaxClients+1];
+	new add_points2[MaxClients+1];
 	for(new client=1; client<=MaxClients; client++)
 	{
 		if(IsValidClient(client))
@@ -2589,9 +2619,9 @@ stock CalcQueuePoints()
 		}
 	}
 
-	new Action:action=Plugin_Continue;
+	new Action:action;
 	Call_StartForward(OnAddQueuePoints);
-	Call_PushArrayEx(add_points2, MAXPLAYERS+1, SM_PARAM_COPYBACK);
+	Call_PushArrayEx(add_points2, MaxClients+1, SM_PARAM_COPYBACK);
 	Call_Finish(action);
 	switch(action)
 	{
@@ -2665,7 +2695,7 @@ public Action:StartBossTimer(Handle:timer)
 		if(IsValidClient(client) && !IsBoss(client) && IsPlayerAlive(client))
 		{
 			playing++;
-			CreateTimer(0.15, MakeNotBoss, GetClientUserId(client));
+			CreateTimer(0.15, MakeNotBoss, GetClientUserId(client));  //TODO:  Is this needed?
 		}
 	}
 
@@ -2836,7 +2866,7 @@ public Action:Timer_MusicTheme(Handle:timer, any:userid)
 			{
 				if(!client)
 				{
-					EmitSoundToAllExcept(SOUNDEXCEPT_MUSIC, music, _, _, SNDLEVEL_TRAFFIC, _, _, 100, _, _, _, false);
+					EmitSoundToAllExcept(SOUNDEXCEPT_MUSIC, music, _, _, _, _, _, _, _, _, _, false);
 				}
 				else if(CheckSoundException(client, SOUNDEXCEPT_MUSIC))
 				{
@@ -2855,6 +2885,39 @@ public Action:Timer_MusicTheme(Handle:timer, any:userid)
 		return Plugin_Stop;
 	}
 	return Plugin_Continue;
+}
+
+StopMusic(target=0)
+{
+	if(!BossKV[Special[0]])
+	{
+		return;
+	}
+
+	KvRewind(BossKV[Special[0]]);
+	if(KvJumpToKey(BossKV[Special[0]], "sound_bgm"))
+	{
+		decl String:music[PLATFORM_MAX_PATH];
+		Format(music, sizeof(music), "path%i", MusicIndex);
+		KvGetString(BossKV[Special[0]], music, music, sizeof(music));
+
+		if(!target || target<0)  //Stop music for all clients
+		{
+			for(target=1; target<=MaxClients; target++)
+			{
+				if(IsValidClient(target))
+				{
+					StopSound(target, SNDCHAN_AUTO, music);
+					StopSound(target, SNDCHAN_AUTO, music);
+				}
+			}
+		}
+		else
+		{
+			StopSound(target, SNDCHAN_AUTO, music);
+			StopSound(target, SNDCHAN_AUTO, music);
+		}
+	}
 }
 
 stock EmitSoundToAllExcept(exceptiontype=SOUNDEXCEPT_MUSIC, const String:sample[], entity=SOUND_FROM_PLAYER, channel=SNDCHAN_AUTO, level=SNDLEVEL_NORMAL, flags=SND_NOFLAGS, Float:volume=SNDVOL_NORMAL, pitch=SNDPITCH_NORMAL, speakerentity=-1, const Float:origin[3]=NULL_VECTOR, const Float:dir[3]=NULL_VECTOR, bool:updatePos=true, Float:soundtime=0.0)
@@ -2982,20 +3045,23 @@ public Action:StartRound(Handle:timer)
 
 public Action:Timer_NextBossPanel(Handle:timer)
 {
-	new i, clients, chosen[MaxClients+1];
-	do
+	new clients;
+	new bool:added[MaxClients+1];
+	while(clients<3)  //TODO: Make this configurable?
 	{
-		new bool:temp[MaxClients+1];
-		new client=FindBosses(temp);
-		if(IsValidClient(client) && chosen[client]!=client && !IsBoss(client))
+		new client=GetClientWithMostQueuePoints(added);
+		if(!IsValidClient(client))  //No more players left on the server
 		{
-			CPrintToChat(client, "{olive}[FF2]{default} %t", "to0_near");
-			chosen[client]=client;
-			i++;
+			break;
 		}
-		clients++;
+
+		if(!IsBoss(client))
+		{
+			CPrintToChat(client, "{olive}[FF2]{default} %t", "to0_near");  //"You will become the Boss soon. Type {olive}/ff2next{default} to make sure."
+			clients++;
+		}
+		added[client]=true;
 	}
-	while(i<3 && clients<=MaxClients);  //TODO: Make this configurable?
 }
 
 public Action:MessageTimer(Handle:timer)
@@ -3025,29 +3091,27 @@ public Action:MessageTimer(Handle:timer)
 	decl String:textChat[512];
 	decl String:lives[4];
 	decl String:name[64];
-	for(new client; Boss[client]; client++)
+	for(new client; client<=MaxClients; client++)
 	{
-		if(!IsValidEdict(Boss[client]))
+		if(IsBoss(client))
 		{
-			continue;
-		}
+			new boss=Boss[client];
+			KvRewind(BossKV[Special[boss]]);
+			KvGetString(BossKV[Special[boss]], "name", name, sizeof(name), "=Failed name=");
+			if(BossLives[boss]>1)
+			{
+				Format(lives, 4, "x%i", BossLives[boss]);
+			}
+			else
+			{
+				strcopy(lives, 2, "");
+			}
 
-		KvRewind(BossKV[Special[client]]);
-		KvGetString(BossKV[Special[client]], "name", name, 64, "=Failed name=");
-		if(BossLives[client]>1)
-		{
-			Format(lives, 4, "x%i", BossLives[client]);
+			Format(text, sizeof(text), "%s\n%t", text, "ff2_start", Boss[boss], name, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), lives);
+			Format(textChat, sizeof(textChat), "{olive}[FF2]{default} %t!", "ff2_start", Boss[boss], name, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), lives);
+			ReplaceString(textChat, sizeof(textChat), "\n", "");  //Get rid of newlines
+			CPrintToChatAll("%s", textChat);
 		}
-		else
-		{
-			strcopy(lives, 2, "");
-		}
-
-		Format(text, sizeof(text), "%s\n%t", text, "ff2_start", Boss[client], name, BossHealth[client]-BossHealthMax[client]*(BossLives[client]-1), lives);
-		Format(textChat, sizeof(textChat), "{olive}[FF2]{default} %t!", "ff2_start", Boss[client], name, BossHealth[client]-BossHealthMax[client]*(BossLives[client]-1), lives);
-		ReplaceString(textChat, sizeof(textChat), "\n", "");  //Get rid of newlines
-		CPrintToChatAll("%s", textChat);
-
 	}
 
 	for(new client; client<=MaxClients; client++)
@@ -3076,19 +3140,20 @@ public Action:MakeModelTimer(Handle:timer, any:client)
 	return Plugin_Stop;
 }
 
-EquipBoss(client)
+EquipBoss(boss)
 {
-	DoOverlay(Boss[client], "");
-	TF2_RemoveAllWeapons(Boss[client]);
+	new client=Boss[boss];
+	DoOverlay(client, "");
+	TF2_RemoveAllWeapons(client);
 	decl String:weapon[64], String:attributes[256];
 	for(new i=1; ; i++)
 	{
-		KvRewind(BossKV[Special[client]]);
+		KvRewind(BossKV[Special[boss]]);
 		Format(weapon, 10, "weapon%i", i);
-		if(KvJumpToKey(BossKV[Special[client]], weapon))
+		if(KvJumpToKey(BossKV[Special[boss]], weapon))
 		{
-			KvGetString(BossKV[Special[client]], "name", weapon, sizeof(weapon));
-			KvGetString(BossKV[Special[client]], "attributes", attributes, sizeof(attributes));
+			KvGetString(BossKV[Special[boss]], "name", weapon, sizeof(weapon));
+			KvGetString(BossKV[Special[boss]], "attributes", attributes, sizeof(attributes));
 			if(attributes[0]!='\0')
 			{
 				Format(attributes, sizeof(attributes), "68 ; 2.0 ; 2 ; 3.0 ; %s", attributes);
@@ -3102,14 +3167,14 @@ EquipBoss(client)
 					//2: x3 damage
 			}
 
-			new BossWeapon=SpawnWeapon(Boss[client], weapon, KvGetNum(BossKV[Special[client]], "index"), 101, 5, attributes);
-			if(!KvGetNum(BossKV[Special[client]], "show", 0))
+			new BossWeapon=SpawnWeapon(client, weapon, KvGetNum(BossKV[Special[boss]], "index"), 101, 5, attributes);
+			if(!KvGetNum(BossKV[Special[boss]], "show", 0))
 			{
 				SetEntProp(BossWeapon, Prop_Send, "m_iWorldModelIndex", -1);
 				SetEntProp(BossWeapon, Prop_Send, "m_nModelIndexOverrides", -1, _, 0);
 				SetEntPropFloat(BossWeapon, Prop_Send, "m_flModelScale", 0.001);
 			}
-			SetEntPropEnt(Boss[client], Prop_Send, "m_hActiveWeapon", BossWeapon);
+			SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", BossWeapon);
 		}
 		else
 		{
@@ -3117,11 +3182,11 @@ EquipBoss(client)
 		}
 	}
 
-	KvGoBack(BossKV[Special[client]]);
-	new TFClassType:class=TFClassType:KvGetNum(BossKV[Special[client]], "class", 1);
-	if(TF2_GetPlayerClass(Boss[client])!=class)
+	KvGoBack(BossKV[Special[boss]]);
+	new TFClassType:class=TFClassType:KvGetNum(BossKV[Special[boss]], "class", 1);
+	if(TF2_GetPlayerClass(client)!=class)
 	{
-		TF2_SetPlayerClass(Boss[client], class);
+		TF2_SetPlayerClass(client, class, _, false);
 	}
 }
 
@@ -3131,18 +3196,6 @@ public Action:MakeBoss(Handle:timer, any:boss)
 	if(!IsValidClient(client))
 	{
 		return Plugin_Continue;
-	}
-
-	KvRewind(BossKV[Special[boss]]);
-	TF2_RemovePlayerDisguise(client);
-	TF2_SetPlayerClass(client, TFClassType:KvGetNum(BossKV[Special[boss]], "class", 1));
-
-	if(GetClientTeam(client)!=BossTeam)
-	{
-		SetEntProp(client, Prop_Send, "m_lifeState", 2);
-		ChangeClientTeam(client, BossTeam);
-		SetEntProp(client, Prop_Send, "m_lifeState", 0);
-		TF2_RespawnPlayer(client);
 	}
 
 	if(!IsPlayerAlive(client))
@@ -3156,6 +3209,20 @@ public Action:MakeBoss(Handle:timer, any:boss)
 			return Plugin_Continue;
 		}
 	}
+
+	if(GetClientTeam(client)!=BossTeam)
+	{
+		SetEntProp(client, Prop_Send, "m_lifeState", 2);
+		ChangeClientTeam(client, BossTeam);
+		SetEntProp(client, Prop_Send, "m_lifeState", 0);
+		TF2_RespawnPlayer(client);
+	}
+
+	SetEntProp(client, Prop_Send, "m_bGlowEnabled", 0);
+	KvRewind(BossKV[Special[boss]]);
+	TF2_RemovePlayerDisguise(client);
+	TF2_SetPlayerClass(client, TFClassType:KvGetNum(BossKV[Special[boss]], "class", 1), _, false);
+	SDKHook(client, SDKHook_GetMaxHealth, OnGetMaxHealth);  //Temporary:  Used to prevent boss overheal
 
 	switch(KvGetNum(BossKV[Special[boss]], "pickups", 0))  //Check if the boss is allowed to pickup health/ammo
 	{
@@ -3256,45 +3323,6 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 
 	switch(iItemDefinitionIndex)
 	{
-/* 		case 38, 457:  //Axtinguisher, Postal Pummeler
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "", true);
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 39, 351, 1081:  //Flaregun, Detonator, Festive Flaregun
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "25 ; 0.5 ; 207 ; 1.33 ; 144 ; 1.0 ; 58 ; 3.2", true);
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 40:  //Backburner
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "165 ; 1.0");
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
-		case 224:  //L'etranger
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "85 ; 0.5 ; 157 ; 1.0 ; 253 ; 1.0");
-				//85: +50% time needed to regen cloak
-				//157: +1 second needed to fully disguise
-				//253: +1 second needed to fully cloak
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		}
 		case 239, 1084, 1100:  //GRU, Festive GRU, Bread Bite
 		{
 			new Handle:itemOverride=PrepareItemHandle(item, _, _, "1 ; 0.5 ; 107 ; 1.5 ; 128 ; 1 ; 191 ; -7", true);
@@ -3307,107 +3335,24 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 				item=itemOverride;
 				return Plugin_Changed;
 			}
-		} */
-		/* case 56, 1005, 1092:  //Huntsman, Festive Huntsman, Fortified Compound
+		}
+		case 226:  //Battalion's Backup
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.5 ; 76 ; 2");
-				//2: +50% damage
-				//76: +100% ammo
+			new Handle:itemOverride=PrepareItemHandle(item, _, _, "140 ; 10.0");
 			if(itemOverride!=INVALID_HANDLE)
 			{
 				item=itemOverride;
 				return Plugin_Changed;
 			}
-		} */
-/*		case 132, 266, 482:
+		}
+		case 444:  //Mantreads
 		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "202 ; 0.5 ; 125 ; -15", true);
+			/*new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5");
 			if(itemOverride!=INVALID_HANDLE)
 			{
 				item=itemOverride;
 				return Plugin_Changed;
-			}
-		}*/
-		/* case 211, 663, 796, 805, 885, 894, 903, 912, 961, 970:  //Renamed/Strange, Festive, Silver Botkiller, Gold Botkiller, Rusty Botkiller, Bloody Botkiller, Carbonado Botkiller, Diamond Botkiller Mk.II, Silver Botkiller Mk.II, and Gold Botkiller Mk.II Mediguns
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "10 ; 1.25 ; 178 ; 0.75 ; 144 ; 2.0 ; 11 ; 1.5");
-				//10: +25% faster charge rate
-				//178: +25% faster weapon switch
-				//144: Quick-fix speed/jump effects
-				//11: +50% overheal bonus
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		} */
-		/* case 220:  //Shortstop
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "328 ; 1.0", true);
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		} */
-		/* case 226:  //Battalion's Backup
-		// {
-			// new Handle:itemOverride=PrepareItemHandle(item, _, _, "140 ; 10.0");
-			// if(itemOverride!=INVALID_HANDLE)
-			// {
-				// item=itemOverride;
-				// return Plugin_Changed;
-			// }
-		// }
-		 case 231:  //Darwin's Danger Shield
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "26 ; 50");  //+50 health
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		} */
-		/* case 305, 1079:  //Crusader's Crossbow, Festive Crusader's Crossbow
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.2 ; 17 ; 0.15");
-				//2: +20% damage
-				//17: +15% uber on hit
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		} */
-		/* case 331:  //Fists of Steel
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "177 ; 1.2 ; 205 ; 0.8 ; 206 ; 2.0", true);
-				//177: +20% slower weapon switch
-				//205: -80% damage from ranged while active
-				//206: +100% damage from melee while active
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		} */
-		/* case 415:  //Reserve Shooter
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "265 ; 99999.0 ; 178 ; 0.6 ; 179 ; 1 ; 2 ; 1.1 ; 3 ; 0.5", true);
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		} */
- 		/* case 444:  //Mantreads
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "58 ; 1.5");
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
+			}*/
 
 			#if defined _tf2attributes_included
 			if(tf2attributes)
@@ -3415,17 +3360,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 				TF2Attrib_SetByDefIndex(client, 58, 1.5);
 			}
 			#endif
-		} */
-		/* case 648:  //Wrap Assassin
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "279 ; 2.0");
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		} */
-		/* case 656:  //Holiday Punch
+		}
+		case 656:  //Holiday Punch
 		{
 			new Handle:itemOverride=PrepareItemHandle(item, _, _, "178 ; 0 ; 358 ; 0 ; 362 ; 0 ; 363 ; 0 ; 369 ; 0", true);
 				//178:  +100% faster weapon switch
@@ -3435,53 +3371,8 @@ public Action:TF2Items_OnGiveNamedItem(client, String:classname[], iItemDefiniti
 				item=itemOverride;
 				return Plugin_Changed;
 			}
-		} */
-		/* case 772:  //Baby Face's Blaster
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "2 ; 1.25 ; 16 ; 10 ; 26 ; 15 ; 109 ; 0.25 ; 128 ; 1 ; 191 ; -3 ; 418 ; 1", true);
-				//2: +25% damage bonus
-				//16: +10 health on hit
-				//26: +15 max health
-				//109: -75% health from packs on wearer
-				//128: Only when weapon is active
-				//191: -3 health drained per second
-				//418: Build hype for faster speed
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		} */
-		/* case 1103:  //Back Scatter
-		{
-			new Handle:itemOverride=PrepareItemHandle(item, _, _, "179 ; 1");
-				//179: Crit instead of mini-critting
-			if(itemOverride!=INVALID_HANDLE)
-			{
-				item=itemOverride;
-				return Plugin_Changed;
-			}
-		} */
+		}
 	}
-
-	/* if(TF2_GetPlayerClass(client)==TFClass_Soldier && (!strncmp(classname, "tf_weapon_rocketlauncher", 24, false) || !strncmp(classname, "tf_weapon_shotgun", 17, false)))
-	{
-		new Handle:itemOverride;
-		if(iItemDefinitionIndex==127)  //Direct Hit
-		{
-			itemOverride=PrepareItemHandle(item, _, _, "265 ; 99999.0 ; 179 ; 1.0");
-		}
-		else
-		{
-			itemOverride=PrepareItemHandle(item, _, _, "265 ; 99999.0");
-		}
-
-		if(itemOverride!=INVALID_HANDLE)
-		{
-			item=itemOverride;
-			return Plugin_Changed;
-		}
-	} */
 	return Plugin_Continue;
 }
 
@@ -3617,23 +3508,16 @@ public Action:MakeNotBoss(Handle:timer, any:userid)
 		return Plugin_Continue;
 	}
 
-	if(LastClass[client]!=TFClass_Unknown)
-	{
-		SetEntProp(client, Prop_Send, "m_lifeState", 2);
-		TF2_SetPlayerClass(client, LastClass[client]);
-		SetEntProp(client, Prop_Send, "m_lifeState", 0);
-		LastClass[client]=TFClass_Unknown;
-		TF2_RespawnPlayer(client);
-	}
-
 	if(!IsVoteInProgress() && GetClientClassinfoCookie(client) && !(FF2flags[client] & FF2FLAG_CLASSHELPED))
 	{
-		HelpPanel2(client);
+		HelpPanelClass(client);
 	}
 
-	SetEntProp(client, Prop_Send, "m_bGlowEnabled", 0);
+	SetEntProp(client, Prop_Send, "m_bGlowEnabled", 0);  //This really shouldn't be needed but I've been noticing players who still have glow
 
-	if(GetClientTeam(client)!=OtherTeam)
+	SetEntProp(client, Prop_Send, "m_iHealth", GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iMaxHealth", _, client));  //Temporary: Reset health to avoid an overhealh bug
+	SetEntProp(client, Prop_Data, "m_iHealth", GetEntProp(GetPlayerResourceEntity(), Prop_Send, "m_iMaxHealth", _, client));
+	if(GetClientTeam(client)==BossTeam)
 	{
 		SetEntProp(client, Prop_Send, "m_lifeState", 2);
 		ChangeClientTeam(client, OtherTeam);
@@ -3645,7 +3529,7 @@ public Action:MakeNotBoss(Handle:timer, any:userid)
 	return Plugin_Continue;
 }
 
-public Action:CheckItems(Handle:timer, any:client)  //Weapon balance 2
+public Action:CheckItems(Handle:timer, any:client)
 {
 	if(!IsValidClient(client) || !IsPlayerAlive(client) || CheckRoundState()==2 || IsBoss(client) || (FF2flags[client] & FF2FLAG_ALLOWSPAWNINBOSSTEAM))
 	{
@@ -3668,41 +3552,6 @@ public Action:CheckItems(Handle:timer, any:client)  //Weapon balance 2
 		}
 		return Plugin_Continue;
 	}
-
-	if(weapon && IsValidEdict(weapon))
-	{
-		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
-		switch(index)
-		{
-			/* case 17, 36, 204, 412:  //Syringe Gun, Blutsauger, Strange Syringe Gun, Overdose
-			{
-				if(GetEntProp(weapon, Prop_Send, "m_iEntityQuality")!=10)
-				{
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-					SpawnWeapon(client, "tf_weapon_syringegun_medic", (index==204 ? 204 : 17), 1, 10, "17 ; 0.05 ; 144 ; 1");  //Strange if possible
-						//17: +5 uber/hit
-						//144:  NOOP
-				}
-			} */
-			case 41:  //Natascha
-			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-				weapon=SpawnWeapon(client, "tf_weapon_minigun", 15, 1, 0, "");
-			}
-			case 237:  //Rocket Jumper
-			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-				weapon=SpawnWeapon(client, "tf_weapon_rocketlauncher", 18, 1, 0, "265 ; 99999.0");
-					//265: Mini-crits airborne targets for 99999 seconds
-				FF2_SetAmmo(client, weapon, 20);
-			}
-			case 402:  //Bazaar Bargain
-			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-				SpawnWeapon(client, "tf_weapon_sniperrifle", 14, 1, 0, "");
-			}
-		}
-	}
 	else
 	{
 		civilianCheck[client]++;
@@ -3714,11 +3563,6 @@ public Action:CheckItems(Handle:timer, any:client)  //Weapon balance 2
 		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 		switch(index)
 		{
-			/* case 231:  //Darwin's Danger Shield
-			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-				weapon=SpawnWeapon(client, "tf_weapon_smg", 16, 1, 0, "");
-			} */
 			case 265:  //Stickybomb Jumper
 			{
 				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
@@ -3732,12 +3576,7 @@ public Action:CheckItems(Handle:timer, any:client)  //Weapon balance 2
 		civilianCheck[client]++;
 	}
 
-	new playerBack=FindPlayerBack(client, 57);  //Razorback
-	shield[client]=playerBack!=-1 ? playerBack : 0;
-	if(IsValidEntity(FindPlayerBack(client, 642)))  //Cozy Camper
-	{
-		weapon=SpawnWeapon(client, "tf_weapon_smg", 16, 1, 6, "149 ; 1.5 ; 15 ; 0.0 ; 1 ; 0.85");
-	}
+
 
 	#if defined _tf2attributes_included
 	if(tf2attributes)
@@ -3768,7 +3607,7 @@ public Action:CheckItems(Handle:timer, any:client)  //Weapon balance 2
 		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
 		switch(index)
 		{
-			/* case 43:  //KGB
+			case 43:  //KGB
 			{
 				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
 				weapon=SpawnWeapon(client, "tf_weapon_fists", 239, 1, 6, "1 ; 0.5 ; 107 ; 1.5 ; 128 ; 1 ; 191 ; -7");  //GRU
@@ -3776,7 +3615,7 @@ public Action:CheckItems(Handle:timer, any:client)  //Weapon balance 2
 					//107: +50% move speed
 					//128: Only when weapon is active
 					//191: -7 health/second
-			} */
+			}
 			case 357:  //Half-Zatoichi
 			{
 				CreateTimer(1.0, Timer_NoHonorBound, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
@@ -3810,24 +3649,6 @@ public Action:CheckItems(Handle:timer, any:client)  //Weapon balance 2
 		if(mediquality!=10)
 		{
 			index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
-			switch(index)
-			{
-				/* case 211, 663, 796, 805, 885, 894, 903, 912, 961, 970:  //Renamed/Strange, Festive, Silver Botkiller, Gold Botkiller, Rusty Botkiller, Bloody Botkiller, Carbonado Botkiller, Diamond Botkiller Mk.II, Silver Botkiller Mk.II, and Gold Botkiller Mk.II Mediguns
-				{
-					SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", 0.40);
-				}
-				default:
-				{
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-					weapon=SpawnWeapon(client, "tf_weapon_medigun", 29, 5, 10, "10 ; 1.25 ; 178 ; 0.75 ; 144 ; 2.0 ; 11 ; 1.5");
-						//Switch to regular medigun
-						//10: +25% faster charge rate
-						//178: +25% faster weapon switch
-						//144: Quick-fix speed/jump effects
-						//11: +50% overheal bonus
-					SetEntPropFloat(weapon, Prop_Send, "m_flChargeLevel", 0.40);
-				} */
-			}
 
 			if(GetIndexOfWeaponSlot(client, TFWeaponSlot_Melee)==142)  //Gunslinger (Randomizer, etc. compatability)
 			{
@@ -3854,9 +3675,12 @@ stock RemovePlayerTarge(client)
 	while((entity=FindEntityByClassname2(entity, "tf_wearable_demoshield"))!=-1)
 	{
 		new index=GetEntProp(entity, Prop_Send, "m_iItemDefinitionIndex");
-		if((index==131 || index==406) && GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity")==client && !GetEntProp(entity, Prop_Send, "m_bDisguiseWearable"))  //Chargin' Targe, Splendid Screen
+		if(GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity")==client && !GetEntProp(entity, Prop_Send, "m_bDisguiseWearable"))
 		{
-			TF2_RemoveWearable(client, entity);
+			if(index==131 || index==406 || index==1099 || index==1144)  //Chargin' Targe, Splendid Screen, Tide Turner, Festive Chargin' Targe
+			{
+				TF2_RemoveWearable(client, entity);
+			}
 		}
 	}
 }
@@ -4018,24 +3842,28 @@ public Action:Command_GetHP(client)  //TODO: This can rarely show a very large n
 	{
 		new String:health[512];
 		decl String:lives[4], String:name[64];
-		for(new boss; Boss[boss]; boss++)
+		for(new target; target<=MaxClients; target++)
 		{
-			KvRewind(BossKV[Special[boss]]);
-			KvGetString(BossKV[Special[boss]], "name", name, 64, "=Failed name=");
-			if(BossLives[boss]>1)
+			if(IsBoss(target))
 			{
-				Format(lives, sizeof(lives), "x%i", BossLives[boss]);
+				new boss=Boss[target];
+				KvRewind(BossKV[Special[boss]]);
+				KvGetString(BossKV[Special[boss]], "name", name, sizeof(name), "=Failed name=");
+				if(BossLives[boss]>1)
+				{
+					Format(lives, sizeof(lives), "x%i", BossLives[boss]);
+				}
+				else
+				{
+					strcopy(lives, 2, "");
+				}
+				Format(health, sizeof(health), "%s\n%t", health, "ff2_hp", name, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), BossHealthMax[boss], lives);
+				CPrintToChatAll("{olive}[FF2]{default} %t", "ff2_hp", name, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), BossHealthMax[boss], lives);
+				BossHealthLast[boss]=BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1);
 			}
-			else
-			{
-				strcopy(lives, 2, "");
-			}
-			Format(health, sizeof(health), "%s\n%t", health, "ff2_hp", name, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), BossHealthMax[boss], lives);
-			CPrintToChatAll("{olive}[FF2]{default} %t", "ff2_hp", name, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), BossHealthMax[boss], lives);
-			BossHealthLast[boss]=BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1);
 		}
 
-		for(new target=1; target<=MaxClients; target++)
+		for(new target; target<=MaxClients; target++)
 		{
 			if(IsValidClient(target) && !(FF2flags[target] & FF2FLAG_HUDDISABLED))
 			{
@@ -4055,9 +3883,12 @@ public Action:Command_GetHP(client)  //TODO: This can rarely show a very large n
 	if(RedAlivePlayers>1)
 	{
 		new String:waitTime[128];
-		for(new boss; Boss[boss]; boss++)
+		for(new target; target<=MaxClients; target++)
 		{
-			Format(waitTime, 128, "%s %i,", waitTime, BossHealthLast[boss]);
+			if(IsBoss(target))
+			{
+				Format(waitTime, sizeof(waitTime), "%s %i,", waitTime, BossHealthLast[Boss[target]]);
+			}
 		}
 		CPrintToChat(client, "{olive}[FF2]{default} %t", "wait_hp", RoundFloat(HPTime-GetGameTime()), waitTime);
 	}
@@ -4066,7 +3897,7 @@ public Action:Command_GetHP(client)  //TODO: This can rarely show a very large n
 
 public Action:Command_SetNextBoss(client, args)
 {
-	decl String:name[32], String:boss[64];
+	decl String:name[64], String:boss[64];
 
 	if(args<1)
 	{
@@ -4078,19 +3909,19 @@ public Action:Command_SetNextBoss(client, args)
 	for(new config; config<Specials; config++)
 	{
 		KvRewind(BossKV[config]);
-		KvGetString(BossKV[config], "name", boss, 64);
-		if(StrContains(boss, name, false)>=0)
+		KvGetString(BossKV[config], "name", boss, sizeof(boss));
+		if(StrContains(boss, name, false)!=-1)
 		{
 			Incoming[0]=config;
 			CReplyToCommand(client, "{olive}[FF2]{default} Set the next boss to %s", boss);
 			return Plugin_Handled;
 		}
 
-		KvGetString(BossKV[config], "filename", boss, 64);
-		if(StrContains(boss, name, false)>=0)
+		KvGetString(BossKV[config], "filename", boss, sizeof(boss));
+		if(StrContains(boss, name, false)!=-1)
 		{
 			Incoming[0]=config;
-			KvGetString(BossKV[config], "name", boss, 64);
+			KvGetString(BossKV[config], "name", boss, sizeof(boss));
 			CReplyToCommand(client, "{olive}[FF2]{default} Set the next boss to %s", boss);
 			return Plugin_Handled;
 		}
@@ -4112,46 +3943,80 @@ public Action:Command_Points(client, args)
 		return Plugin_Handled;
 	}
 
-	decl String:queuePoints[80];
-	decl String:targetName[PLATFORM_MAX_PATH];
-	GetCmdArg(1, targetName, sizeof(targetName));
-	GetCmdArg(2, queuePoints, sizeof(queuePoints));
-	new points=StringToInt(queuePoints);
+	decl String:stringPoints[8];
+	decl String:pattern[PLATFORM_MAX_PATH];
+	GetCmdArg(1, pattern, sizeof(pattern));
+	GetCmdArg(2, stringPoints, sizeof(stringPoints));
+	new points=StringToInt(stringPoints);
 
-	new String:target_name[MAX_TARGET_LENGTH];
-	new target_list[MAXPLAYERS], target_count;
-	new bool:tn_is_ml;
+	new String:targetName[MAX_TARGET_LENGTH];
+	new targets[MAXPLAYERS], matches;
+	new bool:targetNounIsMultiLanguage;
 
-	if((target_count=ProcessTargetString(targetName, client, target_list, MaxClients, 0, target_name, sizeof(target_name), tn_is_ml))<=0)
+	if((matches=ProcessTargetString(pattern, client, targets, sizeof(targets), 0, targetName, sizeof(targetName), targetNounIsMultiLanguage))<=0)
 	{
-		ReplyToTargetError(client, target_count);
+		ReplyToTargetError(client, matches);
 		return Plugin_Handled;
 	}
 
-	for(new target; target<target_count; target++)
+	if(matches>1)
 	{
-		if(IsClientSourceTV(target_list[target]) || IsClientReplay(target_list[target]))
+		for(new target; target<matches; target++)
 		{
-			continue;
+			if(!IsClientSourceTV(targets[target]) && !IsClientReplay(targets[target]))
+			{
+				SetClientQueuePoints(targets[target], GetClientQueuePoints(targets[target])+points);
+				LogAction(client, targets[target], "\"%L\" added %d queue points to \"%L\"", client, points, targets[target]);
+			}
 		}
-
-		SetClientQueuePoints(target_list[target], GetClientQueuePoints(target_list[target])+points);
-		LogAction(client, target_list[target], "\"%L\" added %d queue points to \"%L\"", client, points, target_list[target]);
-		CReplyToCommand(client, "{olive}[FF2]{default} Added %d queue points to %s", points, target_name);
 	}
+	else
+	{
+		SetClientQueuePoints(targets[0], GetClientQueuePoints(targets[0])+points);
+		LogAction(client, targets[0], "\"%L\" added %d queue points to \"%L\"", client, points, targets[0]);
+	}
+	CReplyToCommand(client, "{olive}[FF2]{default} Added %d queue points to %s", points, targetName);
 	return Plugin_Handled;
 }
 
 public Action:Command_StopMusic(client, args)
 {
-	if(!Enabled2)
+	if(Enabled2)
 	{
-		return Plugin_Continue;
-	}
+		if(args)
+		{
+			decl String:pattern[MAX_TARGET_LENGTH];
+			GetCmdArg(1, pattern, sizeof(pattern));
+			new String:targetName[MAX_TARGET_LENGTH];
+			new targets[MAXPLAYERS], matches;
+			new bool:targetNounIsMultiLanguage;
+			if((matches=ProcessTargetString(pattern, client, targets, sizeof(targets), COMMAND_FILTER_NO_BOTS, targetName, sizeof(targetName), targetNounIsMultiLanguage))<=0)
+			{
+				ReplyToTargetError(client, matches);
+				return Plugin_Handled;
+			}
 
-	Native_StopMusic(INVALID_HANDLE, 0);
-	CReplyToCommand(client, "{olive}[FF2]{default} Stopped boss music.");
-	return Plugin_Handled;
+			if(matches>1)
+			{
+				for(new target; target<matches; target++)
+				{
+					StopMusic(targets[target]);
+				}
+			}
+			else
+			{
+				StopMusic(targets[0]);
+			}
+			CReplyToCommand(client, "{olive}[FF2]{default} Stopped boss music for %s.", targetName);
+		}
+		else
+		{
+			StopMusic();
+			CReplyToCommand(client, "{olive}[FF2]{default} Stopped boss music for all clients.");
+		}
+		return Plugin_Handled;
+	}
+	return Plugin_Continue;
 }
 
 public Action:Command_Charset(client, args)
@@ -4253,24 +4118,22 @@ stock SetArenaCapEnableTime(Float:time)
 
 public OnClientPutInServer(client)
 {
-	FF2flags[client]=0;
 	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
 	SDKHook(client, SDKHook_OnTakeDamagePost, OnTakeDamagePost);
-	SDKHook(client, SDKHook_GetMaxHealth, OnGetMaxHealth);  //Temporary:  Used to prevent boss overheal
+
+	FF2flags[client]=0;
 	Damage[client]=0;
 	uberTarget[client]=-1;
-	if(!AreClientCookiesCached(client))
-	{
-		return;
-	}
 
-	new String:buffer[24];
-	GetClientCookie(client, FF2Cookies, buffer, 24);
-	if(!buffer[0])
+	if(AreClientCookiesCached(client))
 	{
-		SetClientCookie(client, FF2Cookies, "0 1 1 1 3 3 3");
+		new String:buffer[24];
+		GetClientCookie(client, FF2Cookies, buffer, sizeof(buffer));
+		if(!buffer[0])
+		{
+			SetClientCookie(client, FF2Cookies, "0 1 1 1 3 3 3");
+		}
 	}
-	LastClass[client]=TFClass_Unknown;
 }
 
 public OnClientDisconnect(client)
@@ -4328,7 +4191,7 @@ public Action:event_player_spawn(Handle:event, const String:name[], bool:dontBro
 		CreateTimer(0.1, CheckAlivePlayers);
 	}
 
-	FF2flags[client]&=~(FF2FLAG_UBERREADY|FF2FLAG_ISBUFFED|FF2FLAG_TALKING|FF2FLAG_ALLOWSPAWNINBOSSTEAM|FF2FLAG_USINGABILITY|FF2FLAG_CLASSHELPED|FF2FLAG_CHANGECVAR|FF2FLAG_ALLOW_HEALTH_PICKUPS|FF2FLAG_ALLOW_AMMO_PICKUPS);
+	FF2flags[client]&=~(FF2FLAG_UBERREADY|FF2FLAG_ISBUFFED|FF2FLAG_TALKING|FF2FLAG_ALLOWSPAWNINBOSSTEAM|FF2FLAG_USINGABILITY|FF2FLAG_CLASSHELPED|FF2FLAG_CHANGECVAR|FF2FLAG_ALLOW_HEALTH_PICKUPS|FF2FLAG_ALLOW_AMMO_PICKUPS|FF2FLAG_ROCKET_JUMPING);
 	FF2flags[client]|=FF2FLAG_USEBOSSTIMER;
 	return Plugin_Continue;
 }
@@ -4344,7 +4207,7 @@ public Action:Timer_RegenPlayer(Handle:timer, any:userid)
 
 public Action:ClientTimer(Handle:timer)
 {
-	if(CheckRoundState()==2 || CheckRoundState()==-1 || !Enabled)
+	if(!Enabled || CheckRoundState()==2 || CheckRoundState()==-1)
 	{
 		return Plugin_Stop;
 	}
@@ -4381,7 +4244,7 @@ public Action:ClientTimer(Handle:timer)
 
 			if(TF2_IsPlayerInCondition(client, TFCond_Cloaked))
 			{
-				if(GetClientCloakIndex(client)==59)
+				if(GetClientCloakIndex(client)==59)  //Dead Ringer
 				{
 					if(TF2_IsPlayerInCondition(client, TFCond_DeadRingered))
 					{
@@ -4474,27 +4337,24 @@ public Action:ClientTimer(Handle:timer)
 			}
 
 			new bool:addthecrit=false;
-			if(validwep && weapon==GetPlayerWeaponSlot(client, TFWeaponSlot_Melee))
+			if(validwep && weapon==GetPlayerWeaponSlot(client, TFWeaponSlot_Melee) && strcmp(classname, "tf_weapon_knife", false))
 			{
-				if(strcmp(classname, "tf_weapon_knife", false))
-				{
-					addthecrit=true;
-				}
+				addthecrit=true;
 			}
 
 			switch(index)
 			{
-				case 16, 56, 203, 305, 1005, 1079, 1092, 1100:  //SMG, Huntsman, Strange SMG, Crusader's Crossbow, Festive Huntsman, Festive Crossbow, Fortified Compound, Bread Bite
+				case 16, 56, 203, 305, 1005, 1079, 1092, 1100, 1149:  //SMG, Huntsman, Strange SMG, Crusader's Crossbow, Festive Huntsman, Festive Crossbow, Fortified Compound, Bread Bite, Festive SMG
 				{
 					addthecrit=true;
 				}
-				case 22, 23, 160, 209, 294, 449, 773:  //Pistols
+				case 22, 23, 160, 209, 294, 449, 773:  //Pistol (Engineer), Pistol (Scout), Lugermorph, Strange Pistol, Strange Lugermorph, Winger, Pretty Boy's Pocket Pistol
 				{
-					/*addthecrit=true;
+					addthecrit=true;
 					if(class==TFClass_Scout && cond==TFCond_HalloweenCritCandy)
 					{
 						cond=TFCond_Buffed;
-					}*/
+					}
 				}
 			}
 
@@ -4517,7 +4377,7 @@ public Action:ClientTimer(Handle:timer)
 							FF2_ShowHudText(client, -1, "%T: %i", "uber-charge", client, charge);
 							if(charge==100 && !(FF2flags[client] & FF2FLAG_UBERREADY))
 							{
-								FakeClientCommand(client,"voicemenu 1 7");
+								FakeClientCommand(client, "voicemenu 1 7");  //"I am fully charged!"
 								FF2flags[client]|= FF2FLAG_UBERREADY;
 							}
 						}
@@ -4533,7 +4393,7 @@ public Action:ClientTimer(Handle:timer)
 				}
 				case TFClass_DemoMan:
 				{
-					if(!IsValidEntity(GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary)) && shieldCrits)  //Demoshields
+					if(weapon==GetPlayerWeaponSlot(client, TFWeaponSlot_Primary) && !IsValidEntity(GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary)) && shieldCrits)  //Demoshields
 					{
 						addthecrit=true;
 						if(shieldCrits==1)
@@ -4656,15 +4516,15 @@ public Action:BossTimer(Handle:timer)
 					GetEntPropVector(Boss[client], Prop_Send, "m_vecOrigin", position);
 
 					FF2flags[Boss[client]]|=FF2FLAG_TALKING;
-					EmitSoundToAll(sound, Boss[client], _, SNDLEVEL_TRAFFIC, _, _, 100, Boss[client], position);
-					EmitSoundToAll(sound, Boss[client], _, SNDLEVEL_TRAFFIC, _, _, 100, Boss[client], position);
+					EmitSoundToAll(sound, Boss[client], _, _, _, _, _, Boss[client], position);
+					EmitSoundToAll(sound, Boss[client], _, _, _, _, _, Boss[client], position);
 
 					for(new target=1; target<=MaxClients; target++)
 					{
 						if(IsClientInGame(target) && target!=Boss[client])
 						{
-							EmitSoundToClient(target, sound, Boss[client], _, SNDLEVEL_TRAFFIC, _, _, 100, Boss[client], position);
-							EmitSoundToClient(target, sound, Boss[client], _, SNDLEVEL_TRAFFIC, _, _, 100, Boss[client], position);
+							EmitSoundToClient(target, sound, Boss[client], _, _, _, _, _, Boss[client], position);
+							EmitSoundToClient(target, sound, Boss[client], _, _, _, _, _, Boss[client], position);
 						}
 					}
 					FF2flags[Boss[client]]&=~FF2FLAG_TALKING;
@@ -4730,18 +4590,22 @@ public Action:BossTimer(Handle:timer)
 		{
 			new String:message[512];
 			decl String:name[64];
-			for(new boss; Boss[boss]; boss++)
+			for(new target; target<=MaxClients; target++)
 			{
-				KvRewind(BossKV[Special[boss]]);
-				KvGetString(BossKV[Special[boss]], "name", name, sizeof(name), "=Failed name=");
-				//Format(bossLives, sizeof(bossLives), ((BossLives[boss]>1) ? ("x%i", BossLives[boss]) : ("")));
-				if(BossLives[boss]>1)
+				if(IsBoss(target))
 				{
-					Format(message, sizeof(message), "%s\n%s's HP: %i of %ix%i", message, name, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), BossHealthMax[boss], BossLives[boss]);
-				}
-				else
-				{
-					Format(message, sizeof(message), "%s\n%s's HP: %i of %i", message, name, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), BossHealthMax[boss]);
+					new boss=Boss[target];
+					KvRewind(BossKV[Special[boss]]);
+					KvGetString(BossKV[Special[boss]], "name", name, sizeof(name), "=Failed name=");
+					//Format(bossLives, sizeof(bossLives), ((BossLives[boss]>1) ? ("x%i", BossLives[boss]) : ("")));
+					if(BossLives[boss]>1)
+					{
+						Format(message, sizeof(message), "%s\n%s's HP: %i of %ix%i", message, name, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), BossHealthMax[boss], BossLives[boss]);
+					}
+					else
+					{
+						Format(message, sizeof(message), "%s\n%s's HP: %i of %i", message, name, BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1), BossHealthMax[boss]);
+					}
 				}
 			}
 
@@ -4918,15 +4782,15 @@ public Action:OnCallForMedic(client, const String:command[], args)
 		if(RandomSoundAbility("sound_ability", sound, PLATFORM_MAX_PATH, boss))
 		{
 			FF2flags[Boss[boss]]|=FF2FLAG_TALKING;
-			EmitSoundToAll(sound, client, _, SNDLEVEL_TRAFFIC, _, _, 100, client, position);
-			EmitSoundToAll(sound, client, _, SNDLEVEL_TRAFFIC, _, _, 100, client, position);
+			EmitSoundToAll(sound, client, _, _, _, _, _, client, position);
+			EmitSoundToAll(sound, client, _, _, _, _, _, client, position);
 
 			for(new target=1; target<=MaxClients; target++)
 			{
 				if(IsClientInGame(target) && target!=Boss[boss])
 				{
-					EmitSoundToClient(target, sound, client, _, SNDLEVEL_TRAFFIC, _, _, 100, client, position);
-					EmitSoundToClient(target, sound, client, _, SNDLEVEL_TRAFFIC, _, _, 100, client, position);
+					EmitSoundToClient(target, sound, client, _, _, _, _, _, client, position);
+					EmitSoundToClient(target, sound, client, _, _, _, _, _, client, position);
 				}
 			}
 			FF2flags[Boss[boss]]&=~FF2FLAG_TALKING;
@@ -4951,6 +4815,41 @@ public Action:OnChangeClass(client, const String:command[], args)
 {
 	if(Enabled && IsBoss(client) && IsPlayerAlive(client))
 	{
+		//Don't allow the boss to switch classes but instead set their *desired* class (for the next round)
+		decl String:class[16];
+		GetCmdArg(1, class, sizeof(class));
+		if(StrEqual(class, "scout", false))
+		{
+			SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", _:TFClass_Scout);
+		}
+		else if(StrEqual(class, "soldier", false))
+		{
+			SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", _:TFClass_Soldier);
+		}
+		else if(StrEqual(class, "pyro", false))
+		{
+			SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", _:TFClass_Pyro);
+		}
+		else if(StrEqual(class, "demoman", false))
+		{
+			SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", _:TFClass_DemoMan);
+		}
+		else if(StrEqual(class, "heavyweapons", false))
+		{
+			SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", _:TFClass_Heavy);
+		}
+		else if(StrEqual(class, "medic", false))
+		{
+			SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", _:TFClass_Medic);
+		}
+		else if(StrEqual(class, "sniper", false))
+		{
+			SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", _:TFClass_Sniper);
+		}
+		else if(StrEqual(class, "spy", false))
+		{
+			SetEntProp(client, Prop_Send, "m_iDesiredPlayerClass", _:TFClass_Spy);
+		}
 		return Plugin_Handled;
 	}
 	return Plugin_Continue;
@@ -4958,7 +4857,7 @@ public Action:OnChangeClass(client, const String:command[], args)
 
 public Action:OnJoinTeam(client, const String:command[], args)
 {
-	if(!Enabled || !args || (!RoundCount && !GetConVarBool(cvarFirstRound)))
+	if(!Enabled || !args || RoundCount<arenaRounds)
 	{
 		return Plugin_Continue;
 	}
@@ -5089,17 +4988,15 @@ public Action:OnPlayerDeath(Handle:event, const String:eventName[], bool:dontBro
 			EmitSoundToAll(sound);
 			EmitSoundToAll(sound);
 		}
+
 		BossHealth[boss]=0;
 		UpdateHealthBar();
 
-		CreateTimer(0.5, Timer_RestoreLastClass, GetClientUserId(client));
-
 		Stabbed[boss]=0.0;
 		Marketed[boss]=0.0;
-		return Plugin_Continue;
 	}
 
-	if(TF2_GetPlayerClass(client)==TFClass_Engineer)
+	if(TF2_GetPlayerClass(client)==TFClass_Engineer && !(GetEventInt(event, "death_flags") & TF_DEATHFLAG_DEADRINGER))
 	{
 		decl String:name[PLATFORM_MAX_PATH];
 		FakeClientCommand(client, "destroy 2");
@@ -5121,26 +5018,6 @@ public Action:OnPlayerDeath(Handle:event, const String:eventName[], bool:dontBro
 				}
 			}
 		}
-	}
-	return Plugin_Continue;
-}
-
-public Action:Timer_RestoreLastClass(Handle:timer, any:userid)
-{
-	new client=GetClientOfUserId(userid);
-	if(LastClass[client])
-	{
-		TF2_SetPlayerClass(client, LastClass[client]);
-	}
-
-	LastClass[client]=TFClass_Unknown;
-	if(BossTeam==_:TFTeam_Red)
-	{
-		ChangeClientTeam(client, _:TFTeam_Blue);
-	}
-	else
-	{
-		ChangeClientTeam(client, _:TFTeam_Red);
 	}
 	return Plugin_Continue;
 }
@@ -5174,7 +5051,7 @@ public Action:Timer_Damage(Handle:timer, any:userid)
 
 public Action:event_deflect(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if(!Enabled || GetEventInt(event, "weaponid"))
+	if(!Enabled || GetEventInt(event, "weaponid"))  //0 means that the client was airblasted, which is what we want
 	{
 		return Plugin_Continue;
 	}
@@ -5202,7 +5079,18 @@ public Action:OnDeployBackup(Handle:event, const String:name[], bool:dontBroadca
 
 public Action:OnRocketJump(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	isClientRocketJumping[GetClientOfUserId(GetEventInt(event, "userid"))]=StrEqual(name, "rocket_jump", false);
+	if(Enabled)
+	{
+		if(StrEqual(name, "rocket_jump", false))
+		{
+			FF2flags[GetClientOfUserId(GetEventInt(event, "userid"))]|=FF2FLAG_ROCKET_JUMPING;
+		}
+		else
+		{
+			FF2flags[GetClientOfUserId(GetEventInt(event, "userid"))]&=~FF2FLAG_ROCKET_JUMPING;
+		}
+	}
+	return Plugin_Continue;
 }
 
 public Action:CheckAlivePlayers(Handle:timer)
@@ -5229,6 +5117,11 @@ public Action:CheckAlivePlayers(Handle:timer)
 		}
 	}
 
+	Call_StartForward(OnAlivePlayersChanged);  //Let subplugins know that the number of alive players just changed
+	Call_PushCell(RedAlivePlayers);
+	Call_PushCell(BlueAlivePlayers);
+	Call_Finish();
+
 	if(!RedAlivePlayers)
 	{
 		ForceTeamWin(BossTeam);
@@ -5242,7 +5135,7 @@ public Action:CheckAlivePlayers(Handle:timer)
 			EmitSoundToAll(sound);
 		}
 	}
-	else if(!PointType && RedAlivePlayers<=(AliveToEnable=GetConVarInt(cvarAliveToEnable)) && !executed)
+	else if(!PointType && RedAlivePlayers<=AliveToEnable && !executed)
 	{
 		PrintHintTextToAll("%t", "point_enable", AliveToEnable);
 		if(RedAlivePlayers==AliveToEnable)
@@ -5250,11 +5143,11 @@ public Action:CheckAlivePlayers(Handle:timer)
 			new String:sound[64];
 			if(GetRandomInt(0, 1))
 			{
-				Format(sound, sizeof(sound), "vo/announcer_am_capenabled0%i.wav", GetRandomInt(1, 4));
+				Format(sound, sizeof(sound), "vo/announcer_am_capenabled0%i.mp3", GetRandomInt(1, 4));
 			}
 			else
 			{
-				Format(sound, sizeof(sound), "vo/announcer_am_capincite0%i.wav", GetRandomInt(0, 1) ? 1 : 3);
+				Format(sound, sizeof(sound), "vo/announcer_am_capincite0%i.mp3", GetRandomInt(0, 1) ? 1 : 3);
 			}
 			EmitSoundToAll(sound);
 		}
@@ -5316,28 +5209,28 @@ public Action:Timer_DrawGame(Handle:timer)
 	{
 		case 300:
 		{
-			EmitSoundToAll("vo/announcer_ends_5min.wav");
+			EmitSoundToAll("vo/announcer_ends_5min.mp3");
 		}
 		case 120:
 		{
-			EmitSoundToAll("vo/announcer_ends_2min.wav");
+			EmitSoundToAll("vo/announcer_ends_2min.mp3");
 		}
 		case 60:
 		{
-			EmitSoundToAll("vo/announcer_ends_60sec.wav");
+			EmitSoundToAll("vo/announcer_ends_60sec.mp3");
 		}
 		case 30:
 		{
-			EmitSoundToAll("vo/announcer_ends_30sec.wav");
+			EmitSoundToAll("vo/announcer_ends_30sec.mp3");
 		}
 		case 10:
 		{
-			EmitSoundToAll("vo/announcer_ends_10sec.wav");
+			EmitSoundToAll("vo/announcer_ends_10sec.mp3");
 		}
 		case 1, 2, 3, 4, 5:
 		{
 			decl String:sound[PLATFORM_MAX_PATH];
-			Format(sound, PLATFORM_MAX_PATH, "vo/announcer_ends_%isec.wav", time);
+			Format(sound, PLATFORM_MAX_PATH, "vo/announcer_ends_%isec.mp3", time);
 			EmitSoundToAll(sound);
 		}
 		case 0:
@@ -5476,7 +5369,12 @@ public Action:event_hurt(Handle:event, const String:name[], bool:dontBroadcast)
 				}
 			}
 
-			if(RandomSound("sound_nextlife", ability, PLATFORM_MAX_PATH))
+			if(BossLives[boss]==1 && RandomSound("sound_last_life", ability, PLATFORM_MAX_PATH, boss))
+			{
+				EmitSoundToAll(ability);
+				EmitSoundToAll(ability);
+			}
+			else if(RandomSound("sound_nextlife", ability, PLATFORM_MAX_PATH, boss))
 			{
 				EmitSoundToAll(ability);
 				EmitSoundToAll(ability);
@@ -5486,7 +5384,7 @@ public Action:event_hurt(Handle:event, const String:name[], bool:dontBroadcast)
 	}
 
 	BossHealth[boss]-=damage;
-	BossCharge[boss][0]+=damage*100.0/BossRageDamage[Special[boss]];
+	BossCharge[boss][0]+=damage*100.0/BossRageDamage[boss];
 	Damage[attacker]+=damage;
 
 	new healers[MAXPLAYERS];
@@ -5596,10 +5494,10 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 			if(shield[client] && damage)
 			{
 				TF2_RemoveWearable(client, shield[client]);
-				EmitSoundToClient(client, "player/spy_shield_break.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, position, _, false);
-				EmitSoundToClient(client, "player/spy_shield_break.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, position, _, false);
-				EmitSoundToClient(attacker, "player/spy_shield_break.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, position, _, false);
-				EmitSoundToClient(attacker, "player/spy_shield_break.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, position, _, false);
+				EmitSoundToClient(client, "player/spy_shield_break.wav", _, _, _, _, 0.7, _, _, position, _, false);
+				EmitSoundToClient(client, "player/spy_shield_break.wav", _, _, _, _, 0.7, _, _, position, _, false);
+				EmitSoundToClient(attacker, "player/spy_shield_break.wav", _, _, _, _, 0.7, _, _, position, _, false);
+				EmitSoundToClient(attacker, "player/spy_shield_break.wav", _, _, _, _, 0.7, _, _, position, _, false);
 				TF2_AddCondition(client, TFCond_Bonked, 0.1);
 				shield[client]=0;
 				return Plugin_Continue;
@@ -5719,7 +5617,25 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 					return Plugin_Changed;
 				}
 
-				new index=(IsValidEntity(weapon) && weapon>MaxClients && attacker<=MaxClients ? GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex") : -1);
+				new index;
+				if(IsValidEntity(weapon) && weapon>MaxClients && attacker<=MaxClients)
+				{
+					decl String:classname[64];
+					GetEntityClassname(weapon, classname, sizeof(classname));
+					if(!StrContains(classname, "eyeball_boss"))  //Dang spell Monoculuses
+					{
+						index=-1;
+					}
+					else
+					{
+						index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
+					}
+				}
+				else
+				{
+					index=-1;
+				}
+
 				switch(index)
 				{
 					case 14, 201, 230, 402, 526, 664, 752, 792, 801, 851, 881, 890, 899, 908, 957, 966:  //Sniper Rifle, Strange Sniper Rifle, Sydney Sleeper, Bazaar Bargain, Machina, Festive Sniper Rifle, Hitman's Heatmaker, Botkiller Sniper Rifles
@@ -5847,22 +5763,21 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 					}
 					case 416:  //Market Gardener (courtesy of Chdata)
 					{
-						if(isClientRocketJumping[attacker])
+						if(FF2flags[attacker] & FF2FLAG_ROCKET_JUMPING)
 						{
-							damage=(Pow(float(BossHealthMax[boss]), (0.74074))+512.0-(Marketed[Boss[boss]]/128*float(BossHealthMax[boss])))/3.0;
+							damage=(Pow(float(BossHealthMax[boss]), 0.74074)+512.0-(Marketed[client]/128.0*float(BossHealthMax[boss])))/3.0;
 							damagetype|=DMG_CRIT;
 
-							if(Marketed[Boss[boss]]<5)
+							if(Marketed[client]<5)
 							{
-								Marketed[Boss[boss]]++;
+								Marketed[client]++;
 							}
 
-							PrintHintText(attacker, "%t", "Market Gardener");
-							PrintHintText(client, "%t", "Market Gardened");
+							PrintHintText(attacker, "%t", "Market Gardener");  //You just market-gardened the boss!
+							PrintHintText(client, "%t", "Market Gardened");  //You just got market-gardened!
 
-							EmitSoundToClient(client, "player/doubledonk.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.6, 100, _, position, _, false);
-							EmitSoundToClient(attacker, "player/doubledonk.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.6, 100, _, position, _, false);
-
+							EmitSoundToClient(attacker, "player/doubledonk.wav", _, _, _, _, 0.6, _, _, position, _, false);
+							EmitSoundToClient(client, "player/doubledonk.wav", _, _, _, _, 0.6, _, _, position, _, false);
 							return Plugin_Changed;
 						}
 					}
@@ -5873,7 +5788,7 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 							damage=85.0;  //255 final damage
 						}
 					}
-					/*case 528:  //Short Circuit
+					case 528:  //Short Circuit
 					{
 						if(circuitStun)
 						{
@@ -5881,7 +5796,7 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 							EmitSoundToAll("weapons/barret_arm_zap.wav", client);
 							EmitSoundToClient(client, "weapons/barret_arm_zap.wav");
 						}
-					}*/
+					}
 					case 593:  //Third Degree
 					{
 						new healers[MAXPLAYERS];
@@ -5952,10 +5867,10 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 					damagetype|=DMG_CRIT;
 					damagecustom=0;
 
-					EmitSoundToClient(client, "player/spy_shield_break.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, position, _, false);
-					EmitSoundToClient(attacker, "player/spy_shield_break.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, position, _, false);
-					EmitSoundToClient(client, "player/crit_received3.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, _, _, false);
-					EmitSoundToClient(attacker, "player/crit_received3.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, _, _, false);
+					EmitSoundToClient(client, "player/spy_shield_break.wav", _, _, _, _, 0.7, _, _, position, _, false);
+					EmitSoundToClient(attacker, "player/spy_shield_break.wav", _, _, _, _, 0.7, _, _, position, _, false);
+					EmitSoundToClient(client, "player/crit_received3.wav", _, _, _, _, 0.7, _, _, _, _, false);
+					EmitSoundToClient(attacker, "player/crit_received3.wav", _, _, _, _, 0.7, _, _, _, _, false);
 					SetEntPropFloat(weapon, Prop_Send, "m_flNextPrimaryAttack", GetGameTime()+2.0);
 					SetEntPropFloat(attacker, Prop_Send, "m_flNextAttack", GetGameTime()+2.0);
 					SetEntPropFloat(attacker, Prop_Send, "m_flStealthNextChangeTime", GetGameTime()+2.0);
@@ -6020,8 +5935,8 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 					decl String:sound[PLATFORM_MAX_PATH];
 					if(RandomSound("sound_stabbed", sound, PLATFORM_MAX_PATH, boss))
 					{
-						EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, sound, _, _, SNDLEVEL_TRAFFIC, _, _, 100, Boss[boss], _, _, false);
-						EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, sound, _, _, SNDLEVEL_TRAFFIC, _, _, 100, Boss[boss], _, _, false);
+						EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, sound, _, _, _, _, _, _, Boss[boss], _, _, false);
+						EmitSoundToAllExcept(SOUNDEXCEPT_VOICE, sound, _, _, _, _, _, _, Boss[boss], _, _, false);
 					}
 
 					if(Stabbed[boss]<3)
@@ -6060,7 +5975,7 @@ public Action:OnTakeDamage(client, &attacker, &inflictor, &Float:damage, &damage
 							damage=490.0;
 						}
 						BossHealth[boss]-=RoundFloat(damage);
-						BossCharge[boss][0]+=damage*100.0/BossRageDamage[Special[boss]];
+						BossCharge[boss][0]+=damage*100.0/BossRageDamage[boss];
 						if(BossHealth[boss]<=0)  //Wat
 						{
 							damage*=5;
@@ -6153,10 +6068,10 @@ public Action:OnStomp(attacker, victim, &Float:damageMultiplier, &Float:damageBo
 			GetEntPropVector(attacker, Prop_Send, "m_vecOrigin", position);
 
 			TF2_RemoveWearable(victim, shield[victim]);
-			EmitSoundToClient(victim, "player/spy_shield_break.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, position, _, false);
-			EmitSoundToClient(victim, "player/spy_shield_break.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, position, _, false);
-			EmitSoundToClient(attacker, "player/spy_shield_break.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, position, _, false);
-			EmitSoundToClient(attacker, "player/spy_shield_break.wav", _, _, SNDLEVEL_TRAFFIC, _, 0.7, 100, _, position, _, false);
+			EmitSoundToClient(victim, "player/spy_shield_break.wav", _, _, _, _, 0.7, _, _, position, _, false);
+			EmitSoundToClient(victim, "player/spy_shield_break.wav", _, _, _, _, 0.7, _, _, position, _, false);
+			EmitSoundToClient(attacker, "player/spy_shield_break.wav", _, _, _, _, 0.7, _, _, position, _, false);
+			EmitSoundToClient(attacker, "player/spy_shield_break.wav", _, _, _, _, 0.7, _, _, position, _, false);
 			TF2_AddCondition(victim, TFCond_Bonked, 0.1);
 			shield[victim]=0;
 			return Plugin_Handled;
@@ -6195,7 +6110,7 @@ public Action:OnGetMaxHealth(client, &maxHealth)
 		new boss=GetBossIndex(client);
 		SetEntProp(client, Prop_Data, "m_iHealth", BossHealth[boss]-BossHealthMax[boss]*(BossLives[boss]-1));
 		maxHealth=BossHealthMax[boss];
-		return Plugin_Handled;
+		return Plugin_Changed;
 	}
 	return Plugin_Continue;
 }
@@ -6241,20 +6156,6 @@ stock SpawnSmallHealthPackAt(client, team=0)
 		new Float:velocity[3];//={float(GetRandomInt(-10, 10)), float(GetRandomInt(-10, 10)), 50.0};  //Q_Q
 		velocity[0]=float(GetRandomInt(-10, 10)), velocity[1]=float(GetRandomInt(-10, 10)), velocity[2]=50.0;  //I did this because setting it on the creation of the vel variable was creating a compiler error for me.
 		TeleportEntity(healthpack, position, NULL_VECTOR, velocity);
-	}
-}
-
-public Action:Timer_StopTickle(Handle:timer, any:userid)
-{
-	new client=GetClientOfUserId(userid);
-	if(!IsValidClient(client) || !IsPlayerAlive(client))
-	{
-		return;
-	}
-
-	if(!GetEntProp(client, Prop_Send, "m_bIsReadyToHighFive") && !IsValidEntity(GetEntPropEnt(client, Prop_Send, "m_hHighFivePartner")))
-	{
-		TF2_RemoveCondition(client, TFCond_Taunting);
 	}
 }
 
@@ -6366,27 +6267,20 @@ public Action:TF2_CalcIsAttackCritical(client, weapon, String:weaponname[], &boo
 	return Plugin_Continue;
 }
 
-stock FindBosses(bool:isBoss[])
+stock GetClientWithMostQueuePoints(bool:omit[])
 {
-	new boss;
+	new winner;
 	for(new client=1; client<=MaxClients; client++)
 	{
-		if(SpecForceBoss)
+		if(IsValidClient(client) && GetClientQueuePoints(client)>=GetClientQueuePoints(winner) && !omit[client])
 		{
-			if(IsValidClient(client) && GetClientQueuePoints(client)>=GetClientQueuePoints(boss) && !isBoss[client])
+			if(SpecForceBoss || GetClientTeam(client)>_:TFTeam_Spectator)
 			{
-				boss=client;
-			}
-		}
-		else
-		{
-			if(IsValidClient(client) && GetClientTeam(client)>_:TFTeam_Spectator && GetClientQueuePoints(client)>=GetClientQueuePoints(boss) && !isBoss[client])
-			{
-				boss=client;
+				winner=client;
 			}
 		}
 	}
-	return boss;
+	return winner;
 }
 
 stock LastBossIndex()
@@ -6423,7 +6317,7 @@ stock CalcBossHealthMax(client)
 	new _operator[128];
 
 	KvRewind(BossKV[Special[client]]);
-	KvGetString(BossKV[Special[client]], "health_formula", formula, sizeof(formula), "((700+n)*n)^1.075");
+	KvGetString(BossKV[Special[client]], "health_formula", formula, sizeof(formula), "((460+n)*n)^1.075");
 	ReplaceString(formula, sizeof(formula), " ", "");  //Get rid of spaces
 	new length=strlen(formula);
 	for(new i; i<=length; i++)
@@ -6782,15 +6676,54 @@ ForceTeamWin(team)
 	AcceptEntityInput(entity, "SetWinner");
 }
 
-public bool:PickCharacter(client, companion)
+public bool:PickCharacter(boss, companion)
 {
-	if(client==companion)
+	if(boss==companion)
 	{
-		Special[client]=Incoming[client];
-		Incoming[client]=-1;
-		if(Special[client]!=-1)  //We've already picked a boss through Command_SetNextBoss
+		Special[boss]=Incoming[boss];
+		Incoming[boss]=-1;
+		if(Special[boss]!=-1)  //We've already picked a boss through Command_SetNextBoss
 		{
-			PrecacheCharacter(Special[client]);
+			new Action:action;
+			Call_StartForward(OnSpecialSelected);
+			Call_PushCell(boss);
+			new characterIndex=Special[boss];
+			Call_PushCellRef(characterIndex);
+			decl String:newName[64];
+			KvRewind(BossKV[Special[boss]]);
+			KvGetString(BossKV[Special[boss]], "name", newName, sizeof(newName));
+			Call_PushStringEx(newName, sizeof(newName), SM_PARAM_STRING_UTF8 | SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
+			Call_Finish(action);
+			if(action==Plugin_Changed)
+			{
+				if(newName[0])
+				{
+					decl String:characterName[64];
+					for(new character; BossKV[character] && character<MAXSPECIALS; character++)
+					{
+						KvRewind(BossKV[character]);
+						KvGetString(BossKV[character], "name", characterName, sizeof(characterName));
+						if(StrContains(newName, characterName, false)!=-1)
+						{
+							Special[boss]=character;
+							PrecacheCharacter(Special[boss]);
+							return true;
+						}
+
+						KvGetString(BossKV[character], "filename", characterName, sizeof(characterName));
+						if(StrContains(newName, characterName, false)!=-1)
+						{
+							Special[boss]=character;
+							PrecacheCharacter(Special[boss]);
+							return true;
+						}
+					}
+				}
+				Special[boss]=characterIndex;
+				PrecacheCharacter(Special[boss]);
+				return true;
+			}
+			PrecacheCharacter(Special[boss]);
 			return true;
 		}
 
@@ -6801,19 +6734,19 @@ public bool:PickCharacter(client, companion)
 				new i=GetRandomInt(0, chances[chancesIndex-1]);
 				while(chancesIndex>=2 && i<chances[chancesIndex-1])
 				{
-					Special[client]=chances[chancesIndex-2]-1;
+					Special[boss]=chances[chancesIndex-2]-1;
 					chancesIndex-=2;
 				}
 			}
 			else
 			{
-				Special[client]=GetRandomInt(0, Specials-1);
+				Special[boss]=GetRandomInt(0, Specials-1);
 			}
 
-			KvRewind(BossKV[Special[client]]);
-			if(KvGetNum(BossKV[Special[client]], "blocked"))
+			KvRewind(BossKV[Special[boss]]);
+			if(KvGetNum(BossKV[Special[boss]], "blocked"))
 			{
-				Special[client]=0;
+				Special[boss]=0;
 				continue;
 			}
 			break;
@@ -6826,26 +6759,26 @@ public bool:PickCharacter(client, companion)
 		KvRewind(BossKV[Special[companion]]);
 		KvGetString(BossKV[Special[companion]], "companion", companionName, sizeof(companionName), "=Failed companion name=");
 
-		while(character<Specials)
+		while(character<Specials)  //Loop through all the bosses to find the companion we're looking for
 		{
 			KvRewind(BossKV[character]);
 			KvGetString(BossKV[character], "name", bossName, sizeof(bossName), "=Failed name=");
 			if(!strcmp(bossName, companionName, false))
 			{
-				Special[client]=character;
+				Special[boss]=character;
 				break;
 			}
 
 			KvGetString(BossKV[character], "filename", bossName, sizeof(bossName), "=Failed name=");
 			if(!strcmp(bossName, companionName, false))
 			{
-				Special[client]=character;
+				Special[boss]=character;
 				break;
 			}
 			character++;
 		}
 
-		if(character==Specials)
+		if(character==Specials)  //Companion not found
 		{
 			return false;
 		}
@@ -6853,13 +6786,13 @@ public bool:PickCharacter(client, companion)
 
 	new Action:action;
 	Call_StartForward(OnSpecialSelected);
-	Call_PushCell(client);
-	new characterIndex=Special[client];
+	Call_PushCell(boss);
+	new characterIndex=Special[boss];
 	Call_PushCellRef(characterIndex);
 	decl String:newName[64];
-	KvRewind(BossKV[Special[client]]);
-	KvGetString(BossKV[Special[client]], "name", newName, sizeof(newName));
-	Call_PushStringEx(newName, sizeof(newName), 0, SM_PARAM_COPYBACK);
+	KvRewind(BossKV[Special[boss]]);
+	KvGetString(BossKV[Special[boss]], "name", newName, sizeof(newName));
+	Call_PushStringEx(newName, sizeof(newName), SM_PARAM_STRING_UTF8 | SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
 	Call_Finish(action);
 	if(action==Plugin_Changed)
 	{
@@ -6870,20 +6803,64 @@ public bool:PickCharacter(client, companion)
 			{
 				KvRewind(BossKV[character]);
 				KvGetString(BossKV[character], "name", characterName, sizeof(characterName));
-				if(!strcmp(newName, characterName))
+				if(StrContains(newName, characterName, false)!=-1)
 				{
-					Special[client]=character;
-					PrecacheCharacter(Special[client]);
+					Special[boss]=character;
+					PrecacheCharacter(Special[boss]);
+					return true;
+				}
+
+				KvGetString(BossKV[character], "filename", characterName, sizeof(characterName));
+				if(StrContains(newName, characterName, false)!=-1)
+				{
+					Special[boss]=character;
+					PrecacheCharacter(Special[boss]);
 					return true;
 				}
 			}
 		}
-		Special[client]=characterIndex;
-		PrecacheCharacter(Special[client]);
+		Special[boss]=characterIndex;
+		PrecacheCharacter(Special[boss]);
 		return true;
 	}
-	PrecacheCharacter(Special[client]);
+	PrecacheCharacter(Special[boss]);
 	return true;
+}
+
+FindCompanion(boss, players, bool:omit[])
+{
+	static playersNeeded=3;
+	decl String:companionName[64];
+	KvRewind(BossKV[Special[boss]]);
+	KvGetString(BossKV[Special[boss]], "companion", companionName, sizeof(companionName));
+	if(playersNeeded<players && strlen(companionName))  //Only continue if we have enough players and if the boss has a companion
+	{
+		new companion=GetClientWithMostQueuePoints(omit);
+		Boss[companion]=companion;  //Woo boss indexes!
+		omit[companion]=true;
+		if(PickCharacter(companion, boss))  //TODO: This is a bit misleading
+		{
+			BossRageDamage[companion]=KvGetNum(BossKV[Special[companion]], "ragedamage", 1900);
+			if(BossRageDamage[companion]<=0)
+			{
+				decl String:bossName[64];
+				KvGetString(BossKV[Special[companion]], "name", bossName, sizeof(bossName));
+				PrintToServer("[FF2 Bosses] Warning: Boss %s's rage damage is below 0, setting to 1900", bossName);
+				BossRageDamage[companion]=1900;
+			}
+
+			BossLivesMax[companion]=KvGetNum(BossKV[Special[companion]], "lives", 1);
+			if(BossLivesMax[companion]<=0)
+			{
+				PrintToServer("[FF2 Bosses] Warning: Boss %s has an invalid amount of lives, setting to 1", companionName);
+				BossLivesMax[companion]=1;
+			}
+
+			playersNeeded++;
+			FindCompanion(companion, players, omit);  //Make sure this companion doesn't have a companion of their own
+		}
+	}
+	playersNeeded=3;  //Reset the amount of players needed back to 3 after we're done
 }
 
 stock SpawnWeapon(client, String:name[], index, level, qual, String:att[])
@@ -6954,53 +6931,61 @@ public QueuePanelH(Handle:menu, MenuAction:action, client, selection)
 }
 
 
-public Action:QueuePanelCmd(client, Args)
+public Action:QueuePanelCmd(client, args)
 {
 	if(!Enabled2)
+	{
 		return Plugin_Continue;
+	}
+
+	decl String:text[64];
+	new items;
+	new bool:added[MaxClients+1];
+
 	new Handle:panel=CreatePanel();
 	SetGlobalTransTarget(client);
-	decl String:s[512];
-	Format(s,512,"%t","thequeue");
-	new i,tBoss,bool:added[MAXPLAYERS+1];
-	SetPanelTitle(panel, s);
-	for(new j; j<=MaxClients; j++)
-		if((tBoss=Boss[i]) && IsValidEdict(tBoss) && IsClientInGame(tBoss))
+	Format(text, sizeof(text), "%t", "thequeue");  //"Boss Queue"
+	SetPanelTitle(panel, text);
+	for(new boss; boss<=MaxClients; boss++)  //Add the current bosses to the top of the list
+	{
+		if(IsBoss(boss))
 		{
-			added[tBoss]=true;
-			Format(s,64,"%N-%i",tBoss,GetClientQueuePoints(tBoss));
-			DrawPanelItem(panel,s);
-			i++;
+			added[boss]=true;  //Don't want the bosses to show up again in the actual queue list
+			Format(text, sizeof(text), "%N-%i", boss, GetClientQueuePoints(boss));
+			DrawPanelItem(panel, text);
+			items++;
 		}
-	DrawPanelText(panel,"---");
-	new pingas;
+	}
+
+	DrawPanelText(panel, "---");
 	do
 	{
-		tBoss=FindBosses(added);
-		if(tBoss && IsValidEdict(tBoss) && IsClientInGame(tBoss))
+		new target=GetClientWithMostQueuePoints(added);  //Get whoever has the highest queue points out of those who haven't been listed yet
+		if(!IsValidClient(target))  //When there's no players left, fill up the rest of the list with blank lines
 		{
-			if(client==tBoss)
-			{
-				Format(s,64,"%N-%i",tBoss,GetClientQueuePoints(tBoss));
-				DrawPanelText(panel,s);
-				i--;
-			}
-			else
-			{
-				Format(s,64,"%N-%i",tBoss,GetClientQueuePoints(tBoss));
-				DrawPanelItem(panel,s);
-			}
-			added[tBoss]=true;
-			i++;
+			DrawPanelItem(panel, "");
+			items++;
+			continue;
 		}
-		pingas++;
+
+		Format(text, sizeof(text), "%N-%i", target, GetClientQueuePoints(target));
+		if(client!=target)
+		{
+			DrawPanelItem(panel, text);
+			items++;
+		}
+		else
+		{
+			DrawPanelText(panel, text);  //DrawPanelText() is white, which allows the client's points to stand out
+		}
+		added[target]=true;
 	}
-	while(i<9 && pingas<100);
-	for(; i<9; i++)
-		DrawPanelItem(panel,"");
-	Format(s,64,"%t (%t)","your_points",GetClientQueuePoints(client),"to0");
-	DrawPanelItem(panel,s);
-	SendPanelToClient(panel, client, QueuePanelH, 9001);
+	while(items<9);
+
+	Format(text, sizeof(text), "%t (%t)", "your_points", GetClientQueuePoints(client), "to0");  //"Your queue point(s) is {1} (set to 0)"
+	DrawPanelItem(panel, text);
+
+	SendPanelToClient(panel, client, QueuePanelH, MENU_TIME_FOREVER);
 	CloseHandle(panel);
 	return Plugin_Handled;
 }
@@ -7037,18 +7022,29 @@ public Action:ResetQueuePointsCmd(client, args)
 		return Plugin_Handled;
 	}
 
-	decl String:targetname[MAX_TARGET_LENGTH];
-	GetCmdArg(1, targetname, MAX_TARGET_LENGTH);
-	new String:target_name[MAX_TARGET_LENGTH];
-	new target_list[1], target_count;
-	new bool:tn_is_ml;
+	decl String:pattern[MAX_TARGET_LENGTH];
+	GetCmdArg(1, pattern, sizeof(pattern));
+	new String:targetName[MAX_TARGET_LENGTH];
+	new targets[MAXPLAYERS], matches;
+	new bool:targetNounIsMultiLanguage;
 
-	if((target_count=ProcessTargetString(targetname, client, target_list, 1, 0, target_name, MAX_TARGET_LENGTH, tn_is_ml))<=0)
+	if((matches=ProcessTargetString(pattern, client, targets, 1, 0, targetName, sizeof(targetName), targetNounIsMultiLanguage))<=0)
 	{
-		ReplyToTargetError(client, target_count);
+		ReplyToTargetError(client, matches);
 		return Plugin_Handled;
 	}
-	TurnToZeroPanel(client, target_list[0]);
+
+	if(matches>1)
+	{
+		for(new target; target<matches; target++)
+		{
+			TurnToZeroPanel(client, targets[target]);  //FIXME:  This can only handle one client currently and doesn't iterate through all clients
+		}
+	}
+	else
+	{
+		TurnToZeroPanel(client, targets[0]);
+	}
 	return Plugin_Handled;
 }
 
@@ -7058,18 +7054,19 @@ public TurnToZeroPanelH(Handle:menu, MenuAction:action, client, position)
 	{
 		if(shortname[client]==client)
 		{
-			CPrintToChat(client,"{olive}[FF2]{default} %t", "to0_done");
+			CPrintToChat(client,"{olive}[FF2]{default} %t", "to0_done");  //Your queue points have been reset to {olive}0{default}
 		}
 		else
 		{
-			CPrintToChat(client, "{olive}[FF2]{default} %t", "to0_done_admin", shortname[client]);
-			CPrintToChat(shortname[client], "{olive}[FF2]{default} %t", "to0_done_by_admin", client);
+			CPrintToChat(client, "{olive}[FF2]{default} %t", "to0_done_admin", shortname[client]);  //{olive}{1}{default}'s queue points have been reset to {olive}0{default}
+			CPrintToChat(shortname[client], "{olive}[FF2]{default} %t", "to0_done_by_admin", client);  //{olive}{1}{default} reset your queue points to {olive}0{default}
+			LogAction(client, shortname[client], "\"%L\" reset \"%L\"'s queue points to 0", client, shortname[client]);
 		}
 		SetClientQueuePoints(shortname[client], 0);
 	}
 }
 
-public Action:TurnToZeroPanel(caller, client)
+public Action:TurnToZeroPanel(client, target)
 {
 	if(!Enabled2)
 	{
@@ -7077,25 +7074,25 @@ public Action:TurnToZeroPanel(caller, client)
 	}
 
 	new Handle:panel=CreatePanel();
-	decl String:text[512];
-	SetGlobalTransTarget(caller);
-	if(caller==client)
+	decl String:text[128];
+	SetGlobalTransTarget(client);
+	if(client==target)
 	{
-		Format(text, 512, "%t", "to0_title");
+		Format(text, sizeof(text), "%t", "to0_title");  //Do you really want to set your queue points to 0?
 	}
 	else
 	{
-		Format(text, 512, "%t", "to0_title_admin", client);
+		Format(text, sizeof(text), "%t", "to0_title_admin", target);  //Do you really want to set {1}'s queue points to 0?
 	}
 
-	PrintToChat(caller, text);
+	PrintToChat(client, text);
 	SetPanelTitle(panel, text);
-	Format(text, 512, "%t", "Yes");
+	Format(text, sizeof(text), "%t", "Yes");
 	DrawPanelItem(panel, text);
-	Format(text, 512, "%t", "No");
+	Format(text, sizeof(text), "%t", "No");
 	DrawPanelItem(panel, text);
-	shortname[caller]=client;
-	SendPanelToClient(panel, caller, TurnToZeroPanelH, MENU_TIME_FOREVER);
+	shortname[client]=target;
+	SendPanelToClient(panel, client, TurnToZeroPanelH, MENU_TIME_FOREVER);
 	CloseHandle(panel);
 	return Plugin_Handled;
 }
@@ -7177,7 +7174,7 @@ public FF2PanelH(Handle:menu, MenuAction:action, client, selection)
 			}
 			case 2:
 			{
-				HelpPanel2(client);
+				HelpPanelClass(client);
 			}
 			case 3:
 			{
@@ -7214,25 +7211,25 @@ public Action:FF2Panel(client, args)  //._.
 		new Handle:panel=CreatePanel();
 		decl String:text[256];
 		SetGlobalTransTarget(client);
-		Format(text, sizeof(text), "%t", "menu_1");
+		Format(text, sizeof(text), "%t", "menu_1");  //What's up?
 		SetPanelTitle(panel, text);
-		Format(text, sizeof(text), "%t", "menu_2");
+		Format(text, sizeof(text), "%t", "menu_2");  //Investigate the boss's current health level (/ff2hp)
 		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "menu_3");
+		//Format(text, sizeof(text), "%t", "menu_3");  //Help about FF2 (/ff2help).
+		//DrawPanelItem(panel, text);
+		Format(text, sizeof(text), "%t", "menu_7");  //Changes to my class in FF2 (/ff2classinfo)
 		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "menu_7");
+		Format(text, sizeof(text), "%t", "menu_4");  //What's new? (/ff2new).
 		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "menu_4");
+		Format(text, sizeof(text), "%t", "menu_5");  //Queue points
 		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "menu_5");
+		Format(text, sizeof(text), "%t", "menu_8");  //Toggle music (/ff2music)
 		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "menu_8");
+		Format(text, sizeof(text), "%t", "menu_9");  //Toggle monologues (/ff2voice)
 		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "menu_9");
+		Format(text, sizeof(text), "%t", "menu_9a");  //Toggle info about changes of classes in FF2
 		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "menu_9a");
-		DrawPanelItem(panel, text);
-		Format(text, sizeof(text), "%t", "menu_6");
+		Format(text, sizeof(text), "%t", "menu_6");  //Exit
 		DrawPanelItem(panel, text);
 		SendPanelToClient(panel, client, FF2PanelH, MENU_TIME_FOREVER);
 		CloseHandle(panel);
@@ -7332,7 +7329,7 @@ public Action:HelpPanel3Cmd(client, args)
 
 public Action:HelpPanel3(client)
 {
-	/*if(!Enabled2)
+	if(!Enabled2)
 	{
 		return Plugin_Continue;
 	}
@@ -7343,7 +7340,7 @@ public Action:HelpPanel3(client)
 	DrawPanelItem(panel, "Off");
 	SendPanelToClient(panel, client, ClassinfoTogglePanelH, MENU_TIME_FOREVER);
 	CloseHandle(panel);
-	return Plugin_Handled;*/
+	return Plugin_Handled;
 }
 
 
@@ -7367,58 +7364,86 @@ public ClassinfoTogglePanelH(Handle:menu, MenuAction:action, param1, param2)
 	}
 }
 
-public Action:HelpPanel2Cmd(client, args)
+public Action:Command_HelpPanelClass(client, args)
 {
 	if(!IsValidClient(client))
 	{
 		return Plugin_Continue;
 	}
 
-	HelpPanel2(client);
+	HelpPanelClass(client);
 	return Plugin_Handled;
 }
 
-public Action:HelpPanel2(client)
+public Action:HelpPanelClass(client)
 {
 	if(!Enabled)
-		return Plugin_Continue;
-	new index=GetBossIndex(client);
-	if(index!=-1)
 	{
-		HelpPanelBoss(index);
 		return Plugin_Continue;
 	}
-	decl String:s[512];
+
+	new boss=GetBossIndex(client);
+	if(boss!=-1)
+	{
+		HelpPanelBoss(boss);
+		return Plugin_Continue;
+	}
+
+	decl String:text[512];
 	new TFClassType:class=TF2_GetPlayerClass(client);
 	SetGlobalTransTarget(client);
 	switch(class)
 	{
 		case TFClass_Scout:
-			Format(s,512,"%t","help_scout");
+		{
+			Format(text, sizeof(text), "%t", "help_scout");
+		}
 		case TFClass_Soldier:
-			Format(s,512,"%t","help_soldier");
+		{
+			Format(text, sizeof(text), "%t", "help_soldier");
+		}
 		case TFClass_Pyro:
-			Format(s,512,"%t","help_pyro");
+		{
+			Format(text, sizeof(text), "%t", "help_pyro");
+		}
 		case TFClass_DemoMan:
-			Format(s,512,"%t","help_demo");
+		{
+			Format(text, sizeof(text), "%t", "help_demo");
+		}
 		case TFClass_Heavy:
-			Format(s,512,"%t","help_heavy");
+		{
+			Format(text, sizeof(text), "%t", "help_heavy");
+		}
 		case TFClass_Engineer:
-			Format(s,512,"%t","help_eggineer");
+		{
+			Format(text, sizeof(text), "%t", "help_eggineer");
+		}
 		case TFClass_Medic:
-			Format(s,512,"%t","help_medic");
+		{
+			Format(text, sizeof(text), "%t", "help_medic");
+		}
 		case TFClass_Sniper:
-			Format(s,512,"%t","help_sniper");
+		{
+			Format(text, sizeof(text), "%t", "help_sniper");
+		}
 		case TFClass_Spy:
-			Format(s,512,"%t","help_spie");
+		{
+			Format(text, sizeof(text), "%t", "help_spie");
+		}
 		default:
-			Format(s, 512, "");
+		{
+			Format(text, sizeof(text), "");
+		}
 	}
-	new Handle:panel=CreatePanel();
+
 	if(class!=TFClass_Sniper)
-		Format(s,512,"%t\n%s","help_melee",s);
-	SetPanelTitle(panel,s);
-	DrawPanelItem(panel,"Exit");
+	{
+		Format(text, sizeof(text), "%t\n%s", "help_melee", text);
+	}
+
+	new Handle:panel=CreatePanel();
+	SetPanelTitle(panel, text);
+	DrawPanelItem(panel, "Exit");
 	SendPanelToClient(panel, client, HintPanelH, 20);
 	CloseHandle(panel);
 	return Plugin_Continue;
@@ -7560,7 +7585,12 @@ public VoiceTogglePanelH(Handle:menu, MenuAction:action, client, selection)
 	}
 }
 
+//Ugly compatability layer since HookSound's arguments changed in 1.8
+#if SOURCEMOD_V_MAJOR==1 && SOURCEMOD_V_MINOR>=8
+public Action:HookSound(clients[64], &numClients, String:sound[PLATFORM_MAX_PATH], &client, &channel, &Float:volume, &level, &pitch, &flags, String:soundEntry[PLATFORM_MAX_PATH], &seed)
+#else
 public Action:HookSound(clients[64], &numClients, String:sound[PLATFORM_MAX_PATH], &client, &channel, &Float:volume, &level, &pitch, &flags)
+#endif
 {
 	if(!Enabled || !IsValidClient(client) || channel<1)
 	{
@@ -7926,10 +7956,10 @@ public Native_FF2Version(Handle:plugin, numParams)
 
 public Native_GetBoss(Handle:plugin, numParams)
 {
-	new client=GetNativeCell(1);
-	if(IsValidClient(Boss[client]))
+	new boss=GetNativeCell(1);
+	if(boss>=0 && boss<=MaxClients && IsValidClient(Boss[boss]))
 	{
-		return GetClientUserId(Boss[client]);
+		return GetClientUserId(Boss[boss]);
 	}
 	return -1;
 }
@@ -8016,6 +8046,16 @@ public Native_GetBossCharge(Handle:plugin, numParams)
 public Native_SetBossCharge(Handle:plugin, numParams)
 {
 	BossCharge[GetNativeCell(1)][GetNativeCell(2)]=Float:GetNativeCell(3);
+}
+
+public Native_GetBossRageDamage(Handle:plugin, numParams)
+{
+	return BossRageDamage[GetNativeCell(1)];
+}
+
+public Native_SetBossRageDamage(Handle:plugin, numParams)
+{
+	BossRageDamage[GetNativeCell(1)]=GetNativeCell(2);
 }
 
 public Native_GetRoundState(Handle:plugin, numParams)
@@ -8213,51 +8253,13 @@ public Native_StartMusic(Handle:plugin, numParams)
 
 public Native_StopMusic(Handle:plugin, numParams)
 {
-	if(!BossKV[Special[0]])
-	{
-		return;
-	}
-
-	KvRewind(BossKV[Special[0]]);
-	if(KvJumpToKey(BossKV[Special[0]], "sound_bgm"))
-	{
-		decl String:music[PLATFORM_MAX_PATH];
-		Format(music, sizeof(music), "path%i", MusicIndex);
-		KvGetString(BossKV[Special[0]], music, music, PLATFORM_MAX_PATH);
-
-		new client;
-		if(plugin==INVALID_HANDLE)
-		{
-			client=0;
-		}
-		else
-		{
-			client=GetNativeCell(1);
-		}
-
-		if(!client)
-		{
-			for(new target=1; target<=MaxClients; target++)
-			{
-				if(IsValidClient(target))
-				{
-					StopSound(target, SNDCHAN_AUTO, music);
-					StopSound(target, SNDCHAN_AUTO, music);
-				}
-			}
-		}
-		else
-		{
-			StopSound(client, SNDCHAN_AUTO, music);
-			StopSound(client, SNDCHAN_AUTO, music);
-		}
-	}
+	StopMusic(GetNativeCell(1));
 }
 
 public Native_RandomSound(Handle:plugin, numParams)
 {
 	new length=GetNativeCell(3)+1;
-	new client=GetNativeCell(4);
+	new boss=GetNativeCell(4);
 	new slot=GetNativeCell(5);
 	new String:sound[length];
 	new kvLength;
@@ -8271,11 +8273,11 @@ public Native_RandomSound(Handle:plugin, numParams)
 	new bool:soundExists;
 	if(!strcmp(keyvalue, "sound_ability"))
 	{
-		soundExists=RandomSoundAbility(keyvalue, sound, length, client, slot);
+		soundExists=RandomSoundAbility(keyvalue, sound, length, boss, slot);
 	}
 	else
 	{
-		soundExists=RandomSound(keyvalue, sound, length, client);
+		soundExists=RandomSound(keyvalue, sound, length, boss);
 	}
 	SetNativeString(2, sound, length);
 	return soundExists;
@@ -8409,15 +8411,17 @@ public OnTakeDamagePost(client, attacker, inflictor, Float:damage, damagetype)
 
 public OnEntityCreated(entity, const String:classname[])
 {
-
-	if(StrEqual(classname, HEALTHBAR_CLASS))
+	if(GetConVarBool(cvarHealthBar))
 	{
-		healthBar=entity;
-	}
+		if(StrEqual(classname, HEALTHBAR_CLASS))
+		{
+			healthBar=entity;
+		}
 
-	if(g_Monoculus==-1 && StrEqual(classname, MONOCULUS))
-	{
-		g_Monoculus=entity;
+		if(g_Monoculus==-1 && StrEqual(classname, MONOCULUS))
+		{
+			g_Monoculus=entity;
+		}
 	}
 
 	if(StrContains(classname, "item_healthkit")!=-1 || StrContains(classname, "item_ammopack")!=-1 || StrEqual(classname, "tf_ammo_pack"))
@@ -8497,7 +8501,7 @@ FindHealthBar()
 
 public HealthbarEnableChanged(Handle:convar, const String:oldValue[], const String:newValue[])
 {
-	if(Enabled)
+	if(Enabled && GetConVarBool(cvarHealthBar) && healthBar!=-1)
 	{
 		UpdateHealthBar();
 	}
@@ -8509,7 +8513,7 @@ public HealthbarEnableChanged(Handle:convar, const String:oldValue[], const Stri
 
 UpdateHealthBar()
 {
-	if(!Enabled || g_Monoculus!=-1 || CheckRoundState()==-1)
+	if(!Enabled || !GetConVarBool(cvarHealthBar) || g_Monoculus!=-1 || CheckRoundState()==-1)
 	{
 		return;
 	}
