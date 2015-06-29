@@ -7,6 +7,7 @@
 #include <dbrelay>
 
 #include <donations>
+#include <rxgcommon>
 
 //#define DEBUG
 
@@ -38,7 +39,7 @@ public Plugin:myinfo =
 	name = "RXG Donations",
 	author = "mukunda",
 	description = "RXG Donations Interface",
-	version = "2.2.0",
+	version = "2.3.0",
 	url = "www.mukunda.com"
 };
 
@@ -791,9 +792,11 @@ LookupRXGMembership( client, target ) {
 	decl String:query[256];
 	decl String:auth[64];
 	
-	GetClientAuthString( target, auth, sizeof(auth) );
-	auth[6] = '_';
-	Format( query, sizeof(query), "SELECT userid FROM sourcebans_forums.userfield WHERE field7 LIKE '%s'", auth );
+	//GetClientAuthString( target, auth, sizeof(auth) );
+	GetClientAuthId( target, AuthId_SteamID64, auth, sizeof(auth) );
+	
+	//auth[6] = '_';
+	Format( query, sizeof(query), "SELECT userid FROM sourcebans_forums.steamuser WHERE steamid='%s'", auth );
 	
 	DBRELAY_TQuery( LookupRXGMembership1, query, client?GetClientUserId(client):0 );
 }
