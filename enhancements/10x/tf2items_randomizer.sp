@@ -311,7 +311,7 @@ static const iWeaponMelee[] =
 	2,
 	3,
 	4,
-	195,
+	5,
 	7,
 	8,
 	37,
@@ -384,7 +384,8 @@ static const iWeaponMelee[] =
 	813,
 	939,
 	954,
-	1013
+	1013,
+	1123
 };
 static const String:strWeaponMelee[][] =
 {
@@ -466,7 +467,8 @@ static const String:strWeaponMelee[][] =
 	"Neon Annihilator",
 	"Bat Outta Hell",
 	"Memory Maker",
-	"Ham Shank"
+	"Ham Shank",
+	"The Necro Smasher"
 };
 static const iWeaponCloakary[] =	//so clever at naming these things b/c why not
 {
@@ -4613,7 +4615,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "9_quality", 0); 
 	SetTrieValue(trie, "9_level", 1); 
 	//SetTrieString(trie, "9_attribs", "4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5"); 
-	SetTrieValue(trie, "9_ammo", 32); 
+	SetTrieValue(trie, "9_ammo", 41); 
 
 //shotgun soldier
 	SetTrieString(trie, "10_classname", "tf_weapon_shotgun_soldier"); //); 
@@ -4622,7 +4624,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "10_quality", 0); 
 	SetTrieValue(trie, "10_level", 1); 
 	//SetTrieString(trie, "10_attribs", "4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5"); 
-	SetTrieValue(trie, "10_ammo", 32); 
+	SetTrieValue(trie, "10_ammo", 41); 
 
 //shotgun heavy
 	SetTrieString(trie, "11_classname", "tf_weapon_shotgun_hwg"); //); 
@@ -4631,7 +4633,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "11_quality", 0); 
 	SetTrieValue(trie, "11_level", 1); 
 	//SetTrieString(trie, "11_attribs", "4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5"); 
-	SetTrieValue(trie, "11_ammo", 32); 
+	SetTrieValue(trie, "11_ammo", 41); 
 
 //shotgun pyro
 	SetTrieString(trie, "12_classname", "tf_weapon_shotgun_pyro"); //); 
@@ -4640,7 +4642,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "12_quality", 0); 
 	SetTrieValue(trie, "12_level", 1); 
 	//SetTrieString(trie, "12_attribs", "4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5"); 
-	SetTrieValue(trie, "12_ammo", 32); 
+	SetTrieValue(trie, "12_ammo", 41); 
 
 //scattergun
 	SetTrieString(trie, "13_classname", "tf_weapon_scattergun"); 
@@ -4649,7 +4651,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "13_quality", 0); 
 	SetTrieValue(trie, "13_level", 1); 
 	//SetTrieString(trie, "13_attribs", "97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8"); 
-	SetTrieValue(trie, "13_ammo", 32); 
+	SetTrieValue(trie, "13_ammo", 102); 
 
 //sniper rifle
 	SetTrieString(trie, "14_classname", "tf_weapon_sniperrifle"); 
@@ -4667,6 +4669,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "15_quality", 0); 
 	//SetTrieValue(trie, "15_level", 1); 
 	SetTrieString(trie, "15_attribs","76;5 ; 6;.9 ; 16;20" );
+	SetTrieValue(trie, "15_ammo", 1000); 
 
 //smg
 	SetTrieString(trie, "16_classname", "tf_weapon_smg"); 
@@ -4675,7 +4678,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "16_quality", 0); 
 	SetTrieValue(trie, "16_level", 1); 
 	//SetTrieString(trie, "16_attribs","6;0.3 ; 1;0.6 ; 78;8 ; 4;3" );
-	SetTrieValue(trie, "16_ammo", 75); 
+	SetTrieValue(trie, "16_ammo", 675); 
 
 //syringe gun
 	SetTrieString(trie, "17_classname", "tf_weapon_syringegun_medic"); 
@@ -4684,7 +4687,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "17_quality", 0); 
 	SetTrieValue(trie, "17_level", 1); 
 	//SetTrieString(trie, "17_attribs", "6 ; 0.7 ; 17 ; 0.05 ; 76 ; 3"); 
-	SetTrieValue(trie, "17_ammo", 150); 
+	SetTrieValue(trie, "17_ammo", 280); 
 
 //rocket launcher
 	SetTrieString(trie, "18_classname", "tf_weapon_rocketlauncher"); 
@@ -4711,7 +4714,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "20_quality", 0); 
 	SetTrieValue(trie, "20_level", 1); 
 	//SetTrieString(trie, "20_attribs","96;0.5 ; 78;10 ; 6;0.3" );
-	SetTrieValue(trie, "20_ammo", 100); 
+	SetTrieValue(trie, "20_ammo", 248); 
 
 //flamethrower
 	SetTrieString(trie, "21_classname", "tf_weapon_flamethrower"); 
@@ -4729,7 +4732,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "22_quality", 0); 
 	SetTrieValue(trie, "22_level", 1); 
 	//SetTrieString(trie, "22_attribs", "97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05"); 
-	SetTrieValue(trie, "22_ammo", 200); 
+	SetTrieValue(trie, "22_ammo", 812); 
 
 //pistol scout
 	SetTrieString(trie, "23_classname", "tf_weapon_pistol_scout"); 
@@ -4738,6 +4741,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "23_quality", 0); 
 	SetTrieValue(trie, "23_level", 1); 
 	//SetTrieString(trie, "23_attribs", "97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05"); 
+	SetTrieValue(trie, "23_ammo", 812); 
 
 //revolver
 	SetTrieString(trie, "24_classname", "tf_weapon_revolver"); 
@@ -4746,7 +4750,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "24_quality", 0); 
 	SetTrieValue(trie, "24_level", 1); 
 	//SetTrieString(trie, "24_attribs", "6 ; 0.3 ; 78 ; 5"); 
-	SetTrieValue(trie, "24_ammo", 24); 
+	SetTrieValue(trie, "24_ammo", 126); 
 
 //build pda engineer
 	SetTrieString(trie, "25_classname", "tf_weapon_pda_engineer_build"); 
@@ -4881,7 +4885,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "39_quality", 6); 
 	SetTrieValue(trie, "39_level", 10); 
 	//SetTrieString(trie, "39_attribs", "6 ; 0.25 ; 78 ; 3");
-	SetTrieValue(trie, "39_ammo", 16); 
+	SetTrieValue(trie, "39_ammo", 96); 
 
 //backburner
 	SetTrieString(trie, "40_classname", "tf_weapon_flamethrower"); 
@@ -4900,7 +4904,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "41_quality", 6); 
 	SetTrieValue(trie, "41_level", 5); 
 	//SetTrieString(trie, "41_attribs","32;2 ; 1;0.66 ; 76;10 ; 6;.1 ; 106;5" );
-	SetTrieValue(trie, "41_ammo", 200); 
+	SetTrieValue(trie, "41_ammo", 2000); 
 
 //sandvich
 	SetTrieString(trie, "42_classname", "tf_weapon_lunchbox"); 
@@ -4945,7 +4949,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "56_quality", 6); 
 	SetTrieValue(trie, "56_level", 10); 
 	//SetTrieString(trie, "56_attribs", "76 ; 3 ; 318 ; 0.5 ; 1 ; 0.8"); 
-	SetTrieValue(trie, "56_ammo", 12); 
+	SetTrieValue(trie, "56_ammo", 76); 
 
 //razorback (broken NO LONGER)
 	SetTrieString(trie, "57_classname", "tf_wearable"); 
@@ -4962,7 +4966,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "58_quality", 6); 
 	SetTrieValue(trie, "58_level", 5); 
 	//SetTrieString(trie, "58_attribs","278;.40 ; 279;3 ; 99;3" );
-	SetTrieValue(trie, "58_ammo", 1); 
+	SetTrieValue(trie, "58_ammo", 3); 
 
 //dead ringer
 	SetTrieString(trie, "59_classname", "tf_weapon_invis"); 
@@ -5122,7 +5126,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "160_quality", 3); 
 	SetTrieValue(trie, "160_level", 5); 
 	//SetTrieString(trie, "160_attribs", "97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05"); 
-	SetTrieValue(trie, "160_ammo", 36); 
+	SetTrieValue(trie, "160_ammo", 812); 
 
 //big kill
 	SetTrieString(trie, "161_classname", "tf_weapon_revolver"); 
@@ -5131,7 +5135,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "161_quality", 6); 
 	SetTrieValue(trie, "161_level", 5); 
 	//SetTrieString(trie, "161_attribs", "6 ; 0.3 ; 78 ; 5"); 
-	SetTrieValue(trie, "161_ammo", 24); 
+	SetTrieValue(trie, "161_ammo", 126); 
 
 //crit a cola
 	SetTrieString(trie, "163_classname", "tf_weapon_lunchbox_drink"); 
@@ -5284,7 +5288,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "200_quality", 6); 
 	SetTrieValue(trie, "200_level", 1); 
 	//SetTrieString(trie, "200_attribs", "97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8"); 
-	SetTrieValue(trie, "200_ammo", 32); 
+	SetTrieValue(trie, "200_ammo", 102); 
 
 //Upgradeable sniper rifle
 	SetTrieString(trie, "201_classname", "tf_weapon_sniperrifle"); 
@@ -5302,7 +5306,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "202_quality", 6); 
 	SetTrieValue(trie, "202_level", 1); 
 	//SetTrieString(trie, "202_attribs", "76 ; 5 ; 6 ; .9 ; 16 ; 20"); 
-	SetTrieValue(trie, "202_ammo", 200); 
+	SetTrieValue(trie, "202_ammo", 2000); 
 
 //Upgradeable smg
 	SetTrieString(trie, "203_classname", "tf_weapon_smg"); 
@@ -5311,7 +5315,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "203_quality", 6); 
 	SetTrieValue(trie, "203_level", 1); 
 	//SetTrieString(trie, "203_attribs", "6 ; 0.3 ; 1 ; 0.4 ; 78 ; 8 ; 4 ; 3"); 
-	SetTrieValue(trie, "203_ammo", 250); 
+	SetTrieValue(trie, "203_ammo", 675); 
 
 //Upgradeable syringe gun
 	SetTrieString(trie, "204_classname", "tf_weapon_syringegun_medic"); 
@@ -5338,6 +5342,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "206_quality", 6); 
 	SetTrieValue(trie, "206_level", 1); 
 	//SetTrieString(trie, "206_attribs", "411 ; 20 ; 4 ; 5 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.4 ; 15 ; 1"); 
+	SetTrieValue(trie, "206_ammo", 24); 
 
 //Upgradeable sticky launcher
 	SetTrieString(trie, "207_classname", "tf_weapon_pipebomblauncher"); 
@@ -5364,7 +5369,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "209_quality", 6); 
 	SetTrieValue(trie, "209_level", 1); 
 	//SetTrieString(trie, "209_attribs", "97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05"); 
-	SetTrieValue(trie, "209_ammo", 100); 
+	SetTrieValue(trie, "209_ammo", 812); 
 	//36 for scout, 200 for engy, but idk what to use.
 
 //Upgradeable revolver
@@ -5374,7 +5379,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "210_quality", 6); 
 	SetTrieValue(trie, "210_level", 1); 
 	//SetTrieString(trie, "210_attribs", "6 ; 0.3 ; 78 ; 5"); 
-	SetTrieValue(trie, "210_ammo", 24); 
+	SetTrieValue(trie, "210_ammo", 126); 
 
 //Upgradeable medigun
 	SetTrieString(trie, "211_classname", "tf_weapon_medigun"); 
@@ -5420,7 +5425,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "220_quality", 6); 
 	SetTrieValue(trie, "220_level", 1); 
 	//SetTrieString(trie, "220_attribs", "26 ; 250 ; 16 ; 15 ; 78 ; 3 ; 2 ; 1.2"); 
-	SetTrieValue(trie, "220_ammo", 36); 
+	SetTrieValue(trie, "220_ammo", 814); 
 
 //The Holy Mackerel
 	SetTrieString(trie, "221_classname", "tf_weapon_bat_fish"); 
@@ -5447,7 +5452,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "224_quality", 6); 
 	SetTrieValue(trie, "224_level", 5); 
 	//SetTrieString(trie, "224_attribs", "6 ; 0.3 ; 1 ; 0.15 ; 166 ; 150 ; 78 ; 5"); 
-	SetTrieValue(trie, "224_ammo", 24); 
+	SetTrieValue(trie, "224_ammo", 113); 
 
 //Your Eternal Reward
 	SetTrieString(trie, "225_classname", "tf_weapon_knife"); 
@@ -5510,7 +5515,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "237_level", 1); 
 //	//SetTrieString(trie, "237_attribs", "1 ;0.0 ;181 ;2.0 ;76 ;3.0 ;65 ;2.0 ;67 ;2.0 ;61 ;2.0"); 		//pre-may31 2012;before sep15, 2011, used to be 181 ;1.0
 	SetTrieString(trie, "237_attribs", "134 ; 2 ; 181 ; 2 ; 476 ; -1 ; 318 ; 0.1 ; 4 ; 10 ; 76 ; 10 ; 128 ; 1 ; 275 ; 1"); 
-	SetTrieValue(trie, "237_ammo", 60); 
+	SetTrieValue(trie, "237_ammo", 240); 
 
 //gloves of running urgently
 	SetTrieString(trie, "239_classname", "tf_weapon_fists"); 
@@ -5542,6 +5547,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 //	SetTrieString(trie, "265_attribs", "181 ;1.0 ;78 ;3.0 ;280 ;14.0 ;1 ;0.0 ;15 ;0.0"); 	//pre-may31 2012
 //	SetTrieString(trie, "265_attribs", "1 ;0.0 ;181 ;1.0 ;78 ;3.0 ;65 ;2.0 ;67 ;2.0 ;61 ;2.0"); 	//old pre-sep15,2011 update
 	//SetTrieString(trie, "265_attribs", "134 ; 2 ; 181 ; 2 ; 476 ; -1 ; 318 ; 0.1 ; 4 ; 10 ; 275 ; 1 ; 78 ; 10"); 
+	SetTrieValue(trie, "265_ammo", 890);
 
 //horseless headless horsemann's headtaker
 	SetTrieString(trie, "266_classname", "tf_weapon_sword"); 
@@ -5559,7 +5565,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "294_quality", 6); 
 	SetTrieValue(trie, "294_level", 5); 
 	//SetTrieString(trie, "294_attribs", "97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05"); 
-	SetTrieValue(trie, "294_ammo", 36); 
+	SetTrieValue(trie, "294_ammo", 812); 
 
 //Enthusiast's Timepiece
 	SetTrieString(trie, "297_classname", "tf_weapon_invis"); 
@@ -5577,7 +5583,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "298_quality", 6); 
 	SetTrieValue(trie, "298_level", 5); 
 	//SetTrieString(trie, "298_attribs", "76 ; 5 ; 6 ; .9 ; 16 ; 20"); 
-	SetTrieValue(trie, "298_ammo", 200); 
+	SetTrieValue(trie, "298_ammo", 2000); 
 
 //Amputator
 	SetTrieString(trie, "304_classname", "tf_weapon_bonesaw"); 
@@ -5595,7 +5601,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "305_quality", 6); 
 	SetTrieValue(trie, "305_level", 15); 
 	//SetTrieString(trie, "305_attribs","199;1 ; 97;.25 ; 76;2.6" );
-	SetTrieValue(trie, "305_ammo", 38); 
+	SetTrieValue(trie, "305_ammo", 391); 
 
 //Ullapool Caber
 	SetTrieString(trie, "307_classname", "tf_weapon_stickbomb"); 
@@ -5722,7 +5728,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "351_quality", 6); 
 	SetTrieValue(trie, "351_level", 10); 
 	//SetTrieString(trie, "351_attribs","58;2.5 ; 144;1 ; 275;1 ; 135;0 ; 318;0.5 ; 78;3" );
-	SetTrieValue(trie, "351_ammo", 16); 
+	SetTrieValue(trie, "351_ammo", 96); 
 
 //Soldier's Sashimono - The Concheror
 	SetTrieString(trie, "354_classname", "tf_weapon_buff_item"); 
@@ -5884,7 +5890,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "425_quality", 6); 
 	SetTrieValue(trie, "425_level", 10); 
 	//SetTrieString(trie, "425_attribs", "4 ; 3.3 ; 6 ; 0.5 ; 25 ; 3.3 ; 1 ; 0.85"); 
-	SetTrieValue(trie, "425_ammo", 32); 
+	SetTrieValue(trie, "425_ammo", 126); 
 
 //Eviction Notice
 	SetTrieString(trie, "426_classname", "tf_weapon_fists"); 
@@ -5947,7 +5953,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "448_quality", 6); 
 	SetTrieValue(trie, "448_level", 10); 
 	//SetTrieString(trie, "448_attribs", "97 ; 0.5 ; 6 ; 0.25 ; 418 ; 1 ; 43 ; 1 ; 37 ; 3 ; 107 ; 1.1 ; 128 ; 1 ; 3 ; 0.5"); 
-	SetTrieValue(trie, "448_ammo", 32); 
+	SetTrieValue(trie, "448_ammo", 99); 
 
 //Winger
 	SetTrieString(trie, "449_classname", "tf_weapon_handgun_scout_secondary"); 
@@ -6047,7 +6053,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "525_quality", 6); 
 	SetTrieValue(trie, "525_level", 5); 
 	//SetTrieString(trie, "525_attribs", "296 ;1.0 ;1 ;0.85 ;15 ;0.0"); 
-	SetTrieValue(trie, "525_ammo", 24); 
+	SetTrieValue(trie, "525_ammo", 30); 
 
 //The Machina
 	SetTrieString(trie, "526_classname", "tf_weapon_sniperrifle"); 
@@ -6190,7 +6196,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "648_slot", 2); 
 	SetTrieValue(trie, "648_quality", 6); 
 	SetTrieValue(trie, "648_level", 15); 
-	//SetTrieString(trie, "648_attribs", "346 ;1.0 ;1 ;0.3"); 
+	SetTrieString(trie, "648_attribs", "346 ; 1.0 ; 1 ;0.3"); 
 	SetTrieValue(trie, "648_ammo", 1); 
 
 //Spy-cicle
@@ -6209,7 +6215,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "654_quality", 6); 
 	SetTrieValue(trie, "654_level", 1); 
 	//SetTrieString(trie, "654_attribs", "76 ; 5 ; 6 ; .9 ; 16 ; 20"); 
-	SetTrieValue(trie, "654_ammo", 200); 
+	SetTrieValue(trie, "654_ammo", 2000); 
 
 //Holiday Punch
 	SetTrieString(trie, "656_classname", "tf_weapon_fists"); 
@@ -6299,7 +6305,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "669_quality", 6); 
 	SetTrieValue(trie, "669_level", 1); 
 	//SetTrieString(trie, "669_attribs", "97 ; 0.75 ; 37 ; 3 ; 106 ; 0.05 ; 45 ; 2 ; 6 ; 0.75 ; 15 ; 1 ; 1 ; .8"); 
-	SetTrieValue(trie, "669_ammo", 32); 
+	SetTrieValue(trie, "669_ammo", 102); 
 
 //Black Rose
 	SetTrieString(trie, "727_classname", "tf_weapon_knife"); 
@@ -6317,7 +6323,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "730_quality", 6); 
 	SetTrieValue(trie, "730_level", 1); 
 	//SetTrieString(trie, "730_attribs","411;20 ; 4;7.5 ; 76;10 ; 413;1 ; 417;1 ; 394;0.07 ; 241;0.45 ; 135;.05 ; 15;1 ; 475;1.05" );
-	SetTrieValue(trie, "730_ammo", 150); 
+	SetTrieValue(trie, "730_ammo", 200); 
 	
 //Lollichop
 	SetTrieString(trie, "739_classname", "tf_weapon_fireaxe"); 
@@ -6335,7 +6341,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "740_quality", 6); 
 	SetTrieValue(trie, "740_level", 10); 
 	//SetTrieString(trie, "740_attribs","99;3 ; 25;0.5 ; 416;3 ; 72;.5 ; 74;.5" ); 
-	SetTrieValue(trie, "740_ammo", 16); 
+	SetTrieValue(trie, "740_ammo", 26); 
 
 //Rainblower
 	SetTrieString(trie, "741_classname", "tf_weapon_flamethrower"); 
@@ -6353,7 +6359,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "751_quality", 6); 
 	SetTrieValue(trie, "751_level", 1); 
 	//SetTrieString(trie, "751_attribs", "31 ; 30"); 
-	SetTrieValue(trie, "751_ammo", 75); 
+	SetTrieValue(trie, "751_ammo", 188); 
 
 //Hitman's Heatmaker
 	SetTrieString(trie, "752_classname", "tf_weapon_sniperrifle"); 
@@ -6407,7 +6413,8 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "811_quality", 6); 
 	SetTrieValue(trie, "811_level", 1); 
 	//SetTrieString(trie, "811_attribs","430;150 ; 431;0 ; 60;.3 ; 87;0.5 ; 527;1" );
-
+	SetTrieValue(trie, "811_ammo", 200); 
+	
 //Flying Guillotine
 	SetTrieString(trie, "812_classname", "tf_weapon_cleaver"); 
 	SetTrieValue(trie, "812_index", 812); 
@@ -6505,7 +6512,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "996_quality", 6); 
 	SetTrieValue(trie, "996_level", 10); 
 	//SetTrieString(trie, "996_attribs", "103 ; 2 ; 4 ; 5 ; 318 ; .3 ; 6 ; 0.3 ; 1 ; 0.7 ; 76 ; 15 ; 15 ; 1 ; 43 ; 1"); 
-	SetTrieValue(trie, "996_ammo", 16); 
+	SetTrieValue(trie, "996_ammo", 84); 
 
 //Rescue Ranger
 	SetTrieString(trie, "997_classname", "tf_weapon_shotgun_building_rescue"); 
@@ -6514,7 +6521,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "997_quality", 6); 
 	SetTrieValue(trie, "997_level", 1); 
 	//SetTrieString(trie, "997_attribs", "469 ; 1 ; 474 ; 100 ; 4 ; 3.3 ; 37 ; 3 ; 6 ; 0.5"); 
-	SetTrieValue(trie, "997_ammo", 16); 
+	SetTrieValue(trie, "997_ammo", 116); 
 
 //Vaccinator
 	SetTrieString(trie, "998_classname", "tf_weapon_medigun"); 
@@ -6533,6 +6540,15 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "1013_level", 5); 
 	//SetTrieString(trie, "1013_attribs", ""); 
 	SetTrieValue(trie, "1013_ammo", -1); 
+	
+//Necro Smasher
+	SetTrieString(trie, "1123_classname", "saxxy"); 
+	SetTrieValue(trie, "1123_index", 1123); 
+	SetTrieValue(trie, "1123_slot", 2); 
+	SetTrieValue(trie, "1123_quality", 6); 
+	SetTrieValue(trie, "1123_level", 5); 
+	//SetTrieString(trie, "1123_attribs", ""); 
+	SetTrieValue(trie, "1123_ammo", -1); 
 
 //force a nature
 	SetTrieString(trie, "45_classname", "tf_weapon_scattergun"); 
@@ -6541,7 +6557,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "45_quality", 6); 
 	SetTrieValue(trie, "45_level", 10); 
 	//SetTrieString(trie, "45_attribs","44;1 ; 45;16 ; 3;0.166 ; 43;1 ; 1;.35 ; 106;5 ; 37;5 ; 97;0.8" );
-	SetTrieValue(trie, "45_ammo", 32); 
+	SetTrieValue(trie, "45_ammo", 161); 
 
 //bottle
 	SetTrieString(trie, "1_classname", "tf_weapon_bottle");
@@ -6559,7 +6575,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "4199_quality", 6);
 	SetTrieValue(trie, "4199_level", 1);
 	//SetTrieString(trie, "4199_attribs", "");
-	SetTrieValue(trie, "4199_ammo", 32);
+	SetTrieValue(trie, "4199_ammo", 41);
 
 //valve rocket launcher
 	SetTrieString(trie, "9018_classname", "tf_weapon_rocketlauncher");
@@ -6844,290 +6860,294 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieString(trie, "5142_viewmodel", "models/custom/weapons/goldslinger/c_engineer_gunslinger.mdl");
 	
 	
-		//HOPEFULLY THIS WILL OVERWRITE
-SetTrieString(trie, "237_attribs","134 ; 2 ; 181 ; 2 ; 476 ; -1 ; 318 ; 0.1 ; 4 ; 10 ; 76 ; 10 ; 128 ; 1 ; 275 ; 1 ; 169 ; 0.1 ; 252 ; 0.7" );
-SetTrieString(trie, "265_attribs","134 ; 2 ; 181 ; 2 ; 476 ; -1 ; 318 ; 0.1 ; 4 ; 10 ; 275 ; 1 ; 78 ; 10 ; 88 ; 8" );
-SetTrieString(trie, "730_attribs","411 ; 20 ; 4 ; 5 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.07 ; 241 ; 0.55 ; 135 ; .05 ; 15 ; 0 ; 475 ; 1.05 ; 214 ; 1" );
-SetTrieString(trie, "18_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1 ; 214 ; 1" );
-SetTrieString(trie, "127_attribs","103 ; 3.5 ; 100 ; 0.01 ; 2 ; 3 ; 114 ; 1 ; 214 ; 1 ; 215 ; 60" );
-SetTrieString(trie, "414_attribs","103 ; 1.5 ; 6 ; 0.5 ; 1 ; 1 ; 4 ; 1.5 ; 318 ; 0.9 ; 76 ; 2 ; 488 ; 3 ; 214 ; 1" );
-SetTrieString(trie, "228_attribs","26 ; 100 ; 16 ; 150 ; 5 ; 1 ; 180 ; 150 ; 3 ; 0.75 ; 214 ; 1" );
-SetTrieString(trie, "1085_attribs","26 ; 100 ; 16 ; 150 ; 5 ; 1 ; 180 ; 150 ; 3 ; 0.75 ; 214 ; 1" );
-SetTrieString(trie, "441_attribs","28 ; 1 ; 281 ; 1 ; 103 ; 2.5 ; 3 ; 0.25 ; 318 ; 0.05 ; 285 ; 1 ; 75 ; 10 ; 214 ; 1" );
-SetTrieString(trie, "444_attribs","259 ; 1 ; 252 ; 0.01 ; 2 ; 100 ; 129 ; 10 ; 214 ; 1" );
-SetTrieString(trie, "21_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4 ; 214 ; 1" );
-SetTrieString(trie, "40_attribs","255 ; 3 ; 256 ; 2 ; 24 ; 1 ; 162 ; 1.5 ; 164 ; 1.5 ; 214 ; 1" );
-SetTrieString(trie, "1146_attribs","255 ; 3 ; 256 ; 2 ; 24 ; 1 ; 162 ; 1.5 ; 164 ; 1.5 ; 214 ; 1" );
-SetTrieString(trie, "351_attribs","58 ; 2.5 ; 144 ; 1 ; 275 ; 1 ; 135 ; 0 ; 318 ; 0.5 ; 78 ; 3 ; 214 ; 1" );
-SetTrieString(trie, "740_attribs","99 ; 3 ; 25 ; 0.5 ; 416 ; 3 ; 72 ; .5 ; 74 ; .5 ; 214 ; 1" );
-SetTrieString(trie, "39_attribs","6 ; 0.25 ; 78 ; 3 ; 214 ; 1" );
-SetTrieString(trie, "1081_attribs","6 ; 0.25 ; 78 ; 3 ; 214 ; 1" );
-SetTrieString(trie, "595_attribs","103 ; 1.9 ; 350 ; 1 ; 96 ; 0.8 ; 6 ; 0.8 ; 2 ; 2 ; 74 ; 0 ; 20 ; 1 ; 367 ; 1 ; 28 ; 0 ; 214 ; 1" );
-SetTrieString(trie, "415_attribs","178 ; 0.05 ; 265 ; 60 ; 214 ; 1 ; 6 ; 0.75 ; 96 ; 0.75" );
-SetTrieString(trie, "2_attribs","178 ; .5 ; 2 ; 1.5 ; 267 ; 1 ; 214 ; 1" );
-SetTrieString(trie, "348_attribs","208 ; 1 ; 20 ; 1 ; 6 ; 0.3 ; 1 ; 0.5 ; 214 ; 1" );
-SetTrieString(trie, "214_attribs","26 ; 100 ; 180 ; 150 ; 107 ; 1.17 ; 128 ; 0 ; 214 ; 1 ; 412 ; 1 ; 62 ; 1" );
-SetTrieString(trie, "215_attribs","178 ; .2 ; 26 ; 25 ; 107 ; 1.1 ; 57 ; 5 ; 214 ; 1 ; 66 ; 0.5" );
-SetTrieString(trie, "326_attribs","69 ; 0 ; 2 ; 3 ; 108 ; 3 ; 214 ; 1" );
-SetTrieString(trie, "153_attribs","137 ; 10 ; 146 ; 1 ; 169 ; 0.1 ; 2 ; 1 ; 252 ; 0.01 ; 214 ; 1 ; 128 ; 1 ; 67 ; 1.5 ; 206 ; 3" );
-SetTrieString(trie, "813_attribs","146 ; 1 ; 438 ; 1 ; 2 ; 2 ; 214 ; 1" );
-SetTrieString(trie, "38_attribs","20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5 ; 638 ; 0 ; 214 ; 1" );
-SetTrieString(trie, "593_attribs","107 ; 1.3 ; 128 ; 1 ; 360 ; 1 ; 226 ; 1 ; 2 ; 2 ; 214 ; 1" );
-SetTrieString(trie, "412_attribs","144 ; 1 ; 6 ; 0.001 ; 1 ; 0.5 ; 96 ; 0.3 ; 3 ; 0.4 ; 107 ; 1.25 ; 76 ; 2 ; 214 ; 1" );
-SetTrieString(trie, "19_attribs","411 ; 10 ; 4 ; 4 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.75 ; 15 ; 0 ; 470 ; 0.5 ; 214 ; 1" );
-SetTrieString(trie, "20_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3 ; 214 ; 1" );
-SetTrieString(trie, "130_attribs","119 ; 1 ; 4 ; 4 ; 76 ; 10 ; 121 ; 1 ; 78 ; 3 ; 88 ; 60 ; 120 ; .6 ; 96 ; 0.5 ; 6 ; 0.5 ; 214 ; 1" );
-SetTrieString(trie, "308_attribs","103 ; 2.7 ; 2 ; 2.5 ; 3 ; 0.25 ; 127 ; 2 ; 207 ; 1.50 ; 15 ; 1 ; 99 ; 1.1 ; 214 ; 1" );
-SetTrieString(trie, "996_attribs","103 ; 1 ; 4 ; 1 ; 318 ; 1 ; 6 ; 1 ; 1 ; 1.5 ; 76 ; 5 ; 15 ; 1 ; 43 ; 1 ; 466 ; 1 ; 179 ; 1 ; 207 ; .25 ; 15 ; 1 ; 214 ; 1" );
-SetTrieString(trie, "405_attribs","246 ; 10 ; 26 ; 200" );
-SetTrieString(trie, "608_attribs","246 ; 10 ; 26 ; 200" );
-SetTrieString(trie, "406_attribs","247 ; 1 ; 248 ; 12 ; 60 ; 0.8 ; 64 ; 0.85 ; 214 ; 1" );
-SetTrieString(trie, "131_attribs","60 ; 0.25 ; 64 ; 0.25 ; 527 ; 1 ; 214 ; 1" );
-SetTrieString(trie, "1144_attribs","60 ; 0.25 ; 64 ; 0.25 ; 527 ; 1 ; 214 ; 1" );
-SetTrieString(trie, "1_attribs","394 ; 0.5 ; 214 ; 1" );
-SetTrieString(trie, "327_attribs","202 ; 10 ; 214 ; 1" );
-SetTrieString(trie, "132_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1" );
-SetTrieString(trie, "1082_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1" );
-SetTrieString(trie, "266_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1" );
-SetTrieString(trie, "482_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1 ; 215 ; 300 ; 216 ; 600" );
-SetTrieString(trie, "357_attribs","220 ; 100 ; 226 ; 1 ; 180 ; 500 ; 125 ; 150 ; 140 ; -150 ; 214 ; 1" );
-SetTrieString(trie, "416_attribs","178 ; .5 ; 2 ; 2.5 ; 267 ; 1 ; 15 ; 0 ; 5 ; 1.75" );
-SetTrieString(trie, "128_attribs","2 ; 4 ; 128 ; 1 ; 115 ; 1" );
-SetTrieString(trie, "775_attribs","107 ; 1.45 ; 128 ; 1 ; 414 ; 0 ; 235 ; 1" );
-SetTrieString(trie, "447_attribs","251 ; 1 ; 1 ; 0 ; 264 ; 20 ; 263 ; 10 ; 394 ; 0.25 ; 107 ; 1.25 ; 128 ; 1" );
-SetTrieString(trie, "133_attribs","135 ; 0 ; 275 ; 1 ; 112 ; 0.05 ; 107 ; 1.25" );
-SetTrieString(trie, "354_attribs","116 ; 3 ; 57 ; 15" );
-SetTrieString(trie, "129_attribs","116 ; 1 ; 357 ; 4" );
-SetTrieString(trie, "226_attribs","116 ; 2 ; 357 ; 5 ; 26 ; 100" );
-SetTrieString(trie, "811_attribs","430 ; 150 ; 431 ; 0 ; 60 ; .3 ; 87 ; 0.5 ; 527 ; 1" );
-SetTrieString(trie, "15_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "424_attribs","107 ; 1.3 ; 1 ; 0.8 ; 75 ; 2.13 ; 238 ; 1 ; 87 ; 0.1 ; 128 ; 1" );
-SetTrieString(trie, "312_attribs","2 ; 2 ; 86 ; 2 ; 183 ; 0.005 ; 266 ; 1 ; 106 ; 0.1" );
-SetTrieString(trie, "41_attribs","32 ; 2 ; 1 ; 0.66 ; 76 ; 10 ; 6 ; .1 ; 106 ; 5 ; 323 ; 2" );
-SetTrieString(trie, "159_attribs","139 ; 1 ; 201 ; .8 ; 551 ; 1" );
-SetTrieString(trie, "42_attribs","200 ; 1 ; 144 ; 3 ; 201 ; 1 ; 551 ; 1" );
-SetTrieString(trie, "425_attribs","4 ; 3.3 ; 6 ; 0.5 ; 25 ; 3.3 ; 1 ; 0.85" );
-SetTrieString(trie, "5_attribs","326 ; 2 ; 128 ; 1 ; 107 ; 1.3 ; 275 ; 1 ; 2 ; 2" );
-SetTrieString(trie, "239_attribs","107 ; 1.83 ; 128 ; 1 ; 414 ; 0" );
-SetTrieString(trie, "1084_attribs","107 ; 1.83 ; 128 ; 1 ; 414 ; 0" );
-SetTrieString(trie, "331_attribs","177 ; 3 ; 128 ; 1 ; 205 ; 0 ; 206 ; 5 ; 107 ; 1.3 ; 2 ; 2" );
-SetTrieString(trie, "310_attribs","26 ; 200 ; 180 ; 100 ; 2 ; 10" );
-SetTrieString(trie, "43_attribs","31 ; 30 ; 107 ; 1.3 ; 128 ; 1 ; 2 ; 2 ; 5 ; 1.5" );
-SetTrieString(trie, "426_attribs","1 ; 0.7 ; 6 ; 0.25 ; 107 ; 1.4 ; 128 ; 1 ; 149 ; 10" );
-SetTrieString(trie, "656_attribs","107 ; 1.3 ; 358 ; 1 ; 362 ; 1 ; 369 ; 1 ; 363 ; 1 ; 1 ; 0 ; 128 ; 1 ; 28 ; 10000" );
-SetTrieString(trie, "450_attribs","250 ; 10" );
-SetTrieString(trie, "317_attribs","203 ; 1 ; 108 ; 3 ; 412 ; 1 ; 62 ; 1" );
-SetTrieString(trie, "325_attribs","149 ; 30 ; 204 ; 0" );
-SetTrieString(trie, "448_attribs","97 ; 0.5 ; 6 ; 0.25 ; 418 ; 0 ; 43 ; 1 ; 37 ; 3 ; 107 ; 1 ; 128 ; 1 ; 3 ; .5" );
-SetTrieString(trie, "220_attribs","26 ; 50 ; 16 ; 15 ; 78 ; 3 ; 2 ; 1.2 ; 526 ; 2 ; 438 ; 1" );
-SetTrieString(trie, "45_attribs","44 ; 1 ; 45 ; 16 ; 3 ; 0.166 ; 43 ; 1 ; 1 ; .35 ; 106 ; 5 ; 37 ; 5 ; 97 ; 0.8" );
-SetTrieString(trie, "1078_attribs","44 ; 1 ; 45 ; 16 ; 3 ; 0.166 ; 43 ; 1 ; 1 ; .35 ; 106 ; 5 ; 37 ; 5 ; 97 ; 0.8" );
-SetTrieString(trie, "13_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "772_attribs","106 ; 0.6 ; 107 ; 1.3 ; 418 ; 1" );
-SetTrieString(trie, "773_attribs","26 ; 125 ; 275 ; 1 ; 412 ; 1 ; 62 ; 1" );
-SetTrieString(trie, "23_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
-SetTrieString(trie, "22_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
-SetTrieString(trie, "294_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
-SetTrieString(trie, "160_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
-SetTrieString(trie, "209_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
-SetTrieString(trie, "449_attribs","2 ; 2.5 ; 78 ; 1.5 ; 5 ; 1.5 ; 326 ; 2 ; 275 ; 1" );
-SetTrieString(trie, "355_attribs","218 ; 1 ; 149 ; 10 ; 337 ; 1 ; 1 ; 0.1 ; 6 ; 0.75 ; 340 ; 1" );
-SetTrieString(trie, "7_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "589_attribs","286 ; 2.31 ; 465 ; 6 ; 2043 ; 1 ; 94 ; 1 ; 148 ; 0 ; 352 ; 1 ; 276 ; 1" );
-SetTrieString(trie, "155_attribs","286 ; 2.31 ; 94 ; 3 ; 148 ; 2.15 ; 345 ; 10 ; 80 ; 3 ; 2 ; 3 ; 2043 ; 4 ; 6 ; 2 ; 412 ; 1 ; 62 ; 1 ; 149 ; 10" );
-SetTrieString(trie, "142_attribs","124 ; 1 ; 125 ; 175 ; 321 ; 2" );
-SetTrieString(trie, "329_attribs","286 ; 2.31 ; 2 ; 1.25 ; 327 ; 1 ; 92 ; 10" );
-SetTrieString(trie, "997_attribs","469 ; 1 ; 474 ; 100 ; 4 ; 3.3 ; 37 ; 3 ; 6 ; 0.5 ; 280 ; 18 ; 1 ; 0.3" );
-SetTrieString(trie, "527_attribs","298 ; 20 ; 301 ; 1 ; 303 ; -1 ; 299 ; 100 ; 6 ; 0.8 ; 80 ; 1.5 ; 307 ; 1 ; 113 ; 25" );
-SetTrieString(trie, "141_attribs","136 ; 1 ; 15 ; 1 ; 3 ; 0.75" );
-SetTrieString(trie, "9_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
-SetTrieString(trie, "528_attribs","298 ; 7 ; 301 ; 1 ; 300 ; 1 ; 307 ; 1 ; 303 ; -1 ; 312 ; 1 ; 299 ; 100 ; 6 ; 1 ; 80 ; 1.5 ; 113 ; 25" );
-SetTrieString(trie, "140_attribs","26 ; 75 ; 57 ; 5 ; 135 ; 0" );
-SetTrieString(trie, "1086_attribs","26 ; 75 ; 57 ; 5 ; 135 ; 0" );
-SetTrieString(trie, "29_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "35_attribs","18 ; 1 ; 10 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "411_attribs","8 ; 3 ; 10 ; 2 ; 231 ; 2 ; 144 ; 2 ; 57 ; 15 ; 11 ; 0.5" );
-SetTrieString(trie, "305_attribs","199 ; 1 ; 97 ; .25 ; 76 ; 2.6" );
-SetTrieString(trie, "1079_attribs","199 ; 1 ; 97 ; .25 ; 76 ; 2.6" );
-SetTrieString(trie, "998_attribs","10 ; 5 ; 144 ; 3 ; 473 ; 3 ; 292 ; 1 ; 293 ; 2 ; 7 ; 1 ; 499 ; 1" );
-SetTrieString(trie, "173_attribs","188 ; 100 ; 125 ; 100 ; 144 ; 2" );
-SetTrieString(trie, "30_attribs","128 ; 1 ; 107 ; 3 ; 35 ; 5 ; 34 ; 0.5" );
-SetTrieString(trie, "61_attribs","51 ; 1 ; 5 ; 2 ; 2 ; 2 ; 392 ; 0.05" );
-SetTrieString(trie, "224_attribs","6 ; 0.3 ; 1 ; 0.15 ; 166 ; 150 ; 78 ; 5" );
-SetTrieString(trie, "24_attribs","6 ; 0.3 ; 78 ; 5" );
-SetTrieString(trie, "1142_attribs","6 ; 0.3 ; 78 ; 5" );
-SetTrieString(trie, "210_attribs","6 ; 0.3 ; 78 ; 5" );
-SetTrieString(trie, "460_attribs","2 ; 3.1 ; 5 ; 4 ; 3 ; 0.16 ; 299 ; 1 ; 78 ; 0.25" );
-SetTrieString(trie, "16_attribs","6 ; 0.3 ; 1 ; 0.6 ; 78 ; 8 ; 4 ; 3 ; 266 ; 1" );
-SetTrieString(trie, "203_attribs","6 ; 0.3 ; 1 ; 0.6 ; 78 ; 8 ; 4 ; 3 ; 266 ; 1" );
-SetTrieString(trie, "1149_attribs","6 ; 0.3 ; 1 ; 0.6 ; 78 ; 8 ; 4 ; 3 ; 266 ; 1" );
-SetTrieString(trie, "14_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "230_attribs","41 ; 2 ; 42 ; 1 ; 175 ; 15 ; 179 ; 1" );
-SetTrieString(trie, "526_attribs","308 ; 1 ; 297 ; 0 ; 304 ; 30 ; 1 ; 0.1 ; 305 ; 1" );
-SetTrieString(trie, "402_attribs","237 ; 1 ; 222 ; 1 ; 223 ; 1 ; 390 ; 2" );
-SetTrieString(trie, "752_attribs","219 ; 1 ; 329 ; 0 ; 387 ; 100 ; 398 ; 50 ; 116 ; 6 ; 318 ; .25 ; 76 ; 2.5" );
-SetTrieString(trie, "751_attribs","6 ; 0.7 ; 613 ; 30 ; 4 ; 1.5 ; 78 ; 2" );
-SetTrieString(trie, "231_attribs","26 ; 175" );
-SetTrieString(trie, "642_attribs","57 ; 10 ; 377 ; 0.001 ; 376 ; 1 ; 378 ; 2 ; 412 ; 1 ; 62 ; 1" );
-SetTrieString(trie, "56_attribs","76 ; 3 ; 318 ; 0.5 ; 1 ; 1 ; 266 ; 1 ; 26 ; 50" );
-SetTrieString(trie, "1092_attribs","76 ; 3 ; 318 ; 0.5 ; 1 ; 1 ; 266 ; 1 ; 26 ; 50" );
-SetTrieString(trie, "17_attribs","6 ; 0.7 ; 17 ; 0.05 ; 76 ; 3" );
-SetTrieString(trie, "37_attribs","5 ; 2.5 ; 17 ; 1" );
-SetTrieString(trie, "1003_attribs","5 ; 2.5 ; 17 ; 1" );
-SetTrieString(trie, "4_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "356_attribs","125 ; -100 ; 140 ; -150 ; 220 ; 99900" );
-SetTrieString(trie, "225_attribs","154 ; 1 ; 144 ; 1 ; 155 ; 0" );
-SetTrieString(trie, "649_attribs","347 ; 1 ; 156 ; 1 ; 359 ; 3 ; 361 ; 6 ; 365 ; 3" );
-SetTrieString(trie, "461_attribs","166 ; 150 ; 107 ; 1.1 ; 125 ; -20 ; 57 ; 1 ; 258 ; 1 ; 251 ; 1 ; 264 ; 1.25 ; 263 ; 1.25" );
-SetTrieString(trie, "59_attribs","33 ; 1 ; 34 ; .9 ; 35 ; 2 ; 292 ; 9" );
-SetTrieString(trie, "60_attribs","48 ; 2 ; 35 ; 5" );
-SetTrieString(trie, "401_attribs","224 ; 5 ; 225 ; 0.1" );
-SetTrieString(trie, "171_attribs","149 ; 10 ; 208 ; 1" );
-SetTrieString(trie, "264_attribs","6 ; 0.5 ; 208 ; 1 ; 1 ; 0.5 ; 134 ; 1" );
-SetTrieString(trie, "200_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "669_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "799_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "808_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "888_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "897_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "906_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "915_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "964_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "973_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
-SetTrieString(trie, "1005_attribs","76 ; 3 ; 318 ; 0.5 ; 1 ; 1 ; 266 ; 1 ; 26 ; 50" );
-SetTrieString(trie, "201_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "664_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "851_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "792_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "801_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "881_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "890_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "899_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "908_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "857_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "966_attribs","41 ; 5 ; 390 ; 2" );
-SetTrieString(trie, "205_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "658_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "513_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "800_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "809_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "889_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "898_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "907_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "916_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "965_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "974_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
-SetTrieString(trie, "298_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "202_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "654_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "793_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "802_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "882_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "891_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "900_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "909_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "958_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "967_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
-SetTrieString(trie, "206_attribs","411 ; 10 ; 4 ; 4 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.75 ; 15 ; 0 ; 470 ; 0.5" );
-SetTrieString(trie, "1007_attribs","411 ; 10 ; 4 ; 4 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.75 ; 15 ; 0 ; 470 ; 0.5" );
-SetTrieString(trie, "207_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
-SetTrieString(trie, "661_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
-SetTrieString(trie, "797_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
-SetTrieString(trie, "806_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
-SetTrieString(trie, "886_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
-SetTrieString(trie, "895_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
-SetTrieString(trie, "904_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
-SetTrieString(trie, "913_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
-SetTrieString(trie, "962_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
-SetTrieString(trie, "971_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
-SetTrieString(trie, "1006_attribs","51 ; 1 ; 5 ; 2 ; 2 ; 2 ; 392 ; 0.05" );
-SetTrieString(trie, "727_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "194_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "665_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "794_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "803_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "883_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "892_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "901_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "910_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "959_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "968_attribs","31 ; 5 ; 394 ; 0.5" );
-SetTrieString(trie, "199_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
-SetTrieString(trie, "1141_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
-SetTrieString(trie, "141_attribs","136 ; 1 ; 15 ; 1 ; 3 ; 0.75" );
-SetTrieString(trie, "169_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "197_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "662_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "795_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "804_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "884_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "893_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "902_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "911_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "960_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "969_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
-SetTrieString(trie, "204_attribs","6 ; 0.3 ; 17 ; 0.05" );
-SetTrieString(trie, "211_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "663_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "796_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "805_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "885_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "894_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "903_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "912_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "961_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "970_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
-SetTrieString(trie, "208_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "659_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "798_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "807_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "887_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "896_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "905_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "914_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "963_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "972_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "452_attribs","149 ; 30 ; 204 ; 0" );
-SetTrieString(trie, "192_attribs","178 ; .5 ; 2 ; 1.5 ; 267 ; 1 ; 15 ; 0" );
-SetTrieString(trie, "739_attribs","178 ; .5 ; 2 ; 1.5 ; 267 ; 1 ; 15 ; 0" );
-SetTrieString(trie, "457_attribs","20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5" );
-SetTrieString(trie, "1000_attribs","20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5 ; 638 ; 0" );
-SetTrieString(trie, "466_attribs","137 ; 10 ; 146 ; 1 ; 169 ; 0.1 ; 2 ; 1 ; 252 ; 0.01 ; 214 ; 1 ; 128 ; 1 ; 67 ; 1.5 ; 206 ; 3" );
-SetTrieString(trie, "834_attribs","146 ; 1 ; 438 ; 1 ; 2 ; 1.5" );
-SetTrieString(trie, "191_attribs","394 ; 0.5" );
-SetTrieString(trie, "609_attribs","394 ; 0.5" );
-SetTrieString(trie, "154_attribs","68 ; 5 ; 67 ; 2" );
-SetTrieString(trie, "741_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
-SetTrieString(trie, "638_attribs","31 ; 3" );
-SetTrieString(trie, "10_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
-SetTrieString(trie, "12_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
-SetTrieString(trie, "11_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
-SetTrieString(trie, "36_attribs","16 ; 30 ; 180 ; 150" );
-SetTrieString(trie, "8_attribs","6 ; 0.8 ; 149 ; 30" );
-SetTrieString(trie, "1143_attribs","6 ; 0.8 ; 149 ; 30" );
-SetTrieString(trie, "304_attribs","129 ; 10 ; 128 ; 0" );
-SetTrieString(trie, "1104_attribs","644 ; 9 ; 621 ; .1 ; 4 ; 2.5 ; 318 ; 0.7 ; 76 ; 2 ; 135 ; 0 ; 275 ; 1" );
-SetTrieString(trie, "1103_attribs","613 ; 15 ; 179 ; 1 ; 106 ; 1 ; 76 ; 3 ; 3 ; 1 ; 619 ; 1" );
-SetTrieString(trie, "1098_attribs","378 ; 2 ; 41 ; 2.5 ; 306 ; 0 ; 636 ; 1 ; 637 ; 1" );
-SetTrieString(trie, "812_attribs","278 ; .25 ; 616 ; 1 ; 437 ; 1" );
-SetTrieString(trie, "163_attribs","278 ; .25 ; 144 ; 2" );
-SetTrieString(trie, "232_attribs","107 ; 1.2 ; 128 ; 1 ; 179 ; 1 ; 2 ; 1.5 ; 28 ; 0" );
-SetTrieString(trie, "58_attribs","278 ; .40 ; 279 ; 3 ; 99 ; 3" );
-SetTrieString(trie, "44_attribs","278 ; .4 ; 279 ; 3 ; 38 ; 1" );
-SetTrieString(trie, "0_attribs","215 ; 300 ; 216 ; 600 ; 2 ; 3 ; 15 ; 0" );
-SetTrieString(trie, "194_attribs","215 ; 300 ; 216 ; 600 ; 2 ; 3 ; 15 ; 0" );
-SetTrieString(trie, "594_attribs","368 ; 1 ; 116 ; 5 ; 356 ; 1 ; 144 ; 1 ; 551 ; 1 ; 350 ; 1 ; 201 ; 2" );
-SetTrieString(trie, "222_attribs","278 ; .40 ; 99 ; 3 ; 129 ; 5" );
-SetTrieString(trie, "1121_attribs","278 ; .40 ; 99 ; 3 ; 129 ; 5" );
-SetTrieString(trie, "735_attribs","425 ; 1.75 ; 427 ; 10" );
-SetTrieString(trie, "736_attribs","425 ; 1.75 ; 427 ; 10" );
-SetTrieString(trie, "1080_attribs","425 ; 1.75 ; 427 ; 10" );
-SetTrieString(trie, "1102_attribs","425 ; 1.75 ; 427 ; 10" );
-SetTrieString(trie, "933_attribs","425 ; 1.75 ; 427 ; 10" );
-SetTrieString(trie, "588_attribs","337 ; 5 ; 338 ; 5 ; 339 ; 1 ; 340 ; 1 ; 349 ; 0 ; 6 ; .3 ; 1 ; 0.1 ; 28 ; 0" );
-SetTrieString(trie, "1150_attribs","670 ; 0.01 ; 669 ; 1 ; 4 ; 0.75 ; 97 ; 0.7 ; 126 ; -2 ; 6 ; 0.5 ; 15 ; 1" );
-SetTrieString(trie, "1151_attribs","100 ; 0.85 ; 6 ; 0.7 ; 97 ; 0.5 ; 671 ; 1 ; 684 ; 3" );
-SetTrieString(trie, "1153_attribs","708 ; 1 ; 709 ; 0.5 ; 710 ; 1 ; 711 ; 0 ; 651 ; 0.25 ; 644 ; 9 ; 97 ; 0.2 ; 394 ; 0.5 ; 424 ; 1.5 ; 25 ; 5 ; 76 ; 5 ; 128 ; 1" );
+		//10X STATS
+	SetTrieString(trie, "237_attribs","134 ; 2 ; 181 ; 2 ; 476 ; -1 ; 318 ; 0.1 ; 4 ; 10 ; 76 ; 10 ; 128 ; 1 ; 275 ; 1 ; 169 ; 0.1 ; 252 ; 0.7" );
+	SetTrieString(trie, "265_attribs","134 ; 2 ; 181 ; 2 ; 476 ; -1 ; 318 ; 0.1 ; 4 ; 10 ; 275 ; 1 ; 78 ; 10 ; 88 ; 8" );
+	SetTrieString(trie, "730_attribs","411 ; 20 ; 4 ; 5 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.07 ; 241 ; 0.55 ; 135 ; .05 ; 15 ; 0 ; 475 ; 1.05 ; 214 ; 1" );
+	SetTrieString(trie, "18_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "127_attribs","103 ; 3.5 ; 100 ; 0.01 ; 2 ; 3 ; 114 ; 1 ; 214 ; 1 ; 215 ; 60" );
+	SetTrieString(trie, "414_attribs","103 ; 1.5 ; 6 ; 0.5 ; 1 ; 1 ; 4 ; 1.5 ; 318 ; 0.9 ; 76 ; 2 ; 488 ; 3 ; 214 ; 1" );
+	SetTrieString(trie, "228_attribs","26 ; 100 ; 16 ; 150 ; 180 ; 150 ; 3 ; 0.75 ; 214 ; 1" );
+	SetTrieString(trie, "1085_attribs","26 ; 100 ; 16 ; 150 ; 5 ; 1 ; 180 ; 150 ; 3 ; 0.75 ; 214 ; 1" );
+	SetTrieString(trie, "441_attribs","28 ; 1 ; 281 ; 1 ; 103 ; 2.5 ; 3 ; 0.25 ; 318 ; 0.05 ; 285 ; 1 ; 75 ; 10 ; 214 ; 1" );
+	SetTrieString(trie, "444_attribs","259 ; 1 ; 252 ; 0.01 ; 2 ; 100 ; 129 ; 10 ; 214 ; 1" );
+	SetTrieString(trie, "21_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4 ; 214 ; 1" );
+	SetTrieString(trie, "40_attribs","255 ; 3 ; 256 ; 2 ; 24 ; 1 ; 162 ; 1.5 ; 164 ; 1.5 ; 214 ; 1" );
+	SetTrieString(trie, "1146_attribs","255 ; 3 ; 256 ; 2 ; 24 ; 1 ; 162 ; 1.5 ; 164 ; 1.5 ; 214 ; 1" );
+	SetTrieString(trie, "351_attribs","58 ; 2.5 ; 144 ; 1 ; 275 ; 1 ; 135 ; 0 ; 318 ; 0.5 ; 78 ; 3 ; 214 ; 1" );
+	SetTrieString(trie, "740_attribs","99 ; 3 ; 25 ; 0.5 ; 416 ; 3 ; 72 ; .5 ; 74 ; .5 ; 214 ; 1" );
+	SetTrieString(trie, "39_attribs","6 ; 0.25 ; 78 ; 3 ; 214 ; 1" );
+	SetTrieString(trie, "1081_attribs","6 ; 0.25 ; 78 ; 3 ; 214 ; 1" );
+	SetTrieString(trie, "595_attribs","103 ; 1.9 ; 350 ; 1 ; 96 ; 0.8 ; 6 ; 0.8 ; 2 ; 2 ; 74 ; 0 ; 20 ; 1 ; 367 ; 1 ; 28 ; 0 ; 214 ; 1" );
+	SetTrieString(trie, "415_attribs","178 ; 0.05 ; 265 ; 60 ; 214 ; 1 ; 6 ; 0.75 ; 96 ; 0.75" );
+	SetTrieString(trie, "2_attribs","178 ; .5 ; 2 ; 1.5 ; 267 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "348_attribs","208 ; 1 ; 20 ; 1 ; 6 ; 0.3 ; 1 ; 0.5 ; 214 ; 1" );
+	SetTrieString(trie, "214_attribs","26 ; 100 ; 180 ; 150 ; 107 ; 1.17 ; 128 ; 0 ; 214 ; 1 ; 412 ; 1 ; 62 ; 1" );
+	SetTrieString(trie, "215_attribs","178 ; .2 ; 26 ; 25 ; 107 ; 1.1 ; 57 ; 5 ; 214 ; 1 ; 66 ; 0.5" );
+	SetTrieString(trie, "326_attribs","69 ; 0 ; 2 ; 3 ; 108 ; 3 ; 214 ; 1" );
+	SetTrieString(trie, "153_attribs","137 ; 10 ; 146 ; 1 ; 169 ; 0.1 ; 2 ; 1 ; 252 ; 0.01 ; 214 ; 1 ; 128 ; 1 ; 67 ; 1.5 ; 206 ; 3" );
+	SetTrieString(trie, "813_attribs","146 ; 1 ; 438 ; 1 ; 2 ; 2 ; 214 ; 1" );
+	SetTrieString(trie, "38_attribs","20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5 ; 638 ; 0 ; 214 ; 1" );
+	SetTrieString(trie, "593_attribs","107 ; 1.3 ; 128 ; 1 ; 360 ; 1 ; 226 ; 1 ; 2 ; 2 ; 214 ; 1" );
+	SetTrieString(trie, "412_attribs","144 ; 1 ; 6 ; 0.001 ; 1 ; 0.5 ; 96 ; 0.3 ; 3 ; 0.4 ; 107 ; 1.25 ; 76 ; 2 ; 214 ; 1" );
+	SetTrieString(trie, "19_attribs","411 ; 10 ; 4 ; 4 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.75 ; 15 ; 0 ; 470 ; 0.5 ; 214 ; 1" );
+	SetTrieString(trie, "20_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3 ; 214 ; 1" );
+	SetTrieString(trie, "130_attribs","119 ; 1 ; 4 ; 4 ; 76 ; 10 ; 121 ; 1 ; 78 ; 3 ; 88 ; 60 ; 120 ; .6 ; 96 ; 0.5 ; 6 ; 0.5 ; 214 ; 1" );
+	SetTrieString(trie, "308_attribs","103 ; 2.7 ; 2 ; 2.5 ; 3 ; 0.25 ; 127 ; 2 ; 207 ; 1.50 ; 15 ; 1 ; 99 ; 1.1 ; 214 ; 1" );
+	SetTrieString(trie, "996_attribs","103 ; 1 ; 4 ; 1 ; 318 ; 1 ; 6 ; 1 ; 1 ; 1.5 ; 76 ; 5 ; 15 ; 1 ; 43 ; 1 ; 466 ; 1 ; 179 ; 1 ; 207 ; .25 ; 15 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "405_attribs","246 ; 10 ; 26 ; 200" );
+	SetTrieString(trie, "608_attribs","246 ; 10 ; 26 ; 200" );
+	SetTrieString(trie, "406_attribs","247 ; 1 ; 248 ; 12 ; 60 ; 0.8 ; 64 ; 0.85 ; 214 ; 1" );
+	SetTrieString(trie, "131_attribs","60 ; 0.25 ; 64 ; 0.25 ; 527 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "1144_attribs","60 ; 0.25 ; 64 ; 0.25 ; 527 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "1_attribs","394 ; 0.5 ; 214 ; 1" );
+	SetTrieString(trie, "327_attribs","202 ; 10 ; 214 ; 1" );
+	SetTrieString(trie, "132_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "1082_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "266_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1" );
+	SetTrieString(trie, "482_attribs","292 ; 6 ; 388 ; 6 ; 219 ; 1 ; 214 ; 1 ; 215 ; 300 ; 216 ; 600" );
+	SetTrieString(trie, "357_attribs","220 ; 100 ; 226 ; 1 ; 180 ; 500 ; 125 ; 150 ; 140 ; -150 ; 214 ; 1" );
+	SetTrieString(trie, "416_attribs","178 ; .5 ; 2 ; 2.5 ; 267 ; 1 ; 15 ; 0 ; 5 ; 1.75" );
+	SetTrieString(trie, "128_attribs","2 ; 4 ; 128 ; 1 ; 115 ; 1" );
+	SetTrieString(trie, "775_attribs","107 ; 1.45 ; 128 ; 1 ; 414 ; 0 ; 235 ; 1" );
+	SetTrieString(trie, "447_attribs","251 ; 1 ; 1 ; 0 ; 264 ; 20 ; 263 ; 10 ; 394 ; 0.25 ; 107 ; 1.25 ; 128 ; 1" );
+	SetTrieString(trie, "133_attribs","135 ; 0 ; 275 ; 1 ; 112 ; 0.05 ; 107 ; 1.25" );
+	SetTrieString(trie, "354_attribs","116 ; 3 ; 57 ; 15" );
+	SetTrieString(trie, "129_attribs","116 ; 1 ; 357 ; 4" );
+	SetTrieString(trie, "226_attribs","116 ; 2 ; 357 ; 5 ; 26 ; 100" );
+	SetTrieString(trie, "811_attribs","430 ; 150 ; 431 ; 0 ; 60 ; .3 ; 87 ; 0.5 ; 527 ; 1" );
+	SetTrieString(trie, "15_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "424_attribs","107 ; 1.3 ; 1 ; 0.8 ; 75 ; 2.13 ; 238 ; 1 ; 87 ; 0.1 ; 128 ; 1" );
+	SetTrieString(trie, "312_attribs","2 ; 2 ; 86 ; 2 ; 183 ; 0.005 ; 266 ; 1 ; 106 ; 0.1 ; 305 ; 1" );
+	SetTrieString(trie, "41_attribs","32 ; 2 ; 1 ; 0.66 ; 76 ; 10 ; 6 ; .1 ; 106 ; 5 ; 323 ; 2" );
+	SetTrieString(trie, "159_attribs","139 ; 1 ; 201 ; .8 ; 551 ; 1" );
+	SetTrieString(trie, "42_attribs","201 ; 3 ; 128 ; 1" );
+	SetTrieString(trie, "425_attribs","4 ; 3.3 ; 6 ; 0.5 ; 25 ; 3.3 ; 1 ; 0.85" );
+	SetTrieString(trie, "5_attribs","326 ; 2 ; 128 ; 1 ; 107 ; 1.3 ; 275 ; 1 ; 2 ; 2" );
+	SetTrieString(trie, "239_attribs","107 ; 1.83 ; 128 ; 1 ; 414 ; 0" );
+	SetTrieString(trie, "1084_attribs","107 ; 1.83 ; 128 ; 1 ; 414 ; 0" );
+	SetTrieString(trie, "331_attribs","177 ; 3 ; 128 ; 1 ; 205 ; 0 ; 206 ; 5 ; 107 ; 1.3 ; 2 ; 2" );
+	SetTrieString(trie, "310_attribs","26 ; 200 ; 180 ; 100 ; 2 ; 10" );
+	SetTrieString(trie, "43_attribs","31 ; 30 ; 107 ; 1.3 ; 128 ; 1 ; 2 ; 2 ; 5 ; 1.5" );
+	SetTrieString(trie, "426_attribs","1 ; 0.7 ; 6 ; 0.25 ; 107 ; 1.4 ; 128 ; 1 ; 149 ; 10" );
+	SetTrieString(trie, "656_attribs","107 ; 1.3 ; 358 ; 1 ; 369 ; 1 ; 1 ; 0.005 ; 128 ; 1 ; 28 ; 10000" );
+	SetTrieString(trie, "450_attribs","250 ; 10" );
+	SetTrieString(trie, "317_attribs","203 ; 1 ; 108 ; 3 ; 412 ; 1 ; 62 ; 1" );
+	SetTrieString(trie, "325_attribs","149 ; 30 ; 204 ; 0" );
+	SetTrieString(trie, "448_attribs","97 ; 0.5 ; 6 ; 0.25 ; 418 ; 0 ; 43 ; 1 ; 37 ; 3 ; 107 ; 1 ; 128 ; 1 ; 3 ; .5" );
+	SetTrieString(trie, "220_attribs","26 ; 50 ; 16 ; 15 ; 78 ; 3 ; 2 ; 1.2 ; 526 ; 2 ; 438 ; 1" );
+	SetTrieString(trie, "45_attribs","44 ; 1 ; 45 ; 16 ; 3 ; 0.166 ; 43 ; 1 ; 1 ; .35 ; 106 ; 5 ; 37 ; 5 ; 97 ; 0.8" );
+	SetTrieString(trie, "1078_attribs","44 ; 1 ; 45 ; 16 ; 3 ; 0.166 ; 43 ; 1 ; 1 ; .35 ; 106 ; 5 ; 37 ; 5 ; 97 ; 0.8" );
+	SetTrieString(trie, "13_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "772_attribs","106 ; 0.6 ; 107 ; 1.3 ; 418 ; 1" );
+	SetTrieString(trie, "773_attribs","26 ; 125 ; 275 ; 1 ; 412 ; 1 ; 62 ; 1" );
+	SetTrieString(trie, "23_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
+	SetTrieString(trie, "22_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
+	SetTrieString(trie, "294_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
+	SetTrieString(trie, "160_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
+	SetTrieString(trie, "209_attribs","97 ; 0.8 ; 78 ; 4 ; 1 ; 0.65 ; 6 ; 0.05" );
+	SetTrieString(trie, "449_attribs","2 ; 2.5 ; 78 ; 1.5 ; 5 ; 1.5 ; 326 ; 2 ; 275 ; 1" );
+	SetTrieString(trie, "355_attribs","218 ; 1 ; 149 ; 10 ; 337 ; 1 ; 1 ; 0.1 ; 6 ; 0.75 ; 340 ; 1" );
+	SetTrieString(trie, "7_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "589_attribs","286 ; 2.31 ; 465 ; 6 ; 2043 ; 1 ; 94 ; 1 ; 148 ; 0 ; 352 ; 1 ; 276 ; 1" );
+	SetTrieString(trie, "155_attribs","286 ; 2.31 ; 94 ; 3 ; 148 ; 2.15 ; 345 ; 10 ; 80 ; 3 ; 2 ; 3 ; 2043 ; 4 ; 6 ; 2 ; 412 ; 1 ; 62 ; 1 ; 149 ; 10" );
+	SetTrieString(trie, "142_attribs","124 ; 1 ; 125 ; 175 ; 321 ; 2" );
+	SetTrieString(trie, "329_attribs","286 ; 2.31 ; 2 ; 1.25 ; 327 ; 1 ; 92 ; 10" );
+	SetTrieString(trie, "997_attribs","469 ; 1 ; 474 ; 100 ; 4 ; 3.3 ; 37 ; 3 ; 6 ; 0.5 ; 280 ; 18 ; 1 ; 0.3" );
+	SetTrieString(trie, "527_attribs","298 ; 20 ; 301 ; 1 ; 303 ; -1 ; 299 ; 100 ; 6 ; 0.8 ; 80 ; 1.5 ; 307 ; 1 ; 113 ; 25" );
+	SetTrieString(trie, "141_attribs","136 ; 1 ; 15 ; 1 ; 3 ; 0.75" );
+	SetTrieString(trie, "9_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "528_attribs","298 ; 7 ; 301 ; 1 ; 300 ; 1 ; 307 ; 1 ; 303 ; -1 ; 312 ; 1 ; 299 ; 100 ; 6 ; 1 ; 80 ; 1.5 ; 113 ; 25" );
+	SetTrieString(trie, "140_attribs","26 ; 75 ; 57 ; 5 ; 135 ; 0" );
+	SetTrieString(trie, "1086_attribs","26 ; 75 ; 57 ; 5 ; 135 ; 0" );
+	SetTrieString(trie, "29_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "35_attribs","18 ; 1 ; 10 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "411_attribs","8 ; 3 ; 10 ; 2 ; 231 ; 2 ; 144 ; 2 ; 57 ; 15 ; 11 ; 0.5" );
+	SetTrieString(trie, "305_attribs","199 ; 1 ; 97 ; .25 ; 76 ; 2.6" );
+	SetTrieString(trie, "1079_attribs","199 ; 1 ; 97 ; .25 ; 76 ; 2.6" );
+	SetTrieString(trie, "998_attribs","10 ; 5 ; 144 ; 3 ; 473 ; 3 ; 292 ; 1 ; 293 ; 2 ; 7 ; 1 ; 499 ; 1" );
+	SetTrieString(trie, "173_attribs","188 ; 100 ; 125 ; 100 ; 144 ; 2" );
+	SetTrieString(trie, "30_attribs","35 ; 2" );
+	SetTrieString(trie, "61_attribs","51 ; 1 ; 5 ; 2 ; 2 ; 2 ; 392 ; 0.05" );
+	SetTrieString(trie, "224_attribs","6 ; 0.3 ; 1 ; 0.15 ; 166 ; 150 ; 78 ; 5" );
+	SetTrieString(trie, "525_attribs","137 ; 3 ; 296 ; 1" );
+	SetTrieString(trie, "24_attribs","6 ; 0.3 ; 78 ; 5" );
+	SetTrieString(trie, "161_attribs","6 ; 0.3 ; 78 ; 5" );
+	SetTrieString(trie, "1142_attribs","6 ; 0.3 ; 78 ; 5" );
+	SetTrieString(trie, "210_attribs","6 ; 0.3 ; 78 ; 5" );
+	SetTrieString(trie, "460_attribs","2 ; 3.1 ; 5 ; 4 ; 3 ; 0.16 ; 299 ; 1 ; 78 ; 0.25" );
+	SetTrieString(trie, "16_attribs","6 ; 0.3 ; 1 ; 0.6 ; 78 ; 8 ; 4 ; 3 ; 266 ; 1" );
+	SetTrieString(trie, "203_attribs","6 ; 0.3 ; 1 ; 0.6 ; 78 ; 8 ; 4 ; 3 ; 266 ; 1" );
+	SetTrieString(trie, "1149_attribs","6 ; 0.3 ; 1 ; 0.6 ; 78 ; 8 ; 4 ; 3 ; 266 ; 1" );
+	SetTrieString(trie, "14_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "230_attribs","41 ; 2 ; 42 ; 1 ; 175 ; 15 ; 179 ; 1" );
+	SetTrieString(trie, "526_attribs","308 ; 1 ; 297 ; 0 ; 304 ; 30 ; 1 ; 0.1 ; 305 ; 1" );
+	SetTrieString(trie, "402_attribs","237 ; 1 ; 222 ; 1 ; 223 ; 1 ; 390 ; 2" );
+	SetTrieString(trie, "752_attribs","219 ; 1 ; 329 ; 0 ; 387 ; 100 ; 398 ; 50 ; 116 ; 6 ; 318 ; .25 ; 76 ; 2.5" );
+	SetTrieString(trie, "751_attribs","6 ; 0.7 ; 613 ; 30 ; 4 ; 1.5 ; 78 ; 2" );
+	SetTrieString(trie, "231_attribs","26 ; 175" );
+	SetTrieString(trie, "642_attribs","57 ; 10 ; 377 ; 0.001 ; 376 ; 1 ; 378 ; 2 ; 412 ; 1 ; 62 ; 1" );
+	SetTrieString(trie, "56_attribs","76 ; 3 ; 318 ; 0.5 ; 1 ; 1 ; 266 ; 1 ; 26 ; 50" );
+	SetTrieString(trie, "1092_attribs","76 ; 3 ; 318 ; 0.5 ; 1 ; 1 ; 266 ; 1 ; 26 ; 50" );
+	SetTrieString(trie, "17_attribs","6 ; 0.7 ; 17 ; 0.05 ; 76 ; 3" );
+	SetTrieString(trie, "37_attribs","5 ; 2.5 ; 17 ; 1" );
+	SetTrieString(trie, "1003_attribs","5 ; 2.5 ; 17 ; 1" );
+	SetTrieString(trie, "4_attribs","31 ; 5 ; 394 ; 0.3" );
+	SetTrieString(trie, "356_attribs","125 ; -100 ; 140 ; -150 ; 220 ; 99900" );
+	SetTrieString(trie, "225_attribs","154 ; 1 ; 155 ; 1 ; 156 ; 1 ; 168 ; 1" );
+	SetTrieString(trie, "649_attribs","347 ; 1 ; 156 ; 1 ; 359 ; 3 ; 361 ; 3 ; 365 ; 3" );
+	SetTrieString(trie, "461_attribs","166 ; 150 ; 107 ; 1.15 ; 221 ; 0.5" );
+	SetTrieString(trie, "59_attribs","33 ; 1 ; 34 ; .9 ; 35 ; 2 ; 292 ; 9" );
+	SetTrieString(trie, "60_attribs","48 ; 2 ; 35 ; 5" );
+	SetTrieString(trie, "401_attribs","224 ; 5 ; 225 ; 0.1" );
+	SetTrieString(trie, "171_attribs","149 ; 10 ; 208 ; 1" );
+	SetTrieString(trie, "264_attribs","6 ; 0.5 ; 208 ; 1 ; 1 ; 0.5 ; 134 ; 1" );
+	SetTrieString(trie, "1123_attribs","1 ; 0.005 ; 28 ; 10000 ; 5 ; 3 ; 204 ; 1" );
+	SetTrieString(trie, "200_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "669_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "799_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "808_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "888_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "897_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "906_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "915_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "964_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "973_attribs","37 ; 3 ; 106 ; 0.05 ; 15 ; 1 ; 2 ; 1.6" );
+	SetTrieString(trie, "1005_attribs","76 ; 3 ; 318 ; 0.5 ; 1 ; 1 ; 266 ; 1 ; 26 ; 50" );
+	SetTrieString(trie, "201_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "664_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "851_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "792_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "801_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "881_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "890_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "899_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "908_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "857_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "966_attribs","41 ; 5 ; 390 ; 2" );
+	SetTrieString(trie, "205_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "658_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "513_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "800_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "809_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "889_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "898_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "907_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "916_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "965_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "974_attribs","104 ; 0.32 ; 99 ; 1 ; 2 ; 5 ; 97 ; 1.4 ; 3 ; 0.25 ; 15 ; 1" );
+	SetTrieString(trie, "298_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "202_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "654_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "793_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "802_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "882_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "891_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "900_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "909_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "958_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "967_attribs","76 ; 5 ; 6 ; .9 ; 16 ; 20" );
+	SetTrieString(trie, "206_attribs","411 ; 10 ; 4 ; 4 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.75 ; 15 ; 0 ; 470 ; 0.5" );
+	SetTrieString(trie, "1007_attribs","411 ; 10 ; 4 ; 4 ; 76 ; 10 ; 413 ; 1 ; 417 ; 1 ; 394 ; 0.08 ; 241 ; 0.75 ; 15 ; 0 ; 470 ; 0.5" );
+	SetTrieString(trie, "207_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "661_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "797_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "806_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "886_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "895_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "904_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "913_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "962_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "971_attribs","96 ; 0.5 ; 78 ; 10 ; 6 ; 0.3" );
+	SetTrieString(trie, "1006_attribs","51 ; 1 ; 5 ; 2 ; 2 ; 2 ; 392 ; 0.05" );
+	SetTrieString(trie, "727_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "194_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "665_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "794_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "803_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "883_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "892_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "901_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "910_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "959_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "968_attribs","31 ; 5 ; 394 ; 0.5" );
+	SetTrieString(trie, "199_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "1141_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "141_attribs","136 ; 1 ; 15 ; 1 ; 3 ; 0.75" );
+	SetTrieString(trie, "169_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1 ; 150 ; 1" );
+	SetTrieString(trie, "197_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "662_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "795_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "804_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "884_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "893_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "902_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "911_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "960_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "969_attribs","6 ; 0.35 ; 286 ; 2.31 ; 1 ; .75 ; 15 ; 1" );
+	SetTrieString(trie, "204_attribs","6 ; 0.3 ; 17 ; 0.05" );
+	SetTrieString(trie, "211_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "663_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "796_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "805_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "885_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "894_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "903_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "912_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "961_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "970_attribs","314 ; 2 ; 11 ; 3 ; 26 ; 100" );
+	SetTrieString(trie, "208_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "659_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "798_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "807_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "887_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "896_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "905_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "914_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "963_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "972_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "452_attribs","149 ; 30 ; 204 ; 0" );
+	SetTrieString(trie, "192_attribs","178 ; .5 ; 2 ; 1.5 ; 267 ; 1 ; 15 ; 0" );
+	SetTrieString(trie, "739_attribs","178 ; .5 ; 2 ; 1.5 ; 267 ; 1 ; 15 ; 0" );
+	SetTrieString(trie, "457_attribs","20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5" );
+	SetTrieString(trie, "1000_attribs","20 ; 1 ; 21 ; 0 ; 22 ; 1 ; 2 ; 1.5 ; 638 ; 0" );
+	SetTrieString(trie, "466_attribs","137 ; 10 ; 146 ; 1 ; 169 ; 0.1 ; 2 ; 1 ; 252 ; 0.01 ; 214 ; 1 ; 128 ; 1 ; 67 ; 1.5 ; 206 ; 3" );
+	SetTrieString(trie, "834_attribs","146 ; 1 ; 438 ; 1 ; 2 ; 1.5" );
+	SetTrieString(trie, "191_attribs","394 ; 0.5" );
+	SetTrieString(trie, "609_attribs","394 ; 0.5" );
+	SetTrieString(trie, "154_attribs","68 ; 5 ; 67 ; 2" );
+	SetTrieString(trie, "741_attribs","171 ; 0.25 ; 256 ; 0.1 ; 254 ; 4" );
+	SetTrieString(trie, "638_attribs","31 ; 3" );
+	SetTrieString(trie, "10_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "12_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "11_attribs","4 ; 1.5 ; 6 ; 0.5 ; 25 ; 3.3 ; 318 ; 0.5" );
+	SetTrieString(trie, "36_attribs","16 ; 30 ; 180 ; 150" );
+	SetTrieString(trie, "8_attribs","6 ; 0.8 ; 149 ; 30" );
+	SetTrieString(trie, "1143_attribs","6 ; 0.8 ; 149 ; 30" );
+	SetTrieString(trie, "304_attribs","129 ; 10 ; 128 ; 0" );
+	SetTrieString(trie, "1104_attribs","644 ; 9 ; 621 ; .1 ; 4 ; 2.5 ; 318 ; 0.7 ; 76 ; 2 ; 135 ; 0 ; 275 ; 1" );
+	SetTrieString(trie, "1103_attribs","613 ; 15 ; 179 ; 1 ; 106 ; 1 ; 76 ; 3 ; 3 ; 1 ; 619 ; 1" );
+	SetTrieString(trie, "1098_attribs","378 ; 2 ; 41 ; 2.5 ; 306 ; 0 ; 636 ; 1 ; 637 ; 1" );
+	SetTrieString(trie, "812_attribs","278 ; .25 ; 616 ; 1 ; 437 ; 1" );
+	SetTrieString(trie, "163_attribs","278 ; .25 ; 144 ; 2" );
+	SetTrieString(trie, "232_attribs","107 ; 1.2 ; 128 ; 1 ; 179 ; 1 ; 2 ; 1.5 ; 28 ; 0" );
+	SetTrieString(trie, "58_attribs","278 ; .40 ; 279 ; 3 ; 99 ; 3" );
+	SetTrieString(trie, "44_attribs","278 ; .1 ; 38 ; 1" );
+	SetTrieString(trie, "0_attribs","215 ; 300 ; 216 ; 600 ; 2 ; 3 ; 15 ; 0" );
+	SetTrieString(trie, "194_attribs","215 ; 300 ; 216 ; 600 ; 2 ; 3 ; 15 ; 0" );
+	SetTrieString(trie, "594_attribs","368 ; 1 ; 116 ; 5 ; 356 ; 1 ; 144 ; 1 ; 551 ; 1 ; 350 ; 1 ; 201 ; 2" );
+	SetTrieString(trie, "222_attribs","278 ; .40 ; 99 ; 3 ; 129 ; 5" );
+	SetTrieString(trie, "1121_attribs","278 ; .40 ; 99 ; 3 ; 129 ; 5" );
+	SetTrieString(trie, "810_attribs","428 ; 2.5 ; 427 ; 5" );
+	SetTrieString(trie, "735_attribs","425 ; 2.3 ; 427 ; 10" );
+	SetTrieString(trie, "736_attribs","425 ; 1.75 ; 427 ; 10" );
+	SetTrieString(trie, "1080_attribs","425 ; 1.75 ; 427 ; 10" );
+	SetTrieString(trie, "1102_attribs","425 ; 1.75 ; 427 ; 10" );
+	SetTrieString(trie, "933_attribs","425 ; 1.75 ; 427 ; 10" );
+	SetTrieString(trie, "588_attribs","337 ; 5 ; 338 ; 5 ; 339 ; 1 ; 340 ; 1 ; 349 ; 0 ; 6 ; .3 ; 1 ; 0.1 ; 28 ; 0" );
+	SetTrieString(trie, "1150_attribs","670 ; 0.01 ; 669 ; 1 ; 4 ; 0.75 ; 97 ; 0.7 ; 126 ; -2 ; 6 ; 0.5 ; 15 ; 1" );
+	SetTrieString(trie, "1151_attribs","100 ; 0.85 ; 6 ; 0.7 ; 97 ; 0.5 ; 671 ; 1 ; 684 ; 3" );
+	SetTrieString(trie, "1153_attribs","708 ; 1 ; 709 ; 0.5 ; 710 ; 1 ; 711 ; 0 ; 651 ; 0.25 ; 644 ; 9 ; 97 ; 0.2 ; 394 ; 0.5 ; 424 ; 1.5 ; 25 ; 5 ; 76 ; 5 ; 128 ; 1" );
 
 
 
@@ -7916,7 +7936,6 @@ public Action:Command_SetLoadout(client, args)
 		if (!StrEqual(strArgs[4], "_", false) && strArgs[4][0] != '\0')
 			wep3 = StringToInt(strArgs[4]);
 		else wep3 = -2;
-		if (wep3 == 5) wep3 = 195;
 		new wep = FindWepInWepsArray(wep3, TFWeaponSlot_Melee);
 		if (wep == -1)
 		{
@@ -8496,6 +8515,7 @@ public Action:Cmd_Healring(client, args)
 }*/
 stock TF2_EquipWearable(client, entity)
 {
+	/*
 	if (bSDKStarted == false || hSDKEquipWearable == INVALID_HANDLE)
 	{
 		TF2_SdkStartup();
@@ -8506,6 +8526,7 @@ stock TF2_EquipWearable(client, entity)
 		if (TF2_IsEntityWearable(entity)) SDKCall(hSDKEquipWearable, client, entity);
 		else LogMessage("Error: Item %i isn't a valid wearable.", entity);
 	}
+	*/
 }
 
 stock bool:TF2_IsEntityWearable(entity)
