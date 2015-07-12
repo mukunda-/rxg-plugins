@@ -21,7 +21,7 @@ public Plugin myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.5.2",
+    version     = "2.6.0",
     url         = "www.mukunda.com"
 };
 
@@ -78,6 +78,9 @@ int g_client_cash_change[MAXPLAYERS+1];
 
 // the last time a client used an item, used for throttling item commands.
 float g_client_item_last_used[MAXPLAYERS];
+
+char g_initial_space[6];
+char g_item_color[11];
 
 // the number of seconds a client has to wait after using an item before
 // he can use another one.
@@ -169,6 +172,7 @@ public void OnPluginStart() {
 	RegServerCmd( "sm_store_broadcast_gift_send",      Command_broadcast_gift_send      );
 	RegServerCmd( "sm_store_broadcast_gift_receive",   Command_broadcast_gift_receive   );
 	RegServerCmd( "sm_store_broadcast_reward_receive", Command_broadcast_reward_receive );
+	RegServerCmd( "sm_store_broadcast_giveaway_claim", Command_broadcast_giveaway_claim );
 	RegServerCmd( "sm_store_broadcast_review",         Command_broadcast_review         );
 	
 	if( g_update_method == UPDATE_METHOD_TIMED ) {
@@ -176,6 +180,9 @@ public void OnPluginStart() {
 	} else if( g_update_method == UPDATE_METHOD_ROUND ) {
 		HookEvent( "round_start", OnRoundStart, EventHookMode_PostNoCopy );
 	}
+	
+	g_initial_space = (GAME == GAME_CSGO) ? "\x01 " : "";
+	g_item_color = (GAME == GAME_TF2) ? "\x07874fad" : "\x03";
 	
 	// parse ip
 	int longIP = GetConVarInt( FindConVar( "hostip" ));
@@ -244,52 +251,67 @@ public Action Command_reload_user_inventory( int args ) {
 }
 
 //-----------------------------------------------------------------------------
-void BroadcastStoreActivity( int args, const char[] msg, 
-                             bool single = false ) {
+void GetPlayerTeamColor( int client, char[] color, int color_size ) {
 	
-	if( args == 0 ) return;
- 
-	int client = FindClientFromAccount( GetCmdArgInt( 1 ));
-	if( !client ) return;
+	int  client_team = GetClientTeam( client );
+	char team_color[11];
+	
+	if( client_team == 2 ){
+		team_color = (GAME == GAME_TF2) ? "\x07ff3d3d" : "\x09";
+	} else if( client_team == 3 ){
+		team_color = (GAME == GAME_TF2) ? "\x0784d8f4" : "\x0B";
+	} else {
+		team_color = (GAME == GAME_TF2) ? "\x07808080" : "\x08";
+	}
+	
+	FormatEx( color, color_size, team_color );
+}
+
+//-----------------------------------------------------------------------------
+void GetPlayerNameColored( int client, char[] msg, int msg_size,
+                           bool start_of_msg = false ) {
 	
 	char player_name[33];
 	GetClientName( client, player_name, sizeof player_name );
 	
 	char team_color[11];
-	char item_color[11];
-	char initial_space[6];
-	int  client_team = GetClientTeam( client );
+	GetPlayerTeamColor( client, team_color, sizeof team_color );
 	
-	if( client_team == 2 ){
-		team_color = GAME == GAME_TF2 ? "\x07ff3d3d" : "\x09";
-	} else if( client_team == 3 ){
-		team_color = GAME == GAME_TF2 ? "\x0784d8f4" : "\x0B";
+	if( start_of_msg ) {
+		FormatEx( msg, msg_size, "%s%s%s", g_initial_space, team_color, player_name );
 	} else {
-		team_color = GAME == GAME_TF2 ? "\x07808080" : "\x08";
+		FormatEx( msg, msg_size, "%s%s", team_color, player_name );
 	}
+}
+
+//-----------------------------------------------------------------------------
+void BroadcastStoreActivity( int args, const char[] msg, int startAtArg = 2 ) {
 	
-	item_color    = GAME == GAME_TF2  ? "\x07874fad" : "\x03";
-	initial_space = GAME == GAME_CSGO ? "\x01 " : "";
+	if( args == 0 ) return;
 	
-	int arg = 2;
+	int client = FindClientFromAccount( GetCmdArgInt( 1 ));
+	if( !client ) return;
 	
-	if( single ) {
+	char player_name[65];
+	GetPlayerNameColored( client, player_name, sizeof player_name, true );
+	
+	PrintToChatAll( msg, player_name );
+	BroadcastStoreItems( args, startAtArg );
+}
+
+//-----------------------------------------------------------------------------
+void BroadcastStoreItems( int args, int startAtArg = 2 ) {
+	
+	if( args == 0 ) return;
+	
+	int arg = startAtArg;
+	
+	// print each item
+	while( args >= arg ) {
 		char item[64];
 		GetCmdArg( arg, item, sizeof item );
-		PrintToChatAll( msg, initial_space, team_color, 
-		                player_name, item_color, item );
-	} else {
-		// show starting message then items on separate lines
-		PrintToChatAll( msg, initial_space, team_color, player_name );
-		
-		while( args >= arg ) {
-			char item[64];
-			GetCmdArg( arg, item, sizeof item );
-			
-			PrintToChatAll( "%s%s%s", initial_space, item_color, item );
-			
-			arg++;
-		}
+		PrintToChatAll( "%s%s%s", g_initial_space, g_item_color, item );
+		arg++;
 	}
 }
 
@@ -297,7 +319,7 @@ void BroadcastStoreActivity( int args, const char[] msg,
 public Action Command_broadcast_purchase( int args ) {
 	
 	BroadcastStoreActivity( args, 
-		"%s%s%s \x01just made a \x04!store \x01purchase:" );
+		"%s \x01just made a \x04!store \x01purchase:" );
 		
 	return Plugin_Handled;
 }
@@ -306,7 +328,7 @@ public Action Command_broadcast_purchase( int args ) {
 public Action Command_broadcast_gift_send( int args ) {
 	
 	BroadcastStoreActivity( args, 
-		"%s%s%s \x01just sent a \x04!store \x01gift:" );
+		"%s \x01just sent a \x04!store \x01gift:" );
 		
 	return Plugin_Handled;
 }
@@ -315,7 +337,7 @@ public Action Command_broadcast_gift_send( int args ) {
 public Action Command_broadcast_gift_receive( int args ) {
 	
 	BroadcastStoreActivity( args, 
-		"%s%s%s \x01just accepted a \x04!store \x01gift:" );
+		"%s \x01just accepted a \x04!store \x01gift:" );
 		
 	return Plugin_Handled;
 }
@@ -324,17 +346,53 @@ public Action Command_broadcast_gift_receive( int args ) {
 public Action Command_broadcast_reward_receive( int args ) {
 	
 	BroadcastStoreActivity( args, 
-		"%s%s%s \x01just accepted a \x04!store \x01reward:" );
+		"%s \x01just accepted a \x04!store \x01reward:" );
 		
+	return Plugin_Handled;
+}
+
+//-----------------------------------------------------------------------------
+public Action Command_broadcast_giveaway_claim( int args ) {
+	
+	if( args == 0 ) return Plugin_Handled;
+	
+	int client = FindClientFromAccount( GetCmdArgInt( 1 ));
+	if( !client ) return Plugin_Handled;
+	
+	char giveaway_name[65];
+	GetCmdArg( 2, giveaway_name, sizeof giveaway_name );
+	
+	char player_name[65];
+	GetPlayerNameColored( client, player_name, sizeof player_name, true );
+	
+	PrintToChatAll( "%s \x01just claimed the \x04!store \x01%s:",
+                    player_name, giveaway_name );
+	BroadcastStoreItems( args, 3 );
+	
 	return Plugin_Handled;
 }
 
 //-----------------------------------------------------------------------------
 public Action Command_broadcast_review( int args ) {
 	
-	BroadcastStoreActivity( args, 
-		"%s%s%s \x01just wrote a \x04!store \x01review about the %s%s", true );
-		
+	if( args == 0 ) return Plugin_Handled;
+ 
+	int client = FindClientFromAccount( GetCmdArgInt( 1 ));
+	if( !client ) return Plugin_Handled;
+	
+	char player_name[65];
+	GetPlayerNameColored( client, player_name, sizeof player_name, true );
+	
+	char team_color[11];
+	GetPlayerTeamColor( client, team_color, sizeof team_color );
+	
+	char item_name_qty[70];
+	GetCmdArg( 2, item_name_qty, sizeof item_name_qty );
+	
+	PrintToChatAll(
+		"%s \x01just wrote a \x04!store \x01review about the %s%s",
+		player_name, g_item_color, item_name_qty );
+	
 	return Plugin_Handled;
 }
 
