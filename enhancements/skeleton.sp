@@ -10,7 +10,7 @@ public Plugin myinfo = {
 	name = "Skeleton",
 	author = "Roker",
 	description = "Spawnable Skeletons.",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -54,6 +54,11 @@ void RecacheConvars(){
 }
 //-----------------------------------------------------------------------------
 public OnMapStart() {
+	// reset last broadcast time for all clients
+	for( int i = 1; i <= MaxClients; i++ ) {
+		g_last_broadcast[i] = -c_broadcast_cooldown;
+	}
+	
 	for(int i=0;i<=7;i++){
 		char sound[64];
 		Format( sound, sizeof sound, "misc/halloween/skeletons/skelly_medium_0%i.wav", i );
