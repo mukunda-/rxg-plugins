@@ -21,7 +21,7 @@ public Plugin myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.6.0",
+    version     = "2.6.1",
     url         = "www.mukunda.com"
 };
 
@@ -1331,23 +1331,12 @@ public void ShowStorePage( int client, int id, int token ) {
 	delete kv;
 }
 
-public void OnQuickAuthSave( Handle owner, Handle hndl, const char[] error, 
-                             DataPack data ) {
-	if( !hndl ) {
-		delete data;
-		LogError( "SQL error saving QuickAuth token ::: %s", error );
-		return;
-	}
-	
-	DBRELAY_TQuery( OnQuickAuthFetch, "SELECT LAST_INSERT_ID()", data );
-}
-
 //-----------------------------------------------------------------------------
 public void OnQuickAuthFetch( Handle owner, Handle hndl, const char[] error, 
                               DataPack data ) {
 	if( !hndl ) {
 		delete data;
-		LogError( "SQL error fetching QuickAuth ID ::: %s", error );
+		LogError( "SQL error saving QuickAuth ID ::: %s", error );
 		return;
 	}
 	
@@ -1422,7 +1411,8 @@ public void ConVar_QueryClient( QueryCookie cookie, int client,
 	pack.WriteCell( token );
 	
 	if( DBRELAY_IsConnected() ) {
-		DBRELAY_TQuery( OnQuickAuthSave, query, pack );
+		DBRELAY_TQuery( IgnoredSQLResult, query );
+		DBRELAY_TQuery( OnQuickAuthFetch, "SELECT LAST_INSERT_ID()", pack );
 	} else {
 		PrintToChat( client, "\x01Visit our store at \x04store.reflex-gamers.com");
 	}
