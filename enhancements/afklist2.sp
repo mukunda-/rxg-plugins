@@ -17,7 +17,7 @@ public Plugin myinfo = {
 	name = "afk list2",
 	author = "REFLEX-GAMERS",
 	description = "afk tracker v2",
-	version = "1.0.2",
+	version = "1.0.3",
 	url = "www.reflex-gamers.com"
 };
 
@@ -75,19 +75,23 @@ MoveAFKClients() {
 	
 	int players = GetClientCount();
 	
+	// kick only one player at a time
+	bool has_kicked_player = false;
+	
 	for( int i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i) || IsFakeClient(i) ) continue;
-		if( GetClientTeam(i) < 2 ) {
+		
+		if( !has_kicked_player && GetClientTeam(i) < 2 ) {
 			// spectator
 			if( players >= threshold ) {
 				if( GetClientIdleTime(i) >= time ) {
 					KickClient( i, "Automated kick to make room" );
+					has_kicked_player = true;
 					continue;
 				}
 			}
-			
-			
 		}
+		
 		if( !IsPlayerAlive(i) ) continue;
 		
 		if( GetClientIdleTime(i) >= IDLE_THRESHOLD ) {
