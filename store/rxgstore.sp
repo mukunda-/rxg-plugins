@@ -21,7 +21,7 @@ public Plugin myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.6.1",
+    version     = "2.7.0",
     url         = "www.mukunda.com"
 };
 
@@ -30,6 +30,14 @@ public Plugin myinfo = {
 
 //#define RXG_CSGO_CLAN "#rxg"
 #define LOCK_DURATION_EXPIRE 30.0
+
+// routes for opening specific store pages
+char g_route_faq[] = "/faq";
+char g_route_buycash[] = "/paypal";
+char g_route_cart[] = "/cart";
+char g_route_item[] = "/item/%s";
+char g_route_profile[] = "/user/%s";
+char g_route_gift[] = "/gift/compose/%s";
 
 // the ip for this server (hostip converted into ipv4 format)
 char c_ip[32];
@@ -61,15 +69,15 @@ int g_client_items[MAXPLAYERS+1][ITEM_MAX];
 
 // false if inventory hasn't been loaded yet
 bool g_client_data_loaded[MAXPLAYERS+1];
-                                             
+
 // cache of the client's account id. This is stored here in the event that
 // a client disconnects and you need to perform a commit.
 int  g_client_data_account[MAXPLAYERS+1]; 
-        
+
 // record of what items a client uses or gains, a buffer of changes
 // that is used during a commit.
 int g_client_items_change[MAXPLAYERS+1][ITEM_MAX];
- 
+
 // amount of rxg dollars each player has.
 int g_client_cash[MAXPLAYERS+1];
 
@@ -115,7 +123,7 @@ float        g_last_update; // game time of the last update
 int GAME;
 
 #define GAME_CSGO	0
-#define GAME_TF2	1 
+#define GAME_TF2	1
 
 //-----------------------------------------------------------------------------
 void RegisterLibrary() {
@@ -159,12 +167,16 @@ public APLRes AskPluginLoad2( Handle myself, bool late, char[] error,
 //-----------------------------------------------------------------------------
 public void OnPluginStart() {
 	
+	LoadTranslations( "common.phrases" );
+	
 	RegConsoleCmd( "sm_cash",  Command_cash );
 	RegConsoleCmd( "useitem",  Command_use_item );
 	RegConsoleCmd( "items",    Command_items );
 	RegConsoleCmd( "sm_store", Command_store );
 	RegConsoleCmd( "sm_shop",  Command_store );
 	RegConsoleCmd( "sm_buy",   Command_store );
+	RegConsoleCmd( "sm_gift",  Command_gift );
+	RegConsoleCmd( "sm_buycash",  Command_buycash );
 	
 	RegServerCmd( "sm_store_unload_inventory",         Command_unload_user_inventory    );
 	RegServerCmd( "sm_store_reload_inventory",         Command_reload_user_inventory    );
@@ -870,13 +882,7 @@ void LogOutPlayer( int client ) {
 
 //-----------------------------------------------------------------------------
 public void IgnoredSQLResult( Handle owner, Handle hndl, const char[] error, 
-                              any data ) {
-                              
-	if( !hndl ) {
-		LogError( "SQL Error --- %s", error );
-		return;
-	}
-}
+                              any data ) {}
 
 //-----------------------------------------------------------------------------
 public void OnMapStart() {
@@ -1302,7 +1308,7 @@ public Action Command_cash( int client, int args ) {
 }
 
 //-----------------------------------------------------------------------------
-public void ShowStorePage( int client, int id, int token ) {
+public void ShowStorePage( int client, int id, int token, const char[] page ) {
 	
 	char source[13];
 	
@@ -1314,12 +1320,19 @@ public void ShowStorePage( int client, int id, int token ) {
 		source = "unknown";
 	}
 	
+	char page_param[65];
+	
+	if( page[0] != EOS ) {
+		FormatEx( page_param, sizeof page_param, "&page=%s", page );
+	}
+	
 	char url[512];
 	FormatEx( url, sizeof url,
-		"http://store.reflex-gamers.com/quickauth?id=%d&token=%d&game=%s",
+		"http://store.reflex-gamers.com/quickauth?id=%d&token=%d&game=%s%s",
 		id,
 		token,
-		source );
+		source,
+		(page[0] != EOS) ? page_param : "" );
 	
 	KeyValues kv = new KeyValues( "motd" );
 	kv.SetString( "title", "RXG Store" );
@@ -1336,7 +1349,7 @@ public void OnQuickAuthFetch( Handle owner, Handle hndl, const char[] error,
                               DataPack data ) {
 	if( !hndl ) {
 		delete data;
-		LogError( "SQL error saving QuickAuth ID ::: %s", error );
+		LogError( "SQL error fetching QuickAuth ID ::: %s", error );
 		return;
 	}
 	
@@ -1346,39 +1359,215 @@ public void OnQuickAuthFetch( Handle owner, Handle hndl, const char[] error,
 		id = SQL_FetchInt( hndl, 0 );
 	}
 	
+	char page[65];
+	
 	data.Reset(); 
-	int client = ReadPackCell(data);
-	int token = ReadPackCell(data);
+	int client = data.ReadCell();
+	int token = data.ReadCell();
+	data.ReadString( page, sizeof page );
 	
 	delete data;
 	
 	client = GetClientOfUserId( client );
 	if( client == 0 ) return; // disconnected
 	
-	ShowStorePage( client, id, token );
+	ShowStorePage( client, id, token, page );
+}
+
+//-----------------------------------------------------------------------------
+public Action QuickAuth( int client, const char[] page ) {
+	
+	DataPack pack = new DataPack();
+	pack.WriteString( page );
+	
+	QueryClientConVar( client, "cl_disablehtmlmotd", ConVar_QueryClient, pack );
+	
+	return Plugin_Handled;
 }
 
 //-----------------------------------------------------------------------------
 public Action Command_store( int client, int args ) {
+	
 	if( client == 0 ) return Plugin_Continue;
 	
 	if( !DBRELAY_IsConnected() ) {
-		PrintToChat( client, 
+		PrintToChat( client,
 			"The store is currently unavailable. Please try again later." );
-			
+		
 		return Plugin_Handled;
 	}
 	
-	QueryClientConVar( client, "cl_disablehtmlmotd", ConVar_QueryClient );
+	if( args > 0 ) {
+		char sub_command[17];
+		GetCmdArg( 1, sub_command, sizeof sub_command );
+		
+		if( StrEqual("help", sub_command, false) ||
+				StrEqual("faq", sub_command, false) ) {
+			
+			return QuickAuth( client, g_route_faq );
+			
+		} else if( StrEqual("buycash", sub_command, false) ) {
+			return QuickAuth( client, g_route_buycash );
+			
+		} else if( StrEqual("cart", sub_command, false) ) {
+			return QuickAuth( client, g_route_cart );
+			
+		} else if( StrEqual("item", sub_command, false) ) {
+			return SubCommand_Item( client, args );
+			
+		} else if( StrEqual("profile", sub_command, false) ) {
+			return SubCommand_Profile( client, args );
+			
+		} else if( StrEqual("gift", sub_command, false) ) {
+			return SubCommand_Gift( client, args );
+			
+		} else if( StrEqual("page", sub_command, false) ) {
+			return SubCommand_Page( client, args );
+		}
+	}
 	
-	return Plugin_Handled;
+	return QuickAuth( client, "" );
+}
+
+//-----------------------------------------------------------------------------
+public Action Command_gift( int client, int args ) {
+	if( client == 0 ) return Plugin_Continue;
+	
+	if( !DBRELAY_IsConnected() ) {
+		PrintToChat( client,
+			"The store is currently unavailable. Please try again later." );
+		
+		return Plugin_Handled;
+	}
+	
+	return SubCommand_Gift( client, args, 1 );
+}
+
+//-----------------------------------------------------------------------------
+public Action Command_buycash( int client, int args ) {
+	if( client == 0 ) return Plugin_Continue;
+	
+	if( !DBRELAY_IsConnected() ) {
+		PrintToChat( client,
+			"The store is currently unavailable. Please try again later." );
+		
+		return Plugin_Handled;
+	}
+	
+	return QuickAuth( client, g_route_buycash );
+}
+
+//-----------------------------------------------------------------------------
+Action SubCommand_Item( int client, int args ) {
+	
+	char page[65] = "";
+	
+	if( args > 1 ) {
+		char item_name[65];
+		GetCmdArg( 2, item_name, sizeof item_name );
+		FormatEx( page, sizeof page, g_route_item, item_name );
+		// TODO: handle invalid item names
+	} else {
+		ReplyToCommand( client, "No item specified" );
+		return Plugin_Handled;
+	}
+	
+	return QuickAuth( client, page );
+}
+
+//-----------------------------------------------------------------------------
+Action SubCommand_Profile( int client, int args, int arg = 2 ) {
+
+	char page[65] = "";
+	
+	if( arg <= args ) {
+		
+		char target_arg[33];
+		GetCmdArg( arg, target_arg, sizeof target_arg );
+		int target = FindTarget( client, target_arg, true, false );
+		
+		if( target == -1 ) {
+			return Plugin_Handled;
+		} else {
+			char steamid[65];
+			if( GetClientAuthId( target, AuthId_SteamID64, steamid, sizeof steamid ) ) {
+				FormatEx( page, sizeof page, g_route_profile, steamid );
+			} else {
+				ReplyToCommand( client, "Invalid player" );
+				return Plugin_Handled;
+			}
+		}
+		
+	} else {
+		ReplyToCommand( client, "No player specified" );
+		return Plugin_Handled;
+	}
+	
+	return QuickAuth( client, page );
+}
+
+//-----------------------------------------------------------------------------
+Action SubCommand_Gift( int client, int args, int arg = 2 ) {
+	
+	char page[65] = "";
+	
+	if( arg <= args ) {
+		
+		char target_arg[33];
+		GetCmdArg( arg, target_arg, sizeof target_arg );
+		int target = FindTarget( client, target_arg, true, false );
+		
+		if( target == -1 ) {
+			ReplyToCommand( client, "Player not found" );
+			return Plugin_Handled;
+		} else if( target == client ) {
+			ReplyToCommand( client, "You cannot send a gift to yourself" );
+			return Plugin_Handled;
+		} else {
+			char steamid[65];
+			if( GetClientAuthId( target, AuthId_SteamID64, steamid, sizeof steamid ) ) {
+				FormatEx( page, sizeof page, g_route_gift, steamid );
+			} else {
+				ReplyToCommand( client, "Invalid player" );
+				return Plugin_Handled;
+			}
+		}
+	} else {
+		ReplyToCommand( client, "No player specified" );
+		return Plugin_Handled;
+	}
+	
+	return QuickAuth( client, page );
+}
+
+//-----------------------------------------------------------------------------
+Action SubCommand_Page( int client, int args ) {
+	
+	char page[65] = "";
+	
+	if( args > 1 ) {
+		char page_arg[65];
+		GetCmdArg( 2, page_arg, sizeof page_arg );
+		FormatEx( page, sizeof page, "/%s", page_arg );
+	} else {
+		ReplyToCommand( client, "No page specified" );
+		return Plugin_Handled;
+	}
+	
+	return QuickAuth( client, page );
 }
 
 //-----------------------------------------------------------------------------
 public void ConVar_QueryClient( QueryCookie cookie, int client, 
                                 ConVarQueryResult result, 
                                 const char[] cvarName, 
-                                const char[] cvarValue ) {
+                                const char[] cvarValue,
+                                DataPack data ) {
+
+	data.Reset();
+	char page[65];
+	data.ReadString( page, sizeof page );
+	delete data;
 
 	if( cookie == QUERYCOOKIE_FAILED ) {
 		return;
@@ -1387,7 +1576,7 @@ public void ConVar_QueryClient( QueryCookie cookie, int client,
 	if( StringToInt(cvarValue) == 1 ) {
 		PrintToChat( client, 
 			"\x01You have web pages blocked. Please visit \x04store.reflex-gamers.com \x01or unblock web pages by entering \x04cl_disablehtmlmotd 0 \x01in console." );
-			
+		
 		return;
 	}
 
@@ -1409,6 +1598,7 @@ public void ConVar_QueryClient( QueryCookie cookie, int client,
 	DataPack pack = new DataPack();
 	pack.WriteCell( GetClientUserId( client )); 
 	pack.WriteCell( token );
+	pack.WriteString( page );
 	
 	if( DBRELAY_IsConnected() ) {
 		DBRELAY_TQuery( IgnoredSQLResult, query );
