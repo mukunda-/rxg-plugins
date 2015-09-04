@@ -110,25 +110,25 @@ POWERUP_CALL(type,index){
 }
 
 bool:POWERUP_FUNCTION_EXISTS( type, index ) {
-	return GetArrayCell( plugin_list, type-1, index ) != INVALID_FUNCTION; 
+	return (view_as<Function>GetArrayCell( plugin_list, type-1, index )) != INVALID_FUNCTION;
 }
 
 CachePluginFunctions( i, Handle:plugin ) {
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_Info" ), PC_INFO );
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_Model" ), PC_MODEL );
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_Start" ), PC_START );
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_Stop" ), PC_STOP );
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_Update" ), PC_UPDATE );
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_Fading" ), PC_FADING );
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_End" ), PC_END );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_Info" ), PC_INFO );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_Model" ), PC_MODEL );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_Start" ), PC_START );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_Stop" ), PC_STOP );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_Update" ), PC_UPDATE );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_Fading" ), PC_FADING );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_End" ), PC_END );
 	
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_OnGiveDamage" ), PC_ONGIVEDAMAGE );
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_OnTakeDamage" ), PC_ONTAKEDAMAGE );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_OnGiveDamage" ), PC_ONGIVEDAMAGE );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_OnTakeDamage" ), PC_ONTAKEDAMAGE );
 	
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_PickupSpawned" ), PC_PICKUPSPAWNED );
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_PickupUpdate" ), PC_PICKUPUPDATE );
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_PickupTaken" ), PC_PICKUPTAKEN );
-	SetArrayCell( plugin_list, i, GetFunctionByName( plugin, "PC_PickupEnd" ), PC_PICKUPEND );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_PickupSpawned" ), PC_PICKUPSPAWNED );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_PickupUpdate" ), PC_PICKUPUPDATE );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_PickupTaken" ), PC_PICKUPTAKEN );
+	SetArrayCell( plugin_list, i, view_as<int>GetFunctionByName( plugin, "PC_PickupEnd" ), PC_PICKUPEND );
 	
 }
 
