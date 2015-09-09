@@ -99,7 +99,9 @@ bool SpawnPumpkin( client ) {
 		return false;
 	}
 	
-	PMKN_SpawnPumpkinAtAim(client, c_max_plant_distance, c_max_per_player);
+	if(!PMKN_SpawnPumpkinAtAim(client, c_max_plant_distance, c_max_per_player)){
+		return false;
+	}
 	
 	char team_color[7];
 	TFTeam client_team = TFTeam:GetClientTeam(client);
@@ -111,8 +113,6 @@ bool SpawnPumpkin( client ) {
 	} else {
 		team_color = "874fad";
 	}
-	
-	
 	
 	char player_name[32];
 	GetClientName(client, player_name, sizeof player_name);

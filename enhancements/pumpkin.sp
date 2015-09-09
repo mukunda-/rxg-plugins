@@ -90,7 +90,7 @@ public Action Command_spawnpumpkin( client, args ) {
 	return Plugin_Handled;
 }
 //-------------------------------------------------------------------------------------------------
-public Native_SpawnPumpkinAtAim(Handle plugin, numParams){
+public bool Native_SpawnPumpkinAtAim(Handle plugin, numParams){
 	int client = GetNativeCell(1);
 	float maxDistance = GetNativeCell(2);
 	int maxPumpkins = GetNativeCell(3);
@@ -119,13 +119,11 @@ bool SpawnPumpkinAtAim(int client, float maxDistance, int maxPumpkins){
 
 		if ( maxDistance != 0 && distance > maxDistance * maxDistance ) {
 			PrintToChat( client, "\x07FFD800Cannot plant that far away." );
-			//RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
 		
 		if ( FloatAbs( norm_angles[0] - (270.0) ) > 45.0 ) {
 			PrintToChat( client, "\x07FFD800Cannot plant there." );
-			//RXGSTORE_ShowUseItemMenu(client);
 			return false;
 		}
 		SpawnPumpkin(client, end, maxPumpkins);
