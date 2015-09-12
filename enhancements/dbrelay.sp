@@ -43,11 +43,11 @@ public OnAllPluginsLoaded() {
 	if (LibraryExists("sourceirc"))
 		use_irc = true;
 }
-public OnLibraryAdded(const String:name[]) {
+public OnLibraryAdded(const char[] name) {
 	if (StrEqual(name, "sourceirc"))
 		use_irc = true;
 }
-public OnLibraryRemoved(const String:name[]) {
+public OnLibraryRemoved(const char[] name) {
 	if (StrEqual(name, "sourceirc"))
 		use_irc = false;
 }
@@ -278,7 +278,7 @@ public OnQueryResult( Handle owner, Handle hndl, const char[] error, any data ) 
 	
 	ResetPack(data);
 	Handle plugin = ReadPackHandle(data);
-	SQLTCallback callback = SQLTCallback:ReadPackFunction(data);
+	SQLTCallback callback = view_as<SQLTCallback>ReadPackFunction(data);
 	Handle inner_data = ReadPackHandle(data);
 	CloseHandle(data);
 	
