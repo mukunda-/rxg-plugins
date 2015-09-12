@@ -34,7 +34,7 @@ public Plugin:myinfo = {
 	name = "Watching",
 	author = "mukunda",
 	description = "Command to see how many players are sharing your view.",
-	version = "1.2.1",
+	version = "1.2.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -86,7 +86,7 @@ ShowWatching( client ) {
 	for( new i = 1; i <= MaxClients; i++ ) {
 		
 		// filter for spectators watching target
-		if( !IsClientInGame(i) ) continue;
+		if( !IsClientInGame(i) || IsFakeClient(i) ) continue;
 		if( client == i ) continue; // exclude caller
 		if( !IsClientObserver(i) ) continue;
 		if( GetClientIdleTime(i) > 300.0 ) continue; // exclude AFK spectators
