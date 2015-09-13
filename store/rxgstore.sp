@@ -6,6 +6,9 @@
 #include <dbrelay>
 #include <rxgcommon>
 
+#undef REQUIRE_PLUGIN
+#include <sourceirc>
+
 #pragma semicolon 1
 #pragma newdecls required
 
@@ -21,7 +24,7 @@ public Plugin myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.7.0",
+    version     = "2.8.0",
     url         = "www.mukunda.com"
 };
 
@@ -89,6 +92,7 @@ float g_client_item_last_used[MAXPLAYERS];
 
 char g_initial_space[6];
 char g_item_color[11];
+char g_irc_prefix[] = "\x030,3[STORE] ";
 
 // the number of seconds a client has to wait after using an item before
 // he can use another one.
@@ -124,6 +128,22 @@ int GAME;
 
 #define GAME_CSGO	0
 #define GAME_TF2	1
+
+//-----------------------------------------------------------------------------
+bool use_irc;
+
+public void OnAllPluginsLoaded() {
+	if (LibraryExists("sourceirc"))
+		use_irc = true;
+}
+public void OnLibraryAdded(const char[] name) {
+	if (StrEqual(name, "sourceirc"))
+		use_irc = true;
+}
+public void OnLibraryRemoved(const char[] name) {
+	if (StrEqual(name, "sourceirc"))
+		use_irc = false;
+}
 
 //-----------------------------------------------------------------------------
 void RegisterLibrary() {
@@ -297,17 +317,25 @@ void GetPlayerNameColored( int client, char[] msg, int msg_size,
 }
 
 //-----------------------------------------------------------------------------
-void BroadcastStoreActivity( int args, const char[] msg, int startAtArg = 2 ) {
+void BroadcastStoreActivity( int args, const char[] msg, const char[] irc_msg,
+							 int startAtArg = 2 ) {
 	
 	if( args == 0 ) return;
 	
 	int client = FindClientFromAccount( GetCmdArgInt( 1 ));
 	if( !client ) return;
 	
-	char player_name[65];
-	GetPlayerNameColored( client, player_name, sizeof player_name, true );
+	char player_name_colored[65];
+	GetPlayerNameColored( client, player_name_colored,
+						  sizeof player_name_colored, true );
 	
-	PrintToChatAll( msg, player_name );
+	if( use_irc ) {
+		char player_name[33];
+		GetClientName( client, player_name, sizeof player_name );
+		IRC_MsgFlaggedChannels( "relay", irc_msg, g_irc_prefix, player_name );
+	}
+	
+	PrintToChatAll( msg, player_name_colored );
 	BroadcastStoreItems( args, startAtArg );
 }
 
@@ -331,8 +359,9 @@ void BroadcastStoreItems( int args, int startAtArg = 2 ) {
 public Action Command_broadcast_purchase( int args ) {
 	
 	BroadcastStoreActivity( args, 
-		"%s \x01just made a \x04!store \x01purchase:" );
-		
+		"%s \x01just made a \x04!store \x01purchase:",
+		"%s%s made a purchase" );
+	
 	return Plugin_Handled;
 }
 
@@ -340,8 +369,9 @@ public Action Command_broadcast_purchase( int args ) {
 public Action Command_broadcast_gift_send( int args ) {
 	
 	BroadcastStoreActivity( args, 
-		"%s \x01just sent a \x04!store \x01gift:" );
-		
+		"%s \x01just sent a \x04!store \x01gift:",
+		"%s%s sent a gift" );
+	
 	return Plugin_Handled;
 }
 
@@ -349,8 +379,9 @@ public Action Command_broadcast_gift_send( int args ) {
 public Action Command_broadcast_gift_receive( int args ) {
 	
 	BroadcastStoreActivity( args, 
-		"%s \x01just accepted a \x04!store \x01gift:" );
-		
+		"%s \x01just accepted a \x04!store \x01gift:",
+		"%s%s accepted a gift" );
+	
 	return Plugin_Handled;
 }
 
@@ -358,8 +389,9 @@ public Action Command_broadcast_gift_receive( int args ) {
 public Action Command_broadcast_reward_receive( int args ) {
 	
 	BroadcastStoreActivity( args, 
-		"%s \x01just accepted a \x04!store \x01reward:" );
-		
+		"%s \x01just accepted a \x04!store \x01reward:",
+		"%s%s accepted a reward" );
+	
 	return Plugin_Handled;
 }
 
@@ -374,11 +406,20 @@ public Action Command_broadcast_giveaway_claim( int args ) {
 	char giveaway_name[65];
 	GetCmdArg( 2, giveaway_name, sizeof giveaway_name );
 	
-	char player_name[65];
-	GetPlayerNameColored( client, player_name, sizeof player_name, true );
+	char player_name_colored[65];
+	GetPlayerNameColored( client, player_name_colored,
+						  sizeof player_name_colored, true );
 	
 	PrintToChatAll( "%s \x01just claimed the \x04!store \x01%s:",
-                    player_name, giveaway_name );
+                    player_name_colored, giveaway_name );
+    
+	if( use_irc ) {
+		char player_name[33];
+		GetClientName( client, player_name, sizeof player_name );
+		IRC_MsgFlaggedChannels( "relay", "%s%s claimed the %s",
+								g_irc_prefix, player_name, giveaway_name );
+	}
+	
 	BroadcastStoreItems( args, 3 );
 	
 	return Plugin_Handled;
@@ -392,18 +433,27 @@ public Action Command_broadcast_review( int args ) {
 	int client = FindClientFromAccount( GetCmdArgInt( 1 ));
 	if( !client ) return Plugin_Handled;
 	
-	char player_name[65];
-	GetPlayerNameColored( client, player_name, sizeof player_name, true );
+	char player_name_colored[65];
+	GetPlayerNameColored( client, player_name_colored,
+						  sizeof player_name_colored, true );
 	
 	char team_color[11];
 	GetPlayerTeamColor( client, team_color, sizeof team_color );
 	
-	char item_name_qty[70];
-	GetCmdArg( 2, item_name_qty, sizeof item_name_qty );
+	char item_name[70];
+	GetCmdArg( 2, item_name, sizeof item_name );
 	
 	PrintToChatAll(
 		"%s \x01just wrote a \x04!store \x01review about the %s%s",
-		player_name, g_item_color, item_name_qty );
+		player_name_colored, g_item_color, item_name );
+	
+	if( use_irc ) {
+		char player_name[33];
+		GetClientName( client, player_name, sizeof player_name );
+		IRC_MsgFlaggedChannels( "relay",
+			"%s%s wrote a review about the %s",
+			g_irc_prefix, player_name, item_name );
+	}
 	
 	return Plugin_Handled;
 }
@@ -1609,4 +1659,3 @@ public void ConVar_QueryClient( QueryCookie cookie, int client,
 	
 	//ReplyToCommand( client, "Visit our store at store.reflex-gamers.com" );
 }
-
