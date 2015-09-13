@@ -7,7 +7,7 @@ public Plugin myinfo = {
 	name = "Game Start Fix",
 	author = "WhiteThunder",
 	description = "Fixes game start",
-	version = "1.1.0",
+	version = "1.1.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -30,32 +30,6 @@ public Event_RoundStart( Handle event, const char[] name, bool db ) {
 			GetTeamScore(2) == 0 && GetTeamScore(3) == 0 ) {
 		
 		g_last_restart = time;
-		int players = CountPlayers();
-		
-		// give time to join teams so people don't get stuck on join screen
-		float restart_delay = 1.0;
-		
-		if( players > 20 ) {
-			restart_delay = 3.0;
-		} else if( players > 10 ) {
-			restart_delay = 2.0;
-		}
-		
-		CreateTimer( restart_delay, Timer_RestartRound );
+		CS_TerminateRound( 0.0, CSRoundEnd_GameStart );
 	}
-}
-
-//-----------------------------------------------------------------------------
-public int CountPlayers() {
-	int players = 0;
-	for( new i = 1; i <= MaxClients; i++ ) {
-		if( IsClientInGame(i) && !IsFakeClient(i) ) players++;
-	}
-	return players;
-}
-
-//-----------------------------------------------------------------------------
-public Action Timer_RestartRound( Handle timer, any data ) {
-	// CSRoundEnd_GameStart ignores the time argument
-	CS_TerminateRound( 0.0, CSRoundEnd_GameStart );
 }
