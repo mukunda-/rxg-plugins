@@ -7,9 +7,9 @@
 #pragma newdecls required;
 
 public Plugin myinfo = {
-	name = "Game Start Fix",
+	name = "Restart Fix",
 	author = "WhiteThunder",
-	description = "Fixes game start",
+	description = "Fixes game restart",
 	version = "1.4.0",
 	url = "www.reflex-gamers.com"
 };
