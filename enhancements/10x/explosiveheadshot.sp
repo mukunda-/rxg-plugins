@@ -11,7 +11,7 @@ public Plugin myinfo = {
 	name = "Explosive Headshot",
 	author = "Roker",
 	description = "Creates explosions on headshot.",
-	version = "1.2.1",
+	version = "1.2.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -88,7 +88,6 @@ public Action Timer_createExplosion(Handle timer, Handle data){
 	
 	if( shooter_index == 0 ) {
 		// invalid client
-		CloseHandle(data);
 		return Plugin_Handled;
 	}
 	
@@ -96,7 +95,6 @@ public Action Timer_createExplosion(Handle timer, Handle data){
 	location[0]  = ReadPackFloat(data);
 	location[1]  = ReadPackFloat(data);
 	location[2]  = ReadPackFloat(data);
-	CloseHandle(data);
 	
 	EmitAmbientSound("ambient/explosions/explode_8.wav", location, SOUND_FROM_WORLD, SNDLEVEL_NORMAL);
 	
