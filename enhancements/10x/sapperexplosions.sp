@@ -11,7 +11,7 @@ public Plugin myinfo = {
 	name = "Sapper Explosions",
 	author = "Roker",
 	description = "Creates explosions on when a sappers destroy buildings.",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -36,7 +36,7 @@ public Action Event_Object_Destroyed( Handle event, const char[] name, bool dont
 	if(!StrEqual(weaponName, "obj_attachment_sapper")){return Plugin_Continue;}
 	
 	Handle data;
-	CreateDataTimer( 0.0, Timer_createExplosion, data);
+	CreateDataTimer( 0.0, Timer_createExplosion, data); // auto closes pack
 	
 	float location[3];
 	GetEntPropVector(building, Prop_Send, "m_vecOrigin", location);
@@ -56,7 +56,6 @@ public Action Timer_createExplosion(Handle timer, Handle data){
 	
 	if( shooter == 0 ) {
 		// invalid client
-		CloseHandle(data);
 		return Plugin_Handled;
 	}
 	
@@ -64,7 +63,6 @@ public Action Timer_createExplosion(Handle timer, Handle data){
 	location[0]  = ReadPackFloat(data);
 	location[1]  = ReadPackFloat(data);
 	location[2]  = ReadPackFloat(data);
-	CloseHandle(data);
 	
 	EmitAmbientSound("ambient/explosions/explode_8.wav", location, SOUND_FROM_WORLD, SNDLEVEL_NORMAL);
 	
