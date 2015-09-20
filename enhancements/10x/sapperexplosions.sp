@@ -11,7 +11,7 @@ public Plugin myinfo = {
 	name = "Sapper Explosions",
 	author = "Roker",
 	description = "Creates explosions on when a sappers destroy buildings.",
-	version = "1.0.1",
+	version = "1.0.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -41,7 +41,7 @@ public Action Event_Object_Destroyed( Handle event, const char[] name, bool dont
 	float location[3];
 	GetEntPropVector(building, Prop_Send, "m_vecOrigin", location);
 	
-	WritePackCell(data, client);
+	WritePackCell(data, GetClientUserId(client));
 	WritePackFloat(data, location[0]);
 	WritePackFloat(data, location[1]);
 	WritePackFloat(data, location[2]);
@@ -52,7 +52,7 @@ public Action Event_Object_Destroyed( Handle event, const char[] name, bool dont
 public Action Timer_createExplosion(Handle timer, Handle data){
 
 	ResetPack(data);
-	int shooter = ReadPackCell(data);
+	int shooter = GetClientOfUserId( ReadPackCell(data) );
 	
 	if( shooter == 0 ) {
 		// invalid client
