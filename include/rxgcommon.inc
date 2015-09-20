@@ -73,12 +73,14 @@ stock int intmin( int a, int b ) {
 stock int intmax( int a, int b ) {
 	return a > b ? a : b; 
 }
+
 //-----------------------------------------------------------------------------
 stock int GetCmdArgInt( int index ) {
 	char number[16];
 	GetCmdArg( index, number, sizeof number );
 	return StringToInt( number );
 }
+
 //-----------------------------------------------------------------------------
 stock bool IntArrayContains(int val, int[] array, int arraySize){
 	for (int i = 0; i < arraySize;i++){
@@ -87,4 +89,21 @@ stock bool IntArrayContains(int val, int[] array, int arraySize){
 		}
 	}
 	return false;
+}
+
+//-----------------------------------------------------------------------------
+stock GetIPv4( char[] buffer, int buffer_size ) {
+	
+	// parse ip
+	int longIP = GetConVarInt( FindConVar( "hostip" ));
+	int pieces[4];
+	
+	pieces[0] = (longIP & 0xFF000000) >> 24;
+	pieces[1] = (longIP & 0x00FF0000) >> 16;
+	pieces[2] = (longIP & 0x0000FF00) >> 8;
+	pieces[3] = (longIP & 0x000000FF);
+
+	// format as ipv4
+	FormatEx( buffer, buffer_size, "%d.%d.%d.%d",
+              pieces[0], pieces[1], pieces[2], pieces[3] );
 }
