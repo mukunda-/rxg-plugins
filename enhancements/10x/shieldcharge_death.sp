@@ -10,21 +10,24 @@
 public Plugin myinfo = {
 	name = "ShieldCharge Death",
 	author = "Roker",
-	description = "Creates explosions on headshot.",
-	version = "1.2.1",
+	description = "Creates explosions when shield-charging demos collide.",
+	version = "1.2.2",
 	url = "www.reflex-gamers.com"
 };
 
 #define WEAPON_INDEX 406
 #define PLAYER_WIDTH 15.0
+
 //-----------------------------------------------------------------------------
 public OnPluginStart() {
 	HookEvent( "player_death", Event_Player_Death, EventHookMode_Post);
 }
+
 //-----------------------------------------------------------------------------
-public OnMapStart(){
+public OnMapStart() {
 	PrecacheSound("ambient/explosions/explode_8.wav", true);
 }
+
 //-----------------------------------------------------------------------------
 public Action Event_Player_Death( Handle event, const char[] name, bool dontBroadcast ) {
 	
@@ -37,12 +40,14 @@ public Action Event_Player_Death( Handle event, const char[] name, bool dontBroa
 	if( !IsValidClient(attacker) || !IsPlayerAlive(attacker) ) {
 		return Plugin_Continue;
 	}
-	bool isBash = GetEventInt( event, "customkill" ) == TF_CUSTOM_CHARGE_IMPACT;
-	if(!isBash){return Plugin_Continue;}
-	if(!hasCorrectWeapon(attacker)){return Plugin_Continue;}
-	if(!hasCorrectWeapon(victim)){return Plugin_Continue;}
 	
-	if(!TF2_IsPlayerInCondition(victim,TFCond_Charging)){return Plugin_Continue;}
+	bool isBash = GetEventInt( event, "customkill" ) == TF_CUSTOM_CHARGE_IMPACT;
+	
+	if( !isBash || !hasCorrectWeapon(attacker) || !hasCorrectWeapon(victim) ||
+			!TF2_IsPlayerInCondition(victim, TFCond_Charging) ) {
+		
+		return Plugin_Continue;
+	}
 	
 	Handle data;
 	CreateDataTimer( 0.1, Timer_createExplosion, data);
@@ -50,29 +55,29 @@ public Action Event_Player_Death( Handle event, const char[] name, bool dontBroa
 	WritePackCell(data, attacker_id);
 	WritePackCell(data, victim_id);
 	
-	
 	return Plugin_Continue;
 }
+
 //-----------------------------------------------------------------------------
-public Action Timer_createExplosion(Handle:timer, Handle:data){
+public Action Timer_createExplosion(Handle timer, Handle data){
+	
 	ResetPack(data);
 	int attacker = GetClientOfUserId( ReadPackCell(data) );
 	int victim = GetClientOfUserId( ReadPackCell(data) );
 	
 	if( victim == 0 || attacker == 0 ) {
 		// invalid client
-		CloseHandle(data);
 		return Plugin_Handled;
 	}
-	CloseHandle(data);
 	
 	createExplosion(victim);
 	createExplosion(attacker);
-	
 
 	return Plugin_Handled;
 }
-void createExplosion(int client){
+
+//-----------------------------------------------------------------------------
+void createExplosion(int client) {
 	float pos[3];
 	GetClientEyePosition(client,pos);
 	EmitAmbientSound("ambient/explosions/explode_8.wav", pos, SOUND_FROM_WORLD, SNDLEVEL_NORMAL);
@@ -92,17 +97,20 @@ void createExplosion(int client){
 	AcceptEntityInput(ent, "explode");
 	AcceptEntityInput(ent, "kill");
 }
+
 //-----------------------------------------------------------------------------
-public TF2_OnConditionRemoved(client, TFCond:condition) 
+public void TF2_OnConditionRemoved(int client, TFCond condition) 
 { 
-    if (condition == TFCond_Charging){	
+    if (condition == TFCond_Charging) {
 
 		//not correct weapon
-		if(!hasCorrectWeapon(client)){return;}
+		if( !hasCorrectWeapon(client) ) return;
 		
-		float start[3]; float angle[3]; float end[3]; float minimums[3]; float maximums[3];
-		minimums = {-PLAYER_WIDTH,-PLAYER_WIDTH,10.0};
-		maximums = {PLAYER_WIDTH,PLAYER_WIDTH,68.0};
+		float start[3]; float angle[3]; float end[3];
+		
+		float minimums[3] = { -PLAYER_WIDTH, -PLAYER_WIDTH, 10.0 };
+		float maximums[3] = { PLAYER_WIDTH, PLAYER_WIDTH, 68.0 };
+		
 		GetClientAbsOrigin( client, start );
 		GetClientAbsAngles( client, angle );
 		GetAngleVectors(angle,end,NULL_VECTOR,NULL_VECTOR);
@@ -110,6 +118,7 @@ public TF2_OnConditionRemoved(client, TFCond:condition)
 		AddVectors(start,end,end);
 		
 		TR_TraceHullFilter( start, end, minimums, maximums, CONTENTS_SOLID , TraceFilter_All);
+		
 		if( TR_DidHit() ) {
 			TR_GetEndPosition( end );
 			float distance = GetVectorDistance( start, end, true );
@@ -119,11 +128,13 @@ public TF2_OnConditionRemoved(client, TFCond:condition)
 			}
 		}
 	}
-} 
+}
+
 //-------------------------------------------------------------------------------------------------
 public bool TraceFilter_All( entity, contentsMask ) {
 	return false;
 }
+
 //-------------------------------------------------------------------------------------------------
 bool hasCorrectWeapon(int client)
 {
@@ -131,6 +142,7 @@ bool hasCorrectWeapon(int client)
 	int index = ( IsValidEntity(shield) ? GetEntProp( shield, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	return (index == WEAPON_INDEX);
 }
+
 //-------------------------------------------------------------------------------------------------
 stock FindDemoShield(int iClient)
 {
@@ -144,6 +156,8 @@ stock FindDemoShield(int iClient)
     }
     return -1;
 }
+
+//-------------------------------------------------------------------------------------------------
 stock int FindEntityByClassname2(startEnt, const String:classname[])
 {
     /* If startEnt isn't valid shifting it back to the nearest valid one */
