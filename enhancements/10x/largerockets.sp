@@ -12,7 +12,7 @@ public Plugin myinfo =
 	name = "Large Rockets",
 	author = "Roker",
 	description = "Make large rockets.",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -24,6 +24,8 @@ public void OnEntityCreated(int entity, const char[] classname){
 }
 public void RocketSpawn(int entity){
 	int client = GetEntPropEnt(entity, Prop_Data, "m_hOwnerEntity");
+	
+	if( !IsValidClient(client) ) return;
 	
 	int weapon = GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
 	int index = TF2_GetWeaponIndex(weapon);
