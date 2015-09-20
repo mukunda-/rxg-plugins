@@ -15,7 +15,7 @@ public Plugin myinfo = {
 	name        = "rxg-weapons",
 	author      = "REFLEX",
 	description = "Weapon purchasing management.",
-	version     = "1.3.1",
+	version     = "1.3.2",
 	url         = "www.reflex-gamers.com"
 };
 
@@ -50,13 +50,11 @@ Handle ammo_grenade_limit_flashbang;
 Handle ammo_grenade_limit_total;
 Handle mp_buytime;
 Handle rxg_auto_rebuy;
-Handle sm_taser_limit;
 
 // cached convar values
 int c_ammo_grenade_limit_default;
 int c_ammo_grenade_limit_flashbang;
 int c_ammo_grenade_limit_total;
-int c_taser_limit;
 
 // indexes for the rebuy data
 enum {
@@ -83,9 +81,6 @@ int g_rebuy_data[MAXPLAYERS+1][REBUY_COUNT];
 
 // if they used rebuy this round yet
 bool g_rebuy_used[MAXPLAYERS+1];
-
-// number of taser bought this round
-int g_tasers_bought[MAXPLAYERS+1];
 
 // price of each weapon
 int WeaponPrices[CSWeaponID] = {
@@ -124,12 +119,9 @@ public void OnPluginStart() {
 		
 	mp_buytime = FindConVar( "mp_buytime" );
 	
-	sm_taser_limit = CreateConVar( "sm_taser_limit", "0", "Taser buy limit per player per round. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
-	
 	HookConVarChange( ammo_grenade_limit_default,   OnCVarChanged );
 	HookConVarChange( ammo_grenade_limit_flashbang, OnCVarChanged );
 	HookConVarChange( ammo_grenade_limit_total,     OnCVarChanged );
-	HookConVarChange( sm_taser_limit,               OnCVarChanged );
 	
 	CacheCVars();
 	
@@ -150,7 +142,6 @@ void CacheCVars() {
 	c_ammo_grenade_limit_default   = GetConVarInt( ammo_grenade_limit_default );
 	c_ammo_grenade_limit_flashbang = GetConVarInt( ammo_grenade_limit_flashbang );
 	c_ammo_grenade_limit_total     = GetConVarInt( ammo_grenade_limit_total );
-	c_taser_limit                  = GetConVarInt( sm_taser_limit );
 }
 
 //-----------------------------------------------------------------------------
@@ -209,7 +200,6 @@ public void OnClientPutInServer( int client ) {
 	ResetRebuyData( client );
 	g_nades_locked[client] = false;
 	g_rebuy_used[client] = true;
-	g_tasers_bought[client] = 0;
 	SDKHook( client, SDKHook_WeaponDropPost, OnWeaponDrop );
 }
 
@@ -346,14 +336,6 @@ public Action CS_OnBuyCommand( int client, const char[] weapon ) {
 	// catch invalid weapon name.
 	if( id == CSWeapon_NONE ) return Plugin_Continue;
 	
-	// limit tasers per round
-	if( c_taser_limit > 0 && id == CSWeapon_TASER ) {
-		if( g_tasers_bought[client] >= c_taser_limit ) {
-			return Plugin_Handled;
-		}
-		g_tasers_bought[client]++;
-	}
-	
 	// TODO verify all weapons being translated correctly.
 	
 	// catch invalid weapon name.
@@ -486,7 +468,6 @@ public void OnRoundStart( Handle event, const char[] name, bool db ) {
 	for( int i = 1; i <= MaxClients; i++ ) {
 		g_rebuy_used[i] = false;
 		g_nades_locked[i] = false;
-		g_tasers_bought[i] = 0;
 	}
 	
 	g_nades_graceperiod = true;
