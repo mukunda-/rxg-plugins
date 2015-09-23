@@ -14,7 +14,7 @@ public Plugin myinfo = {
     name        = "RXG Store Broadcasts",
     author      = "WhiteThunder",
     description = "Broadcasts Store Events",
-    version     = "1.0.0",
+    version     = "1.0.1",
     url         = "www.reflex-gamers.com"
 };
 
@@ -76,6 +76,7 @@ public void OnPluginStart() {
 int FindClientFromAccount( int account ) {
 	
 	for( int i = 1; i <= MaxClients; i++ ) {
+		if( !IsClientInGame(i) ) continue;
 		int acc = GetSteamAccountID(i);
 		if( acc == account ) {
 			return i;
