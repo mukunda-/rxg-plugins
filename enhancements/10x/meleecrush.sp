@@ -10,7 +10,7 @@ public Plugin myinfo = {
 	name = "Melee Crush",
 	author = "Roker",
 	description = "Crush People",
-	version = "1.0.1",
+	version = "1.0.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -36,9 +36,9 @@ public OnClientPutInServer(client) {
 }
 
 //-----------------------------------------------------------------------------
-public Action OnTakeDamage( victim, &attacker, &inflictor, &Float:damage,
-						   &damagetype, &weapon, Float:damageForce[3],
-						   Float:damagePosition[3] ) {
+public Action OnTakeDamage( int victim, int &attacker, int &inflictor,
+							float &damage, &damagetype, &weapon,
+							float damageForce[3], float damagePosition[3] ) {
 	
 	// do client checks before weapon
 	// both attacker and victim need to be clients
@@ -47,6 +47,14 @@ public Action OnTakeDamage( victim, &attacker, &inflictor, &Float:damage,
 	}
 	
 	if( !IsValidEntity(weapon) ) {
+		return Plugin_Continue;
+	}
+	
+	char weapon_classname[64];
+	GetEntityClassname( weapon, weapon_classname, sizeof weapon_classname );
+	
+	// must be a client weapon, not an eyeball boss or something
+	if( strncmp( weapon_classname, "tf_weapon", 9 ) != 0 ) {
 		return Plugin_Continue;
 	}
 	
