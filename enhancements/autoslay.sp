@@ -16,7 +16,7 @@ public Plugin:myinfo = {
 	name = "autoslay",
 	author = "REFLEX-GAMERS",
 	description = "auto slay vaginas",
-	version = "1.1.1",
+	version = "1.1.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -89,7 +89,7 @@ public Event_RoundEnd( Handle:event, const String:name[], bool:dontBroadcast ) {
 	new CSRoundEndReason:reason = CSRoundEndReason:GetEventInt( event, "reason" );
 	if( reason == CSRoundEnd_HostagesRescued ) {
 		SlaySurvivors( CS_TEAM_T, "\x01 \x02Slaying terrorists for letting the hostage escape." );
-	} else if( reason == CSRoundEnd_HostagesNotRescued ) {
+	} else if( reason == CSRoundEnd_HostagesNotRescued || reason == CSRoundEnd_TerroristsNotEscaped ) {
 		SlaySurvivors( CS_TEAM_CT, "\x01 \x02Slaying counter-terrorists for not rescuing the hostage." );
 	} else if( reason == CSRoundEnd_TargetSaved ) {
 		SlaySurvivors( CS_TEAM_T, "\x01 \x02Slaying terrorists for not planting the bomb." );
