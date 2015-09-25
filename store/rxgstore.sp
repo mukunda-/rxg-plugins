@@ -21,7 +21,7 @@ public Plugin myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.9.0",
+    version     = "2.9.1",
     url         = "www.mukunda.com"
 };
 
@@ -162,6 +162,9 @@ public APLRes AskPluginLoad2( Handle myself, bool late, char[] error,
 public void OnPluginStart() {
 	
 	LoadTranslations( "common.phrases" );
+	
+	RegServerCmd( "sm_store_unload_inventory", Command_unload_user_inventory );
+	RegServerCmd( "sm_store_reload_inventory", Command_reload_user_inventory );
 	
 	RegConsoleCmd( "sm_cash",  Command_cash );
 	RegConsoleCmd( "useitem",  Command_use_item );
