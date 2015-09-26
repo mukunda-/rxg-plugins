@@ -21,7 +21,7 @@ public Plugin myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.10.0",
+    version     = "2.11.0",
     url         = "www.mukunda.com"
 };
 
@@ -187,6 +187,8 @@ public void OnPluginStart() {
 	LoadConfigFile();
 	
 	BuildSQLItemIDFilter();
+	
+	Update();
 }
 
 //-----------------------------------------------------------------------------
@@ -702,9 +704,9 @@ public void OnMapStart() {
 }
 
 //-----------------------------------------------------------------------------
-public void OnClientConnected( int client ) {
+public void OnClientPostAdminCheck( int client ) {
 	g_client_data_loaded[client] = false; 
-	 
+	LoadClientData( client );
 }
 
 //-----------------------------------------------------------------------------
@@ -714,10 +716,11 @@ public void OnClientDisconnect( int client ) {
 
 //-----------------------------------------------------------------------------
 public int OnDBRelayConnected() {
-	
 	for( int i = 1; i <= MaxClients; i++ ) {
 		g_client_data_loaded[i] = false;
 	}
+	
+	Update();
 }
 
 //-----------------------------------------------------------------------------
@@ -1025,6 +1028,7 @@ public int Native_AddCash( Handle plugin, int args ) {
 	
 	return CommitCashChange( client, GetNativeCell(2) );
 }
+
 //-----------------------------------------------------------------------------
 public int Native_TakeCash( Handle plugin, int args ) {
 	return TryTakeCash( GetNativeCell(1), GetNativeCell(2), plugin, 
