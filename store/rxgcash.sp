@@ -1,6 +1,5 @@
  
-//-------------------------------------------------------------------------------------------------
-#include <sourcemod>
+include <sourcemod>
 #include <sdktools> 
 #include <sdkhooks>
 #include <rxgstore>
@@ -9,90 +8,88 @@
 #undef REQUIRE_PLUGIN
 #include <tf2use>
 
-#pragma semicolon 1 
+#pragma semicolon 1
+#pragma newdecls required
 
 // 1.0.4
 //   check if store is connected before spawning cash
 
-//-------------------------------------------------------------------------------------------------
-public Plugin:myinfo =
-{
+//-----------------------------------------------------------------------------
+public Plugin myinfo = {
 	name = "RXGCASH",
 	author = "mukunda",
 	description = "Dat monay",
 	version = "2.0.0",
 	url = "www.mukunda.com"
 };
- 
-new String:money_model[64];
-new String:take_sound[64];
+
+char money_model[64];
+char take_sound[64];
 //#define money_model "models/props/cs_assault/money.mdl"
 //#define take_sound "weapons/flashbang/flashbang_draw.wav"
-   
-new pickup_message_amount[MAXPLAYERS+1];
-new Float:pickup_message_time[MAXPLAYERS+1];
+
+int pickup_message_amount[MAXPLAYERS+1];
+float pickup_message_time[MAXPLAYERS+1];
 #define PICKUP_MESSAGE_LEN 6.0
 
 // for preventing prop spawn abuse
-new cash_drop_counter[MAXPLAYERS+1];
+int cash_drop_counter[MAXPLAYERS+1];
 
 #define CASHDROP_MAX 15
 
-new entprop_cash_amount[2048];
-new entprop_cash_owner[2048];
+int entprop_cash_amount[2048];
+int entprop_cash_owner[2048];
   
-new Handle:sm_dropcash_chance;
-new Handle:sm_dropcash_amount;
-new Handle:sm_dropcash_min;
-new Handle:sm_dropcash_max;
-new Float:c_dropcash_chance;
-new c_dropcash_amount;
-new c_dropcash_min;
-new c_dropcash_max;
+Handle sm_dropcash_chance;
+Handle sm_dropcash_amount;
+Handle sm_dropcash_min;
+Handle sm_dropcash_max;
+float c_dropcash_chance;
+int c_dropcash_amount;
+int c_dropcash_min;
+int c_dropcash_max;
 
-new Handle:sm_dropcash_limitents;
-new c_dropcash_limitents;
+Handle sm_dropcash_limitents;
+int c_dropcash_limitents;
 
-new cash_ent_buffer[500]; // max=500
-new cash_ent_next;
+int cash_ent_buffer[500]; // max=500
+int cash_ent_next;
 
 //#define TF2_CASH_SCALE 1.5
-new Float:g_cash_spawn_time[2048];
+float g_cash_spawn_time[2048];
 #define TF2_CASH_ACTIVATION_DELAY 1.0
 #define TF2_VERTICAL_OFFSET 20.0
 
-new GAME;
+int GAME;
 
 #define GAME_CSGO	0
 #define GAME_TF2	1
  
     
-//-------------------------------------------------------------------------------------------------
-RecacheConvars() {
+//-----------------------------------------------------------------------------
+void RecacheConvars() {
 	c_dropcash_chance = GetConVarFloat( sm_dropcash_chance );
 	c_dropcash_amount = GetConVarInt( sm_dropcash_amount );
 	c_dropcash_min = GetConVarInt( sm_dropcash_min );
 	c_dropcash_max = GetConVarInt( sm_dropcash_max );
 }
 
-//-------------------------------------------------------------------------------------------------
-public OnConVarChanged( Handle:cvar, const String:oldval[], const String:newval[] ) {
+//-----------------------------------------------------------------------------
+public void OnConVarChanged( Handle cvar, const char[] oldval, const char[] newval ) {
 	RecacheConvars();
 }
 
-
-//-------------------------------------------------------------------------------------------------
-public OnPluginStart() {
+//-----------------------------------------------------------------------------
+public void OnPluginStart() {
 	LoadTranslations("common.phrases");
 	
-	decl String:gamedir[64];
+	char gamedir[64];
 	GetGameFolderName( gamedir, sizeof gamedir );
 	if( StrEqual(gamedir, "csgo") ){ 
 		GAME = GAME_CSGO;
 	} else {
 		GAME = GAME_TF2;
 	}
-	
 	
 	
 	if( GAME == GAME_CSGO ) {
@@ -135,7 +132,8 @@ public OnPluginStart() {
 	}
 }
 
-public OnAllPluginsLoaded() {
+//-----------------------------------------------------------------------------
+public void OnAllPluginsLoaded() {
 	if( GAME == GAME_TF2 ) {
 		if( !LibraryExists( "tf2use" ) ) {
 			SetFailState( "Required Library \"tf2use\" not installed!" );
@@ -144,14 +142,14 @@ public OnAllPluginsLoaded() {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
-public Action:Command_SpawnCash( client, args ) {
+//-----------------------------------------------------------------------------
+public Action Command_SpawnCash( int client, int args ) {
 
 	if( !RXGSTORE_IsConnected() ) {
 		ReplyToCommand( client, "Store is not connected yet." );
 		return Plugin_Handled;
 	}
-	new Float:vec[3];
+	float vec[3];
 	if( GAME == GAME_TF2 ) {
 		GetClientAbsOrigin( client, vec );
 		vec[2] += TF2_VERTICAL_OFFSET;
@@ -162,16 +160,17 @@ public Action:Command_SpawnCash( client, args ) {
 	return Plugin_Handled;
 }
  
-//-------------------------------------------------------------------------------------------------
-ResetCounters() {
-	for( new i = 1; i <= MaxClients; i++ ) { 
+//-----------------------------------------------------------------------------
+void ResetCounters() {
+	for( int i = 1; i <= MaxClients; i++ ) { 
 		cash_drop_counter[i] = 0;
 	}
 	cash_ent_next = 0;
 	c_dropcash_limitents = GetConVarInt( sm_dropcash_limitents );
 }
-//-------------------------------------------------------------------------------------------------
-public OnMapStart() {
+
+//-----------------------------------------------------------------------------
+public void OnMapStart() {
 	if( GAME == GAME_TF2 ) {
 		/*
 		AddFileToDownloadsTable( "materials/rxg/items/cash.vmt" );
@@ -193,15 +192,15 @@ public OnMapStart() {
 	ResetCounters();
 }
 
-//-------------------------------------------------------------------------------------------------
-public OnRoundStart( Handle:event, const String:name[], bool:dontBroadcast ) {
+//-----------------------------------------------------------------------------
+public void OnRoundStart( Handle event, const char[] name, bool dontBroadcast ) {
 	ResetCounters();
 }
 
-//-------------------------------------------------------------------------------------------------
-public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
-	new attacker = GetClientOfUserId(GetEventInt( event, "attacker" ));
-	new victim = GetClientOfUserId(GetEventInt( event, "userid" )); 
+//-----------------------------------------------------------------------------
+public void OnPlayerDeath( Handle event, const char[] name, bool dontBroadcast ) {
+	int attacker = GetClientOfUserId(GetEventInt( event, "attacker" ));
+	int victim = GetClientOfUserId(GetEventInt( event, "userid" )); 
 	if( victim == 0 ) return; // ???
 	 
 	if( IsFakeClient( victim ) ) return;
@@ -215,17 +214,17 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 		return;
 	}
 	
-	new Float:multiplier = 1.0;
+	float multiplier = 1.0;
 	
 	if( GAME == GAME_CSGO ) {
-		decl String:weap[64];
+		char weap[64];
 		GetEventString( event, "weapon", weap, sizeof(weap) );
 		if( StrContains( weap, "knife" ) >= 0 ) {
 			multiplier = 4.0;
 		}
 	}
 	
-	decl Float:vec[3];
+	float vec[3];
 	
 	if( GAME == GAME_TF2 ) {
 		GetClientAbsOrigin( victim, vec );
@@ -233,7 +232,7 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 		GetClientEyePosition( victim, vec );
 	}
 	
-	for( new i = 0; i < c_dropcash_amount; i++ ) {
+	for( int i = 0; i < c_dropcash_amount; i++ ) {
 		 
 		if( GetRandomFloat(0.0,1.0) > c_dropcash_chance*multiplier ) continue;
 		 
@@ -241,12 +240,12 @@ public OnPlayerDeath( Handle:event, const String:name[], bool:dontBroadcast ) {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
-PrintPickupMessage( client, amount ) {
-	new Float:time = GetGameTime();
+//-----------------------------------------------------------------------------
+void PrintPickupMessage( int client, int amount ) {
+	float time = GetGameTime();
 	
 	if( (time - pickup_message_time[client]) > PICKUP_MESSAGE_LEN ) {
-		// new msg
+		// int msg
 		pickup_message_time[client] = time;
 		pickup_message_amount[client] = amount;
 	} else {
@@ -255,9 +254,9 @@ PrintPickupMessage( client, amount ) {
 		pickup_message_amount[client] += amount;
 	}
 	
-	new cash = pickup_message_amount[client];
+	int cash = pickup_message_amount[client];
 	
-	decl String:cash_string[16];
+	char cash_string[16];
 	FormatNumberInt( cash, cash_string, sizeof cash_string, ',' );
 	
 	//PrintHintText( client, "<font size='20px'>You picked up %d\xC2\xA2!", pickup_message_amount[client] );
@@ -269,12 +268,12 @@ PrintPickupMessage( client, amount ) {
 }
 
 
-//-------------------------------------------------------------------------------------------------
-SpawnCash( const Float:pos[3], const Float:vel[3], amount, dropper ) {
+//-----------------------------------------------------------------------------
+void SpawnCash( const float[3] pos, const float[3] vel, int amount, int dropper ) {
 	if( !RXGSTORE_IsConnected() ) {
-		return ;
+		return;
 	}
-	new ent;
+	int ent;
 
 	if( GAME == GAME_TF2 ) {
 		ent = CreateEntityByName( "item_currencypack_custom" );
@@ -303,7 +302,7 @@ SpawnCash( const Float:pos[3], const Float:vel[3], amount, dropper ) {
 	entprop_cash_amount[ent] = amount;
 	entprop_cash_owner[ent] = dropper;
 
-	new Float:ang[3];
+	float ang[3];
 	ang[0] = GetRandomFloat( 0.0, 360.0 );
 	ang[1] = GetRandomFloat( 0.0, 360.0 );
 	ang[2] = GetRandomFloat( 0.0, 360.0 );
@@ -323,46 +322,46 @@ SpawnCash( const Float:pos[3], const Float:vel[3], amount, dropper ) {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
-public Action:EDFTimer( Handle:timer, any:ent ) {
+//-----------------------------------------------------------------------------
+public Action EDFTimer( Handle timer, any ent ) {
 	
 	if( !IsValidEntity(ent) ) return Plugin_Handled;
 	AcceptEntityInput( ent, "EnableDamageForces" );
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
-GetClientThrowVector( client, Float:vec[], Float:power=1000.0 ) {
+//-----------------------------------------------------------------------------
+void GetClientThrowVector( int client, float[] vec, float power=1000.0 ) {
 
-	new Float:eyeang[3];
-	new Float:eyenorm[3];
-	new Float:eyenorm_up[3];
+	float eyeang[3];
+	float eyenorm[3];
+	float eyenorm_up[3];
 
 	GetClientEyeAngles( client, eyeang );
 	GetAngleVectors( eyeang, eyenorm, NULL_VECTOR, eyenorm_up );
 	
-	for( new i = 0; i < 3; i++ )
+	for( int i = 0; i < 3; i++ )
 		vec[i] = eyenorm[i]*power + eyenorm_up[i] *power * 0.2;
 }
 
-//-------------------------------------------------------------------------------------------------
-DropPlayerCashFunc( client, Float:vec[], bool:throw, amount, bool:count ) {
-	new Float:vel[3];
+//-----------------------------------------------------------------------------
+void DropPlayerCashFunc( int client, float[] vec, bool doThrow, int amount, bool count ) {
+	float vel[3];
 	 
 	// randomize throw/drop
-	if( !throw ) {
+	if( !doThrow ) {
 		vel[0] = GetRandomFloat( -100.0, 100.0 );
 		vel[1] = GetRandomFloat( -100.0, 100.0 );
 		vel[2] = GetRandomFloat( 0.0, 400.0 );
 	} else {
 		GetClientThrowVector( client, vel, 200.0 );
-		for( new i = 0; i < 3; i++ )
+		for( int i = 0; i < 3; i++ )
 			vel[i] += GetRandomFloat( -20.0, 20.0 );
 	}
 	
 	// randomize origin
-	new Float:vec2[3];
-	for( new i = 0; i < 3; i++ ) vec2[i] = vec[i];
+	float vec2[3];
+	for( int i = 0; i < 3; i++ ) vec2[i] = vec[i];
 	if( GAME == GAME_TF2 ) {
 		vec2[0] += GetRandomFloat( -25.0, 25.0 );
 		vec2[1] += GetRandomFloat( -25.0, 25.0 );
@@ -378,37 +377,39 @@ DropPlayerCashFunc( client, Float:vec[], bool:throw, amount, bool:count ) {
 	SpawnCash( vec2, vel, amount, count?client:0 );
 }
 
-
-//-------------------------------------------------------------------------------------------------
-public OnPlayerUse( Handle:event, const String:name[], bool:dontBroadcast ) {  
-	new client = GetClientOfUserId( GetEventInt( event, "userid" ) );
+//-----------------------------------------------------------------------------
+public void OnPlayerUse( Handle event, const char[] name, bool dontBroadcast ) {  
+	int client = GetClientOfUserId( GetEventInt( event, "userid" ) );
 	if( client <= 0 ) return;
-	new ent = GetEventInt( event, "entity" );
-	decl String:entname[64];
+	int ent = GetEventInt( event, "entity" );
+	char entname[64];
 	GetEntPropString( ent, Prop_Data, "m_iName", entname, sizeof(entname) );
 	if( !StrEqual( entname, "RXGCASHMONAY" ) ) return;
 	OnCashTouch( client, ent ); 
 }
 
-//-------------------------------------------------------------------------------------------------
-public bool:OnCashTouch( client, entity ) { 
+//-----------------------------------------------------------------------------
+public bool OnCashTouch( int client, int entity ) { 
 
 	if( !RXGSTORE_IsClientLoaded(client) ) {
 		PrintToChat( client, "Your items are still being loaded; cannot pickup cash!" );
 		return false;
 	}
+	
 	RXGSTORE_AddCash( client, entprop_cash_amount[entity] );
 	PrintPickupMessage( client, entprop_cash_amount[entity] );
+	
 	if( entprop_cash_owner[entity] ) {
 		cash_drop_counter[entprop_cash_owner[entity]]--;
 	}
+	
 	EmitSoundToAll( take_sound, client );
 	AcceptEntityInput( entity, "Kill" );
 	return true;
 }
 
-//-------------------------------------------------------------------------------------------------
-public Action:OnCashTouch_TF2( entity, client ) {
+//-----------------------------------------------------------------------------
+public Action OnCashTouch_TF2( int entity, int client ) {
 	
 	if( GetGameTime() < g_cash_spawn_time[entity] + TF2_CASH_ACTIVATION_DELAY ) {
 		return Plugin_Handled;
@@ -434,20 +435,19 @@ public Action:OnCashTouch_TF2( entity, client ) {
 	return Plugin_Handled;
 }
 
-//-------------------------------------------------------------------------------------------------
-public Action:Command_DropCash( client, args ) {
+//-----------------------------------------------------------------------------
+public Action Command_DropCash( int client, int args ) {
 	if( client == 0 ) return Plugin_Continue;
 	if( !IsPlayerAlive(client) ) return Plugin_Handled;
 	
 	if( !RXGSTORE_IsClientLoaded(client) ) {
 		PrintToChat( client, "Your items are still being loaded." );
 		return Plugin_Handled;
-		
 	}
 	
-	new amount = 50;
+	int amount = 50;
 	if( args >= 1 ) {
-		decl String:arg[32];
+		char arg[32];
 		GetCmdArg( 1, arg, sizeof( arg ) );
 		amount = StringToInt( arg );
 		if( amount < 50 ) {
@@ -470,12 +470,12 @@ public Action:Command_DropCash( client, args ) {
 	RXGSTORE_TakeCash( client, amount, OnTakeCash );
 	
 	return Plugin_Handled;
-} 
+}
 
-//-------------------------------------------------------------------------------------------------
-public OnTakeCash( userid, amount, any:data, bool:failed ) {
+//-----------------------------------------------------------------------------
+public void OnTakeCash( int userid, int amount, any data, bool failed ) {
 	
-	new client = GetClientOfUserId(userid);
+	int client = GetClientOfUserId(userid);
 	if( !client ) return; // disconnected, cash went into oblivion.
 	
 	if( failed ) {
@@ -483,8 +483,7 @@ public OnTakeCash( userid, amount, any:data, bool:failed ) {
 		return;
 	}
 	
-	
-	new Float:vec[3];
+	float vec[3];
 	
 	if( GAME == GAME_TF2 ) {
 		GetClientAbsOrigin( client, vec );
@@ -494,4 +493,3 @@ public OnTakeCash( userid, amount, any:data, bool:failed ) {
 	
 	DropPlayerCashFunc( client, vec, true, amount, true );
 }
- 
