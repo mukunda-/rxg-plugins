@@ -7,6 +7,14 @@
 // todo: FORWARD OnItemRegistered/Unregistered
 
 /** ---------------------------------------------------------------------------
+ * Global forward that fires when a client is logged in.
+ *
+ * @param client  Client index.
+ * @param account Signed 32-bit account integer.
+ */
+forward RXGSTORE_OnClientLoggedIn( int client, int account  );
+
+/** ---------------------------------------------------------------------------
  * Register an item.
  *
  * Plugins that call this must provide a function with the prototype

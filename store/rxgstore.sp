@@ -21,7 +21,7 @@ public Plugin myinfo = {
     name        = "rxgstore",
     author      = "mukunda",
     description = "rxg store api",
-    version     = "2.9.1",
+    version     = "2.10.0",
     url         = "www.mukunda.com"
 };
 
@@ -29,6 +29,8 @@ public Plugin myinfo = {
 #define ITEM_MAX 16
 
 #define LOCK_DURATION_EXPIRE 30.0
+
+Handle g_LoginForward;
 
 // rxgstore config
 KeyValues kv_config;
@@ -134,6 +136,9 @@ void RegisterLibrary() {
 	CreateNative( "RXGSTORE_ShowUseItemMenu",  Native_ShowUseItemMenu );
 	CreateNative( "RXGSTORE_IsClientLoaded",   Native_IsClientLoaded );
 	CreateNative( "RXGSTORE_IsConnected",      Native_IsConnected );
+	
+	g_LoginForward = CreateGlobalForward( "RXGSTORE_OnClientLoggedIn",
+		ET_Ignore, Param_Cell, Param_Cell );
 	
 	RegPluginLibrary( "rxgstore" );
 }
@@ -253,7 +258,7 @@ public Action Command_reload_user_inventory( int args ) {
 	LoadClientData( client );
 	PrintToChat( client, "%s\x04[STORE]\x01 Your inventory has been updated.", 
 		         initial_space );
-		
+	
 	return Plugin_Handled;
 }
 
@@ -556,6 +561,12 @@ public void OnClientLoggedIn( Handle owner, Handle hndl, const char[] error,
 		return;
 	}
 	
+	// broadcast forward
+	Call_StartForward( g_LoginForward );
+	Call_PushCell( client );
+	Call_PushCell( account );
+	Call_Finish();
+	
 	char query[1024];
 	FormatEx( query, sizeof query, 
 	          "SELECT locked FROM %s.user where user_id=%d", 
@@ -593,58 +604,6 @@ public void OnClientLockChecked( Handle owner, Handle hndl,
 		//PrintToChat( client, "Your inventory did not load due to a temporary lock." );
 		CloseHandle(data);
 		return;
-	}
-	
-	char query[1024];
-	FormatEx( query, sizeof query,
-		"SELECT 'gifts' as type, count(*) as total FROM %s.gift WHERE recipient_id=%d AND accepted=0 UNION SELECT 'rewards' as type, count(*) as total FROM %s.reward_recipient WHERE recipient_id=%d AND accepted=0",
-		g_database, account, g_database, account );
-	
-	DBRELAY_TQuery( OnClientGiftsLoaded, query, data );
-}
-
-//-----------------------------------------------------------------------------
-public void OnClientGiftsLoaded( Handle owner, Handle hndl, const char[] error, 
-                            DataPack data ) {
-	
-	data.Reset();
-	int client  = GetClientOfUserId( data.ReadCell() );
-	int account = data.ReadCell();
-	
-	if( client == 0 ) {
-		delete data;
-		return;
-	}
-	
-	if( !hndl ) {
-		delete data;
-		LogError( "Error checking pending gifts/rewards for %L : %s", 
-		          client, error );
-		return;
-	}
-	
-	int num_gifts   = 0;
-	int num_rewards = 0;
-	
-	// pending gifts
-	if( SQL_MoreRows( hndl ) ) {
-		SQL_FetchRow( hndl );
-		num_gifts = SQL_FetchInt( hndl, 1 );
-	}
-
-	// pending rewards
-	if( SQL_MoreRows( hndl ) ) {
-		SQL_FetchRow( hndl );
-		num_rewards = SQL_FetchInt( hndl, 1 );
-	}
-	
-	char initial_space[6];
-	initial_space = GAME == GAME_CSGO ? "\x01 " : "";
-	
-	if( num_gifts > 0 || num_rewards > 0 ) {
-		PrintToChat( client, 
-			"%s\x04[STORE]\x01 You have a pending gift or reward. Access the \x04!store \x01to accept it.", 
-			initial_space );
 	}
 	
 	char query[1024];
