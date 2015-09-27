@@ -1,6 +1,8 @@
 
 #include <sourcemod>
 #include <sdktools>
+
+#undef REQUIRE_PLUGIN
 #include <sourceirc>
 
 #pragma semicolon 1;
@@ -10,9 +12,17 @@ public Plugin myinfo = {
 	name = "SourceIRC -> Rounds",
 	author = "WhiteThunder",
 	description = "Relays round events",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "www.reflex-gamers.com"
 };
+
+//-----------------------------------------------------------------------------
+public void OnAllPluginsLoaded() {
+	if( !LibraryExists( "sourceirc" ) ) {
+		SetFailState( "Required Library \"sourceirc\" not installed!" );
+		return;
+	}
+}
 
 //-----------------------------------------------------------------------------
 public void OnPluginStart() {
