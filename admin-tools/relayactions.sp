@@ -1,28 +1,42 @@
 
 #include <sourcemod>
-#include <sourceirc>
- 
-#pragma semicolon 1
 
-public Plugin:myinfo = {
+#undef REQUIRE_PLUGIN
+#include <sourceirc>
+
+#pragma semicolon 1
+#pragma newdecls required
+
+public Plugin myinfo = {
 	name = "relay actions",
 	author = "mukunda",
 	description = "relays logged actions to irc",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "www.mukunda.com"
 };
 
-new Handle:basechat;
+Handle basechat;
 
-public OnPluginStart() {
+//-----------------------------------------------------------------------------
+public void OnAllPluginsLoaded() {
+	if( !LibraryExists( "sourceirc" ) ) {
+		SetFailState( "Required Library \"sourceirc\" not installed!" );
+		return;
+	}
+	FindBasechat();
+}
+
+//-----------------------------------------------------------------------------
+public void OnPluginStart() {
 	
 }
 
-FindBasechat() {
-	new Handle:iter=GetPluginIterator();
-	new Handle:p;
+//-----------------------------------------------------------------------------
+void FindBasechat() {
+	Handle iter=GetPluginIterator();
+	Handle p;
 	while( MorePlugins(iter) && (p = ReadPlugin(iter)) ) {
-		decl String:buffer[64];
+		char buffer[64];
 		GetPluginFilename( p, buffer, sizeof buffer );
 		
 		if( StrEqual(buffer,"basechat_rxg.smx") ) {
@@ -33,21 +47,13 @@ FindBasechat() {
 		}
 		
 	}
-	basechat=  INVALID_HANDLE;
+	basechat = INVALID_HANDLE;
 	CloseHandle(iter);
 }
-public OnAllPluginsLoaded() {
-	FindBasechat();
-	
-	
-	
-}
 
-public Action:OnLogAction(Handle:source, 
-                           Identity:ident,
-                           client,
-                           target,
-                           const String:message[]) {
+//-----------------------------------------------------------------------------
+public Action OnLogAction( Handle source, Identity ident, int client,
+						   int target, const char[] message ) {
 	
 	if( ident != Identity_Plugin ) return Plugin_Continue;
 	if( source == basechat ) return Plugin_Continue;
