@@ -8,9 +8,9 @@
 
 public Plugin myinfo = {
 	name = "Melee Spin",
-	author = "grimAuxiliatrix",
+	author = "Roker",
 	description = "Make melee turn people",
-	version = "1.0.2",
+	version = "1.0.3",
 	url = "www.reflex-gamers.com"
 };
 
@@ -35,17 +35,11 @@ public Action OnTakeDamage( int victim, int &attacker, int &inflictor,
 							float damageForce[3], float damagePosition[3],
 							int damagecustom) {
 	
-	if( !IsValidClient(attacker) || !IsValidClient(victim) || !IsValidEntity(weapon) ) {
- 		return Plugin_Continue;
-	}
+	if( !IsValidClient(attacker) || !IsValidClient(victim) || !IsValidEntity(weapon) ) {return Plugin_Continue;}
 	
 	char weapon_classname[64];
 	GetEntityClassname( weapon, weapon_classname, sizeof weapon_classname );
-	
-	// must be a client weapon, not an eyeball boss or something
-	if( strncmp( weapon_classname, "tf_weapon", 9 ) != 0 ) {
-		return Plugin_Continue;
-	}
+	if( strncmp( weapon_classname, "tf_weapon", 9 ) != 0 ) {return Plugin_Continue;} // must be a client weapon, not an eyeball boss or something
 	
 	int index = GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" );
 	if (!IntArrayContains(index, validWeapons, sizeof(validWeapons))) {
@@ -54,7 +48,7 @@ public Action OnTakeDamage( int victim, int &attacker, int &inflictor,
 	
  	float look[3];
  	GetClientAbsAngles(victim, look);
- 	look[1] = look[1] + 180.0;
+ 	look[1] += 180.0;
 	
  	TeleportEntity(victim, NULL_VECTOR, look, NULL_VECTOR);
 	
