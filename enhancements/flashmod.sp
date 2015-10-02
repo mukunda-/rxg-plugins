@@ -9,7 +9,7 @@ public Plugin myinfo = {
 	name        = "flashmod",
 	author      = "mukunda",
 	description = "Flashbang messages and forwards",
-	version     = "1.3.0",
+	version     = "1.3.1",
 	url         = "www.mukunda.com"
 };
 
@@ -54,6 +54,7 @@ public void Event_PlayerBlind( Handle event, const char[] name, bool db ) {
 	
 	// the client that was blinded
 	int victim = GetClientOfUserId( GetEventInt( event, "userid" ));
+	if( victim == 0 ) return; // something strange happened
 	
 	bool  alive = IsPlayerAlive( victim );
 	
