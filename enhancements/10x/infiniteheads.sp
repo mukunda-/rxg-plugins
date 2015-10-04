@@ -24,6 +24,7 @@ public void OnPluginStart(){
 	HookEvent( "player_death", Event_Player_Death);
 	HookEvent( "teamplay_round_start", Event_Round_Start );
 }
+
 //-----------------------------------------------------------------------------
 public Action Event_Round_Start( Handle event, const char[] name, bool dontBroadcast ) {
 	for(int i=1;i<=MaxClients;i++){
@@ -34,6 +35,7 @@ public Action Event_Round_Start( Handle event, const char[] name, bool dontBroad
 		}
 	}
 }
+
 //-----------------------------------------------------------------------------
 public Action Event_Player_Death( Handle event, const char[] name, bool dontBroadcast ) {
 	int victim = GetClientOfUserId( GetEventInt( event, "userid" ) );
@@ -67,10 +69,13 @@ public Action Event_Player_Death( Handle event, const char[] name, bool dontBroa
 	extra_stats[killer] = true;
 	return Plugin_Continue;
 }
+
 //-----------------------------------------------------------------------------
 void removeStats(int client){
 	int weapon = GetPlayerWeaponSlot( client, TFWeaponSlot_Melee );	
-	TF2Attrib_RemoveByDefIndex(weapon,26);
-	TF2Attrib_RemoveByDefIndex(weapon,107);
+	if(!IsValidEntity(weapon)){return;}
+	
+	TF2Attrib_RemoveByDefIndex(weapon, 26);
+	TF2Attrib_RemoveByDefIndex(weapon, 107);
 	extra_stats[client] = false;
 }

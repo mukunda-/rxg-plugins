@@ -4705,7 +4705,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "19_quality", 0); 
 	SetTrieValue(trie, "19_level", 1); 
 	//SetTrieString(trie, "19_attribs","411;10 ; 4;4 ; 76;10 ; 413;1 ; 417;1 ; 394;0.08 ; 241;0.5 ; 15;1 ; 470;0.5" );
-	SetTrieValue(trie, "19_ammo", 150); 
+	SetTrieValue(trie, "19_ammo", 1600); 
 	
 //sticky launcher
 	SetTrieString(trie, "20_classname", "tf_weapon_pipebomblauncher"); 
@@ -6368,7 +6368,7 @@ stock AddCustomHardcodedToTrie(Handle:trie)
 	SetTrieValue(trie, "752_quality", 6); 
 	SetTrieValue(trie, "752_level", 1); 
 	//SetTrieString(trie, "752_attribs", "219 ; 1 ; 329 ; 0.1 ; 387 ; 100 ; 398 ; 50 ; 116 ; 6"); 
-	SetTrieValue(trie, "752_ammo", 25); 
+	SetTrieValue(trie, "752_ammo", 62); 
 
 //Baby Face's Blaster
 	SetTrieString(trie, "772_classname", "tf_weapon_pep_brawler_blaster"); 

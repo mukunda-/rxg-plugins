@@ -183,7 +183,10 @@ void SkeletonAttach(int skeleton){
 	AcceptEntityInput( pumpkin, "SetParent", skeleton );
 }
 
+//-------------------------------------------------------------------------------------------------
 public void OnEntityDestroyed(int skeleton){
+	if(skeleton <= MaxClients){return;}
+	
 	char classname[64];
 	GetEntityClassname(skeleton, classname, sizeof(classname)); 						//classname of destroyed entity
 	if(!StrEqual(classname, "tf_zombie")) { return;}									//is destroyed entity a skeleton?
