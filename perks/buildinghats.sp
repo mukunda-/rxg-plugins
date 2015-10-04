@@ -102,7 +102,7 @@ public OnPluginStart()
 	
 	g_hClientCookie = RegClientCookie("BuildingHats", "sm_bhats_enabled", CookieAccess_Private);
 	
-	LoadTranslations("buildinghats.phrases");
+	//LoadTranslations("buildinghats.phrases");
 	
 	RegAdminCmd("sm_buildinghats",		 Command_iDontWantHatsOnMyThings, 0);
 	RegAdminCmd("sm_bhats_reloadconfig", Command_Parse, ADMFLAG_ROOT);
@@ -115,8 +115,9 @@ public OnPluginStart()
 }
 
 public OnLibraryAdded( const String:name[] ) {
-	if( StrEqual(name,"donations") ) 
-		VIP_Register( "Connect Message", OnVIPMenu );
+	if( StrEqual(name, "donations") ){
+		VIP_Register( "Building Hats", OnVIPMenu );
+	}
 }
 public OnVIPMenu( client, VIPAction:action ) {
 	if( action == VIP_ACTION_HELP ) {

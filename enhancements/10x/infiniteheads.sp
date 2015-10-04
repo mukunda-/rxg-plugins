@@ -72,7 +72,7 @@ public Action Event_Player_Death( Handle event, const char[] name, bool dontBroa
 
 //-----------------------------------------------------------------------------
 void removeStats(int client){
-	int weapon = GetPlayerWeaponSlot( client, TFWeaponSlot_Melee );	
+	int weapon = GetPlayerWeaponSlot( client, TFWeaponSlot_Melee );
 	if(!IsValidEntity(weapon)){return;}
 	
 	TF2Attrib_RemoveByDefIndex(weapon, 26);
