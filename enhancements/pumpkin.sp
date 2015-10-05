@@ -12,7 +12,7 @@ public Plugin myinfo =
 	name = "Pumpkin",
 	author = "Roker",
 	description = "Pumpkin Spawner Library",
-	version = "1.1.0",
+	version = "1.1.1",
 	url = "www.reflex-gamers.com"
 };
 

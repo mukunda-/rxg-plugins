@@ -12,7 +12,7 @@ public Plugin myinfo = {
 	name = "Infinite Heads",
 	author = "Roker",
 	description = "All heads benefit user.",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "www.reflex-gamers.com"
 };
 
