@@ -7,7 +7,7 @@
 #include <clientprefs>
 
 #pragma semicolon 1
-//#pragma newdecls required
+#pragma newdecls required
 
 public Plugin myinfo = 
 {
@@ -23,8 +23,7 @@ Handle clientPrefs;
 int enabled[MAXPLAYERS];
 
 //-----------------------------------------------------------------------------
-public void OnPluginStart()
-{
+public void OnPluginStart(){
 	clientPrefs = RegClientCookie( "VIPGreenFlamesData", "VIP Green Flames Saved Data", CookieAccess_Protected );
 	VIP_Register( "Green Flames", OnVIPMenu );
 	
@@ -39,7 +38,7 @@ public void OnLibraryAdded( const char[] name ) {
 }
 
 //-----------------------------------------------------------------------------
-public OnVIPMenu( int client, VIPAction action ) {
+public int OnVIPMenu( int client, VIPAction action ) {
 	if( action == VIP_ACTION_HELP ) {
 		PrintToChat( client, "\x01 \x04Green Flames for Flamethrowers." );
 	} else if( action == VIP_ACTION_USE ) {
