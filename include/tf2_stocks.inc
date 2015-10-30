@@ -594,22 +594,3 @@ stock TFObjectMode:TF2_GetObjectMode(entity)
 
 	return TFObjectMode:GetEntData(entity, offset);
 }
-/**
- * Gets an entity's object mode.
- *
- * @param client		Client index.
- * @return				Current Client of entity. -1 for no target
- */
-stock int TF2_GetHealingTarget(int client)
-{
-	if(TF2_GetPlayerClass(client) != TFClass_Medic){return -1;}
-	int weapon = GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-	if(GetEntProp(weapon, Prop_Send, "m_bHealing") != 1){return -1;}
-	return GetEntPropEnt(weapon, Prop_Send, "m_hHealingTarget");
-}  
-
-stock int TF2_GetWeaponIndex(int weapon){
-	if (!IsValidEntity(weapon)) { return -1; }
-	return GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" );
-}
-
