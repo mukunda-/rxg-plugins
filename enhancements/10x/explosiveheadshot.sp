@@ -11,7 +11,7 @@ public Plugin myinfo = {
 	name = "Explosive Headshot",
 	author = "Roker",
 	description = "Creates explosions on headshot.",
-	version = "1.2.2",
+	version = "1.2.3",
 	url = "www.reflex-gamers.com"
 };
 
@@ -60,8 +60,20 @@ public Action Event_Player_Death( Handle event, const char[] name, bool dontBroa
 	}
 
 	int weapon = GetPlayerWeaponSlot( shooter, TFWeaponSlot_Primary );
-	int index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	
+	if( !IsValidEntity(weapon) ) {
+		return Plugin_Continue;
+	}
+	
+	char weapon_classname[64];
+	GetEntityClassname( weapon, weapon_classname, sizeof weapon_classname );
+	
+	// must be a client weapon, not an eyeball boss or something
+	if( strncmp( weapon_classname, "tf_weapon", 9, false ) != 0 ) {
+		return Plugin_Continue;
+	}
+
+	int index = GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" );
 	bool isHeadshot = GetEventInt( event, "customkill" ) == TF_CUSTOM_HEADSHOT;
 	
 	if( !isHeadshot || index != WEAPON_INDEX ) {
