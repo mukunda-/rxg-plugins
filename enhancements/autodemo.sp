@@ -434,8 +434,8 @@ StopDemo() {
 	KvSetNum( op, "score1", demo_scores[1] );
 	KvSetNum( op, "retries", 0 );
 
-	g_hibernate = GetConVarInt( FindConVar( "sv_hibernate_when_empty" ))
-	SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), 0 )
+	g_hibernate = GetConVarInt( FindConVar( "sv_hibernate_when_empty" ));
+	SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), 0 );
 	
 	CreateTimer( 2.0, StartTransfer, op );
 }
@@ -577,7 +577,7 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 					LogToFile( g_logfile, "Couldn't register demo on site: \"%s\". Giving up.", name );
 					CloseHandle(op);
 
-					SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), g_hibernate )
+					SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), g_hibernate );
 					return;
 				} else {
 					LogToFile( g_logfile, "Registration failed for \"%s\". Retrying...", name );
@@ -592,7 +592,7 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 			DeleteDemo(op);
 			CloseHandle(op);
 			
-			SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), g_hibernate )
+			SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), g_hibernate );
 			return; // operation complete
 		}
 		
@@ -607,7 +607,7 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 			LogToFile( g_logfile, "Upload failure for: \"%s\" (index %d). code %d. Giving up.", name, index, code );
 			CloseHandle(op);
 
-			SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), g_hibernate )
+			SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), g_hibernate );
 			return;
 		} else {
 			LogToFile( g_logfile, "Upload failure for: \"%s\" (index %d). code %d. Retrying...", name, index, code );
