@@ -10,10 +10,10 @@
 
 public Plugin myinfo = 
 {
-    name = "",
-    author = "grimAuxiliatrix",
-    description = "",
-    version = "1.0.0",
+    name = "RXG Xmas",
+    author = "Roker",
+    description = "Happy holiays.",
+    version = "1.1.0",
     url = "www.reflex-gamers.com"
 };
 
@@ -112,13 +112,32 @@ public Action Event_Player_Death(Handle event, char[] arg, bool noBroadcast){
         float location[3];
         GetClientEyePosition( victim, location );
         
-        SpawnGift(location);
+        SpawnGift(location, NULL_VECTOR);
     }
     return Plugin_Continue;
 }
-
+public void OnEntityDestroyed(int ent){
+	char classname[64];
+	GetEntityClassname(ent, classname, sizeof(classname));
+	if(!StrEqual(classname, "eyeball_boss")) return;
+	
+	int random = GetRandomInt(3,5);
+	float location[3];
+	float vel[3];
+	GetEntPropVector(ent, Prop_Data, "m_vecAbsOrigin", location);
+	for(int i=0;i<random;i++){
+		for(int j=0;j<3;j++){
+			vel[j] = GetRandomFloat(1000.0, 3000.0);	
+			if(j < 2 && GetRandomInt(0, 1) == 1){
+				vel[j] *= -1;	
+			}
+		}
+		
+		SpawnGift(location, vel);
+	}
+}
 //-------------------------------------------------------------------------------------------------
-void SpawnGift(float location[3]){
+void SpawnGift(float location[3], float vel[3]){
 
     int ent = CreateEntityByName( "prop_physics_override" );
     DispatchKeyValue( ent, "targetname", "RXG_GIFT" );
@@ -132,7 +151,7 @@ void SpawnGift(float location[3]){
     DispatchSpawn( ent );
     ActivateEntity( ent );
         
-    TeleportEntity( ent, location, NULL_VECTOR, NULL_VECTOR );
+    TeleportEntity( ent, location, NULL_VECTOR, vel );
     
     AddTrigger( ent ); 
 }
@@ -154,6 +173,7 @@ public Action GiftTouched(int gift, int client){
     gift = GetEntPropEnt( gift, Prop_Send, "m_hOwnerEntity" );
     //}
     
+    SetEntPropFloat( gift, Prop_Data, "m_flModelScale", 1.0 );
     AcceptEntityInput( gift, "Kill" );
     return Plugin_Continue;
 }
@@ -231,37 +251,36 @@ bool givePrize( int client ) {
             PrintToChat( client, "You found \x04$%i \x01in a gift!", cashDropped );
         }
     }
-    
     if( GAME == GAME_TF2 ) {
-        if( random <= 50 && RXGSTORE_IsItemRegistered(12) ) {
+        if( random <= 10 && RXGSTORE_IsItemRegistered(12) ) {
             //time warp
             itemName = "Time Warp";
             itemID = 12;
-        } else if( random <= 175 && RXGSTORE_IsItemRegistered(8) ) {
+        } else if( random <= 60 && RXGSTORE_IsItemRegistered(8) ) {
             //boss monoculus
             itemName = "Boss Monoculus";
             itemID = 8;
-        } else if( random <= 425 && RXGSTORE_IsItemRegistered(10) ) {
+        } else if( random <= 210 && RXGSTORE_IsItemRegistered(10) ) {
             //roman candle
             itemName = "Roman Candle";
             itemID = 10;
-        } else if( random <= 600 && RXGSTORE_IsItemRegistered(11) ) {
+        } else if( random <= 360 && RXGSTORE_IsItemRegistered(11) ) {
             //fire cracker
             itemName = "Fire Cracker";
             itemID = 11;
-        } else if( random <= 1175 && RXGSTORE_IsItemRegistered(9) ) {
+        } else if( random <= 600 && RXGSTORE_IsItemRegistered(9) ) {
             //spectral monoculus
             itemName = "Spectral Monoculus";
             itemID = 9;
-        } else if( random <= 1675 && RXGSTORE_IsItemRegistered(4) ) {
+        } else if( random <= 1000 && RXGSTORE_IsItemRegistered(4) ) {
             //cookie
             itemName = "Cookie";
             itemID = 4;
-        }else if( random <= 2500 && RXGSTORE_IsItemRegistered(14) ) {
+        }else if( random <= 2000 && RXGSTORE_IsItemRegistered(14) ) {
             //skeleton
             itemName = "Skeleton";
             itemID = 14;
-        }else if( random <= 3875 && RXGSTORE_IsItemRegistered(6) ) {
+        }else if( random <= 4000 && RXGSTORE_IsItemRegistered(6) ) {
             //pumpkin
             itemName = "Pumpkin Bomb";
             itemID = 6;

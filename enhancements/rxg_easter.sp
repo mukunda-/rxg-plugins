@@ -14,7 +14,7 @@ public Plugin myinfo = {
 	name = "Reflex Easter Egg Hunt",
 	author = "Roker",
 	description = "Pickup dem eggs",
-	version = "1.3.0",
+	version = "1.3.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -278,7 +278,6 @@ public Action Command_SpawnEgg( client, args ) {
 
 //-----------------------------------------------------------------------------
 public DropEgg( int client ) {
-
 	float pos[3];
 	GetClientEyePosition( client, pos );
 	SpawnEgg( pos, NULL_VECTOR );
@@ -360,7 +359,6 @@ public OnPlayerUse( Handle event, const char[] name, bool dontBroadcast ) {
 
 //-------------------------------------------------------------------------------------------------
 public bool RedeemEgg( int client, int entity ) { 
-
 	if( !IsValidClient(client) || IsFakeClient(client) ) return false;
 	if( !givePrize(client) ) return false;
 	eggDB(client);

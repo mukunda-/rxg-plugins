@@ -137,7 +137,10 @@ bool SpawnSkeleton(int client, team){
 		PrintToChat( client, "\x07FFD800Cannot summon when disguised." );
 		return false;
 	}
-	
+	if( GameRules_GetProp("m_bInSetup") == 1 ){
+		PrintToChat( client, "\x07FFD800Cannot summon during setup." );
+		return false;
+	}
 	float start[3];
 	float angle[3];
 	float end[3];
