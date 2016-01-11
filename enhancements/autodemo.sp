@@ -8,6 +8,8 @@
 
 #pragma semicolon 1
 
+// 2.2.5
+//  disable hiberation during demo upload
 // 2.2.3
 //  additional diagnostic support
 // 2.2.2
@@ -37,7 +39,7 @@
 //1.0.3
 //   exclude bots 
 
-#define VERSION "2.2.4"
+#define VERSION "2.2.5"
 
 //-------------------------------------------------------------------------------------------------
 public Plugin:myinfo = {
@@ -94,6 +96,8 @@ new String:curl_transfer_limit[32] = "300000";
 
 new g_save_all;
 new g_result_index;
+
+new g_hibernate;
  
 #define UPDATE_URL "http://www.mukunda.com/plagins/autodemo/update.txt"
 
@@ -429,7 +433,10 @@ StopDemo() {
 	KvSetNum( op, "score0", demo_scores[0] );
 	KvSetNum( op, "score1", demo_scores[1] );
 	KvSetNum( op, "retries", 0 );
- 
+
+	g_hibernate = GetConVarInt( FindConVar( "sv_hibernate_when_empty" ));
+	SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), 0 );
+	
 	CreateTimer( 2.0, StartTransfer, op );
 }
 
@@ -569,6 +576,8 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 				if( !CanRetryTransfer(op) ) {
 					LogToFile( g_logfile, "Couldn't register demo on site: \"%s\". Giving up.", name );
 					CloseHandle(op);
+
+					SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), g_hibernate );
 					return;
 				} else {
 					LogToFile( g_logfile, "Registration failed for \"%s\". Retrying...", name );
@@ -583,6 +592,7 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 			DeleteDemo(op);
 			CloseHandle(op);
 			
+			SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), g_hibernate );
 			return; // operation complete
 		}
 		
@@ -596,6 +606,8 @@ public OnCurlComplete( Handle:hndl, CURLcode:code, any:data ) {
 		if( !CanRetryTransfer( op ) ) {
 			LogToFile( g_logfile, "Upload failure for: \"%s\" (index %d). code %d. Giving up.", name, index, code );
 			CloseHandle(op);
+
+			SetConVarInt( FindConVar( "sv_hibernate_when_empty" ), g_hibernate );
 			return;
 		} else {
 			LogToFile( g_logfile, "Upload failure for: \"%s\" (index %d). code %d. Retrying...", name, index, code );
