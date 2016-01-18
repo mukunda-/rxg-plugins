@@ -10,16 +10,15 @@
 
 public Plugin myinfo = 
 {
-	name = "POP POP",
+	name = "Airshot Helper",
 	author = "Roker",
 	description = "POP POP",
-	version = "1.0.0",
+	version = "1.0.3",
 	url = "www.reflex-gamers.com"
 };
 
 int g_Attacker[MAXPLAYERS];
-public void OnPluginStart()
-{
+public void OnPluginStart(){
 	for(int client=1;client<=MaxClients;client++){
 		if(!IsValidClient(client)) continue;
 		SDKHook(client, SDKHook_OnTakeDamage, Event_Damage);
@@ -35,8 +34,12 @@ public void OnClientPutInServer(int client){
 //-----------------------------------------------------------------------------
 public Action Event_Damage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3], int damagecustom){
 	if(!IsValidClient(attacker)) return;
+	if(!IsValidEntity(weapon)) return;
+	char weaponClass[64];
+	GetEntityClassname(weapon, weaponClass, 64);
+	if(StrEqual(weaponClass, "eyeball_boss")) return;
 	if(victim == attacker) return;
-	int index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
+	int index = GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" );
 	if(index != 127) return;
 	
 	g_Attacker[victim] = attacker; 
