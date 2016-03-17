@@ -13,7 +13,7 @@ public Plugin myinfo =
 	name = "Airshot Helper",
 	author = "Roker",
 	description = "POP POP",
-	version = "1.0.3",
+	version = "1.0.4",
 	url = "www.reflex-gamers.com"
 };
 
@@ -33,14 +33,14 @@ public void OnClientPutInServer(int client){
 
 //-----------------------------------------------------------------------------
 public Action Event_Damage(int victim, int &attacker, int &inflictor, float &damage, int &damagetype, int &weapon, float damageForce[3], float damagePosition[3], int damagecustom){
-	if(!IsValidClient(attacker)) return;
-	if(!IsValidEntity(weapon)) return;
+	if(!IsValidClient(attacker)) return Plugin_Continue;
+	if(!IsValidEntity(weapon)) return Plugin_Continue;
 	char weaponClass[64];
 	GetEntityClassname(weapon, weaponClass, 64);
-	if(StrEqual(weaponClass, "eyeball_boss")) return;
-	if(victim == attacker) return;
+	if(StrEqual(weaponClass, "eyeball_boss"))  return Plugin_Continue;
+	if(victim == attacker)  return Plugin_Continue;
 	int index = GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" );
-	if(index != 127) return;
+	if(index != 127)  return Plugin_Continue;
 	
 	g_Attacker[victim] = attacker; 
 	
@@ -49,6 +49,11 @@ public Action Event_Damage(int victim, int &attacker, int &inflictor, float &dam
 	
 	WritePackCell(data, weapon);
 	WritePackCell(data, victim);
+	if(TF2_IsPlayerInCondition(victim, TFCond_BlastJumping)){
+		damagetype += DMG_CRIT;
+		return Plugin_Changed;
+	}
+	return Plugin_Continue;
 }
 
 //-----------------------------------------------------------------------------
@@ -76,6 +81,7 @@ public void Airborne(int client){
 
 //-----------------------------------------------------------------------------
 void FocusMode(int client, bool enabled){
+	if(!IsValidClient(client)) return;
 	int weapon = GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
 	if(enabled){
 		TF2_AddCondition(client, TFCond_UberBlastResist);
