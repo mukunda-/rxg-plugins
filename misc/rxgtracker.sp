@@ -11,7 +11,7 @@ public Plugin myinfo =
 	name = "RXG Tracker",
 	author = "Roker",
 	description = "WE'RE WATCHING YOU",
-	version = "1.2.0",
+	version = "1.2.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -76,12 +76,13 @@ public Action Event_Death(Handle event, char[] arg, bool noBroadcast){
 //-----------------------------------------------------------------------------
 public Action Event_Disconnect(Handle event, char[] arg, bool noBroadcast){
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
-	
+	if(!IsValidClient(client)) return Plugin_Continue;
 	PrintToServer("time on server: %f", GetClientTime(client));
 	PrintToServer("points awarded: %i", RoundToFloor(GetClientTime(client)/60*c_rxg_time_points));
 	
 	timePoints[client] = RoundToFloor(GetClientTime(client)/60*c_rxg_time_points);
 	sqlStore(client);
+	return Plugin_Continue;
 }
 
 //-----------------------------------------------------------------------------
