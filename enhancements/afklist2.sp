@@ -2,6 +2,7 @@
 
 #include <sourcemod>
 #include <sdktools>
+#include <autoslay>
 
 #include <idletracker>
 
@@ -12,22 +13,22 @@
 
 #define IDLE_THRESHOLD 60.0
 
-//----------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Plugin myinfo = {
 	name = "afk list2",
 	author = "REFLEX-GAMERS",
 	description = "afk tracker v2",
-	version = "1.0.3",
+	version = "1.0.4",
 	url = "www.reflex-gamers.com"
 };
 
 
-bool idle_at_spawn_printed;
+bool idle_spawn_checked;
 
 Handle sm_afklist_kickspec_threshold;
 Handle sm_afklist_kickspec_time;
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public OnPluginStart() {
 	sm_afklist_kickspec_threshold = CreateConVar( "sm_afklist_kickspec_threshold", "99", "Threshold of players in server to start kicking spectators" );
 	sm_afklist_kickspec_time = CreateConVar( "sm_afklist_kickspec_time", "10.0", "Kick spectators after this many minutes of idling" ); 
@@ -38,37 +39,57 @@ public OnPluginStart() {
 	RegConsoleCmd( "sm_afklist", Command_afklist );
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 CheckSpawnAFK() {
-	if( idle_at_spawn_printed ) return;
+	if( idle_spawn_checked ) return;
+	
 	int active_players[2];
 	int inactive_players[2];
+	bool afk_clients[2][MAXPLAYERS+1];
+	
 	for( int i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i) ) continue;
 		if( !IsPlayerAlive(i) ) continue;
 		int team = GetClientTeam(i) - 2;
 		//if( team < 0 ) continue; // justin case
 		
-		if( IsClientIdleAtSpawn(i) && GetClientIdleTime(i) >= IDLE_THRESHOLD ) inactive_players[team]++;
-		else active_players[team]++;
+		if( IsClientIdleAtSpawn(i) && GetClientIdleTime(i) >= IDLE_THRESHOLD ) {
+			inactive_players[team]++;
+			afk_clients[team][i] = true;
+		} else {
+			active_players[team]++;
+		}
 	}
 	if( ((active_players[1]+inactive_players[1]) > 0) && active_players[1] == 0 ) {
-		PrintToChatAll( "\x01 \x04[IDLE] The last CT%s AFK!", inactive_players[1] == 1 ? " is" : "s are" );
-		PrintCenterTextAll( "The last CT%s AFK!", inactive_players[1] == 1 ? " is" : "s are" );
-		idle_at_spawn_printed = true;
+		//PrintToChatAll( "\x01 \x04[IDLE] The last CT%s AFK!", inactive_players[1] == 1 ? " is" : "s are" );
+		//PrintCenterTextAll( "The last CT%s AFK!", inactive_players[1] == 1 ? " is" : "s are" );
+		PrintToChatAll("\x01 \x02Slaying AFK Counter-Terrorists.");
+		SlayClients(afk_clients[1], sizeof afk_clients[]);
+		idle_spawn_checked = true;
 	} else if( ((active_players[0]+inactive_players[0]) > 0) && active_players[0] == 0 ) {
-		PrintToChatAll( "\x01 \x04[IDLE] The last terrorist%s AFK!", inactive_players[0] == 1 ? " is" : "s are" );
-		PrintCenterTextAll( "The last terrorist%s AFK!", inactive_players[0] == 1 ? " is" : "s are" );
-		idle_at_spawn_printed = true;
+		//PrintToChatAll( "\x01 \x04[IDLE] The last terrorist%s AFK!", inactive_players[0] == 1 ? " is" : "s are" );
+		//PrintCenterTextAll( "The last terrorist%s AFK!", inactive_players[0] == 1 ? " is" : "s are" );
+		PrintToChatAll("\x01 \x02Slaying AFK Terrorists.");
+		SlayClients(afk_clients[0], sizeof afk_clients[]);
+		idle_spawn_checked = true;
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Event_RoundStart( Handle event, const char[] name, bool dontBroadcast ) {
-	idle_at_spawn_printed = false;
+	idle_spawn_checked = false;
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+SlayClients(const int[] clients, int size) {
+	for( int i = 0; i < size; i++ ) {
+		if( clients[i] ) {
+			Autoslay_ExplodePlayer(i);
+		}
+	}
+}
+
+//-----------------------------------------------------------------------------
 MoveAFKClients() {
 	int threshold = GetConVarInt(sm_afklist_kickspec_threshold);
 	float time = GetConVarFloat(sm_afklist_kickspec_time) * 60.0;
@@ -101,13 +122,12 @@ MoveAFKClients() {
 	}
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Event_RoundEnd( Handle event, const char[] name, bool dontBroadcast ) {
-	
 	MoveAFKClients();
 }
 
-//-------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Event_PlayerDeath( Handle event, const char[] name, bool dontBroadcast ) {
 	
 	int client=GetClientOfUserId(GetEventInt(event,"userid"));
@@ -119,7 +139,7 @@ public Event_PlayerDeath( Handle event, const char[] name, bool dontBroadcast ) 
 	CheckSpawnAFK();
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 public Action Command_afklist( client, args ) {
 	
 	PrintToConsole( client, "AFK REPORT:" );
