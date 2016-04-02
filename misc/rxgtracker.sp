@@ -78,9 +78,9 @@ public Action Event_Disconnect(Handle event, char[] arg, bool noBroadcast){
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	if(!IsValidClient(client)) return Plugin_Continue;
 	PrintToServer("time on server: %f", GetClientTime(client));
-	PrintToServer("points awarded: %i", RoundToFloor(GetClientTime(client)/60*c_rxg_time_points));
+	PrintToServer("points awarded: %i", RoundToFloor(GetClientTime(client) / 60 *c_rxg_time_points));
 	
-	timePoints[client] = RoundToFloor(GetClientTime(client)/60*c_rxg_time_points);
+	timePoints[client] = RoundToFloor(GetClientTime(client) / 60 * c_rxg_time_points);
 	sqlStore(client);
 	return Plugin_Continue;
 }
@@ -92,7 +92,7 @@ void addKillAssistPoint(int client, int clientid){
 	}else{
 		killAssistPoints[client] = c_rxg_killassist_points;
 		userID[client] = GetClientUserId(client);	
-	}	
+	}
 }
 //-----------------------------------------------------------------------------
 void sqlStore(int client){
@@ -141,7 +141,7 @@ public void cmCheckMember( Handle owner, Handle results, const char [] error, an
 	
 	char query[1024];
 	FormatEx( query, sizeof query,
-	"INSERT INTO sourcebans_tracker.points( account, points, timepoints, killassistpoints ) VALUES ( %s, %i, %i, %i ) ON DUPLICATE KEY UPDATE points = points + %i, timepoints = timepoints + %i, killassistpoints = killassistpoints + %i",
+	"INSERT INTO sourcebans_tracker.points( account, timepoints, killassistpoints ) VALUES ( %s, %i, %i ) ON DUPLICATE KEY UPDATE timepoints = timepoints + %i, killassistpoints = killassistpoints + %i",
 	steamID,
 	timePoints[client] + killAssistPoints[client], timePoints[client], killAssistPoints[client],
 	timePoints[client] + killAssistPoints[client], timePoints[client], killAssistPoints[client]);
