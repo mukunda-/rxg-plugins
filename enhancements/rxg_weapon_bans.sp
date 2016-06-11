@@ -7,10 +7,10 @@
 
 #pragma semicolon 1
 
-#define PLUGIN_VERSION "1.0.0"
+#define PLUGIN_VERSION "1.1.0"
 
 //--------------------------------------------------------------------------
-public Plugin:myinfo =
+public Plugin myinfo =
 {
 	name = "RXGweaponbans",
 	author = "rxg",
@@ -19,17 +19,33 @@ public Plugin:myinfo =
 	url = "www.reflex-gamers.com"
 };
 
+Handle rxg_weapons_ban_awp;
+bool c_rxg_weapons_ban_awp;
+
 //--------------------------------------------------------------------------
-public OnPluginStart() {
-	
+RecacheConvars() {
+	c_rxg_weapons_ban_awp = GetConVarBool(rxg_weapons_ban_awp);
+}
+
+//-------------------------------------------------------------------------------------------------
+public OnConVarChanged( Handle cvar, const char[] oldval, const char[] newval ) {
+	RecacheConvars();
 }
 
 //--------------------------------------------------------------------------
-public Action:CS_OnBuyCommand( client, const String:weapon[] ) {
-	new WeaponID:id = GetWeaponID( weapon );
+public OnPluginStart() {
+	rxg_weapons_ban_awp = CreateConVar( "rxg_weapons_ban_awp", "1", "Whether to ban AWP");
+	HookConVarChange( rxg_weapons_ban_awp, OnConVarChanged );
+	RecacheConvars();
+}
+
+//--------------------------------------------------------------------------
+public Action CS_OnBuyCommand( client, const char[] weapon ) {
+	WeaponID id = GetWeaponID( weapon );
 	if( id == WEAPON_SCAR20 ||
 		id == WEAPON_G3SG1 ||
-		id == WEAPON_AWP || id == WEAPON_SCAR17 ) {
+		id == WEAPON_SCAR17 ||
+		(c_rxg_weapons_ban_awp && id == WEAPON_AWP)) {
 
 		// todo: make sound
 		PrintToChat( client, "\x01 \x02[SM] The %s is banned.", weapon );
