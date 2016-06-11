@@ -14,7 +14,7 @@ public Plugin myinfo =
 	name = "FireSpeed",
 	author = "Roker",
 	description = "Move fast when near ppl on fiar",
-	version = "1.0.0",
+	version = "1.0.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -28,15 +28,29 @@ bool 	enemyLit[MAXPLAYERS];
 public void OnPluginStart(){
 	HookEvent("player_ignited", Event_Ignited, EventHookMode_Post);
 	HookEvent("player_spawn", Event_Spawn, EventHookMode_Post);
+	HookEvent("teamplay_round_active", Event_Round_Start, EventHookMode_Post);
+}
+
+//-----------------------------------------------------------------------------
+public Action Event_Round_Start(Handle event, char[] args, bool noBroadcast){ 
+	for(int i=0;i<MaxClients;i++){
+		if(!IsValidClient(i)) continue;
+		if(!IsPlayerAlive(i)) continue;
+		baseSpeed[i] = GetEntPropFloat(i, Prop_Data, "m_flMaxspeed");
+	}
 }
 
 //-----------------------------------------------------------------------------
 public Action Event_Spawn(Handle event, char[] args, bool noBroadcast){ 
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 	int weapon = GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
+	if(!IsValidEntity(weapon)) return;
 	int index = GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" );
+	
 	lit[client] = false;
 	equipped[client] = false;
+	enemyLit[client] = false;
+	
 	baseSpeed[client] = GetEntPropFloat(client, Prop_Data, "m_flMaxspeed");
 	
 	if(index != WEAPON_INDEX){
@@ -89,6 +103,8 @@ public Action Event_Weapon_Switch(int client, int weapon){
 //-----------------------------------------------------------------------------
 public Action setSpeed(int client){
 	if(enemyLit[client] && equipped[client]){
+		if(baseSpeed[client] == 0) return;
+		
 		SetEntPropFloat(client, Prop_Data, "m_flMaxspeed", baseSpeed[client] * 1.5);
 	}
 }
@@ -101,5 +117,7 @@ void checkEnemyLit(int client){
 		}
 	}
 	enemyLit[client] = false;
-	SetEntPropFloat(client, Prop_Data, "m_flMaxspeed", baseSpeed[client]);	
+	if(equipped[client]){
+		SetEntPropFloat(client, Prop_Data, "m_flMaxspeed", baseSpeed[client]);
+	}
 }
