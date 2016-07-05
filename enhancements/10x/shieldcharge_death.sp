@@ -3,6 +3,7 @@
 #include <sdktools>
 #include <tf2_stocks>
 #include <rxgcommon>
+#include <rxgtfcommon>
 
 #pragma semicolon 1
 
@@ -11,7 +12,7 @@ public Plugin myinfo = {
 	name = "ShieldCharge Death",
 	author = "Roker",
 	description = "Creates explosions when shield-charging demos collide.",
-	version = "1.2.2",
+	version = "1.2.3",
 	url = "www.reflex-gamers.com"
 };
 
@@ -141,27 +142,5 @@ bool hasCorrectWeapon(int client)
 	int shield = FindDemoShield(client);
 	int index = ( IsValidEntity(shield) ? GetEntProp( shield, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	return (index == WEAPON_INDEX);
-}
-
-//-------------------------------------------------------------------------------------------------
-stock FindDemoShield(int iClient)
-{
-	//int index = ( IsValidEntity(shield) ? GetEntProp( shield, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
-    int iEnt = MaxClients + 1; while ((iEnt = FindEntityByClassname2(iEnt, "tf_wearable_demoshield")) != -1)
-    {
-        if (GetEntPropEnt(iEnt, Prop_Send, "m_hOwnerEntity") == iClient && !GetEntProp(iEnt, Prop_Send, "m_bDisguiseWearable"))
-        {
-            return iEnt;
-        }
-    }
-    return -1;
-}
-
-//-------------------------------------------------------------------------------------------------
-stock int FindEntityByClassname2(startEnt, const String:classname[])
-{
-    /* If startEnt isn't valid shifting it back to the nearest valid one */
-    while (startEnt > -1 && !IsValidEntity(startEnt)) startEnt--;
-    return FindEntityByClassname(startEnt, classname);
 }
 

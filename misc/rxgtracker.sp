@@ -11,7 +11,7 @@ public Plugin myinfo =
 	name = "RXG Tracker",
 	author = "Roker",
 	description = "WE'RE WATCHING YOU",
-	version = "1.2.1",
+	version = "1.2.3",
 	url = "www.reflex-gamers.com"
 };
 
@@ -20,14 +20,17 @@ int killAssistPoints[MAXPLAYERS];
 int timePoints[MAXPLAYERS];
 
 
+Handle sm_rxg_event;
 Handle sm_rxg_time_points;
 Handle sm_rxg_killassist_points;
 
+bool c_rxg_event;
 int c_rxg_time_points;
 int c_rxg_killassist_points;
 
 //-------------------------------------------------------------------------------------------------
 void RecacheConvars() {
+	c_rxg_event = GetConVarBool( sm_rxg_event );
 	c_rxg_time_points = GetConVarInt( sm_rxg_time_points );
 	c_rxg_killassist_points = GetConVarInt( sm_rxg_killassist_points );
 }
@@ -40,16 +43,17 @@ public void OnConVarChanged( Handle cvar, const char[] oldval, const char[] newv
 //-----------------------------------------------------------------------------
 public void OnPluginStart()
 {
-	sm_rxg_time_points = CreateConVar( "sm_rxg_time_points", "1", "Points awarded per minute on the server.", FCVAR_PLUGIN );
-	sm_rxg_killassist_points = CreateConVar( "sm_rxg_killassist_points", "1", "Points awarded for kills and assists.", FCVAR_PLUGIN );
+	sm_rxg_event = CreateConVar("sm_rxg_event", "0", "Is this an event server?", FCVAR_PLUGIN, true, 0.0, true, 1.0);
+	sm_rxg_time_points = CreateConVar( "sm_rxg_time_points", "1", "Points awarded per minute on the server.", FCVAR_PLUGIN, true, 0.0 );
+	sm_rxg_killassist_points = CreateConVar( "sm_rxg_killassist_points", "1", "Points awarded for kills and assists.", FCVAR_PLUGIN, true, 0.0 );
 	
+	HookConVarChange( sm_rxg_event, OnConVarChanged );
 	HookConVarChange( sm_rxg_time_points, OnConVarChanged );
 	HookConVarChange( sm_rxg_killassist_points, OnConVarChanged );
 	
 	RecacheConvars();
 	
 	HookEvent("player_death", Event_Death, EventHookMode_Post);
-	HookEvent("player_disconnect", Event_Disconnect, EventHookMode_Post);
 }
 
 //-----------------------------------------------------------------------------
@@ -74,15 +78,14 @@ public Action Event_Death(Handle event, char[] arg, bool noBroadcast){
 }
 
 //-----------------------------------------------------------------------------
-public Action Event_Disconnect(Handle event, char[] arg, bool noBroadcast){
-	int client = GetClientOfUserId(GetEventInt(event, "userid"));
-	if(!IsValidClient(client)) return Plugin_Continue;
-	PrintToServer("time on server: %f", GetClientTime(client));
-	PrintToServer("points awarded: %i", RoundToFloor(GetClientTime(client) / 60 *c_rxg_time_points));
+public void OnClientDisconnect(int client){
+	if(!IsValidClient(client)) return;
 	
-	timePoints[client] = RoundToFloor(GetClientTime(client) / 60 * c_rxg_time_points);
+	PrintToServer("time on server: %f seconds", GetClientTime(client));
+	PrintToServer("points awarded: %i", RoundToFloor(GetClientTime(client) / 60 * c_rxg_time_points));
+	
+	
 	sqlStore(client);
-	return Plugin_Continue;
 }
 
 //-----------------------------------------------------------------------------
@@ -96,7 +99,8 @@ void addKillAssistPoint(int client, int clientid){
 }
 //-----------------------------------------------------------------------------
 void sqlStore(int client){
-	if(( timePoints[client] > 0 || killAssistPoints[client] > 0) && DBRELAY_IsConnected() ) {
+	timePoints[client] = RoundToFloor(GetClientTime(client) / 60 * c_rxg_time_points);
+	if(DBRELAY_IsConnected()) {
 		char steamID[64];
 		if( !GetClientAuthId(client, AuthId_SteamID64, steamID, sizeof(steamID))) return;
 		
@@ -128,28 +132,36 @@ public void cmGetSteam( Handle owner, Handle results, const char [] error, any d
 public void cmCheckMember( Handle owner, Handle results, const char [] error, any data ) {
 	if( SQL_GetRowCount(results) != 1 ) return; //No, or multiple results
 	
+	
 	if(!SQL_FetchRow(results)) return; //Couldnt get row.
+
 	int groupID = SQL_FetchInt(results, 0); //usergroupid
 	if(groupID <= 20 || groupID == 31) return; //Not member or banned
+
 	
 	ResetPack(data);
 	char steamID[64];
 	int client = ReadPackCell(data);
 	ReadPackString(data, steamID, sizeof(steamID));
 	
-	
-	
 	char query[1024];
+	
 	FormatEx( query, sizeof query,
 	"INSERT INTO sourcebans_tracker.points( account, timepoints, killassistpoints ) VALUES ( %s, %i, %i ) ON DUPLICATE KEY UPDATE timepoints = timepoints + %i, killassistpoints = killassistpoints + %i",
 	steamID,
-	timePoints[client] + killAssistPoints[client], timePoints[client], killAssistPoints[client],
-	timePoints[client] + killAssistPoints[client], timePoints[client], killAssistPoints[client]);
-	
-	killAssistPoints[client] = 0;
-	timePoints[client] = 0;
+	timePoints[client], killAssistPoints[client],
+	timePoints[client], killAssistPoints[client]);
 	
 	DBRELAY_TQuery( IgnoredSQLResult, query );
+	
+	if(c_rxg_event && GetClientCount() > 5){
+		FormatEx( query, sizeof query,
+		"INSERT INTO sourcebans_forums.event_participation VALUES ( %s, %i, now()) ON DUPLICATE KEY UPDATE minutes = minutes + %i",
+		steamID, timePoints[client], timePoints[client]);
+		DBRELAY_TQuery( IgnoredSQLResult, query );
+	}
+	
+	killAssistPoints[client] = 0;
 }
 
 //-----------------------------------------------------------------------------

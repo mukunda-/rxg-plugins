@@ -10,7 +10,7 @@ public Plugin:myinfo = {
 	name = "Airblast Ammo Refund",
 	author = "WhiteThunder",
 	description = "Refunds ammo after successful airblast with stock flamethrower",
-	version = "1.0.0",
+	version = "1.0.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -18,6 +18,7 @@ public Plugin:myinfo = {
 #define AMMO_COST 5 //Based on weapon attribute
 #define REFUND_MULTIPLIER 2 //Multiplier for how much ammo to refund
 #define AMMO_MAX 200
+#define HEALTH_RETURN 5
 
 //-----------------------------------------------------------------------------
 public OnPluginStart() {
@@ -41,7 +42,14 @@ public Action:Event_AirBlast( Handle:event, const String:name[], bool:dontBroadc
 	new currentAmmo = GetEntData( client, iAmmoTable + iOffset, 4 );
 	
 	new newAmmo = currentAmmo > AMMO_MAX ? AMMO_MAX : currentAmmo;
-	SetEntData( client, iAmmoTable + iOffset, newAmmo + AMMO_COST*REFUND_MULTIPLIER, 4, true );
+	SetEntData( client, iAmmoTable + iOffset, newAmmo + AMMO_COST * REFUND_MULTIPLIER, 4, true );
 	
+	int maxHealth = GetEntProp(client, Prop_Data, "m_iMaxHealth");
+	int health = GetEntProp(client, Prop_Data, "m_iHealth");
+	health += HEALTH_RETURN;
+	if(health > maxHealth){
+		health = maxHealth;
+	}
+	SetEntProp(client, Prop_Data, "m_iHealth", health);
 	return Plugin_Continue;
 }
