@@ -12,7 +12,7 @@ public Plugin myinfo = {
 	name = "Spawn Monoculus",
 	author = "WhiteThunder",
 	description = "Spawnable Monoculus",
-	version = "1.5.0",
+	version = "1.5.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -88,13 +88,13 @@ public OnPluginStart() {
 	sm_monoculus_max_summon_distance = CreateConVar( "sm_monoculus_max_summon_distance", "750", "The maximum distance you may summon a Monoculus away from yourself. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
 	sm_monoculus_min_distance_player_spawn = CreateConVar( "sm_monoculus_min_distance_player_spawn", "500", "The minimum distance from spawn points Monoculi can be spawned", FCVAR_PLUGIN, true, 0.0 );
 	sm_monoculus_max_spectrals_per_team = CreateConVar( "sm_monoculus_max_spectrals_per_team", "2", "The maximum number of Spectral Monoculi allowed per team. Set to 0 for no limit.", FCVAR_PLUGIN, true, 0.0 );
-	sm_monoculus_boss_base_health = CreateConVar( "sm_monoculus_boss_base_health", "4000", "The base health the Boss MONOCULUS should have before considering player count.", FCVAR_PLUGIN, true, 1.0, true, 50000.0 );
-	sm_monoculus_boss_health_per_player_above_threshold = CreateConVar( "sm_monoculus_boss_health_per_player_above_threshold", "200", "The additional health the Boss MONOCULUS should get per player above the threshold set by sm_monoculus_boss_health_player_threshold.", FCVAR_PLUGIN, true, 0.0, true, 5000.0 );
+	sm_monoculus_boss_base_health = CreateConVar( "sm_monoculus_boss_base_health", "2000", "The base health the Boss MONOCULUS should have before considering player count.", FCVAR_PLUGIN, true, 1.0, true, 50000.0 );
+	sm_monoculus_boss_health_per_player_above_threshold = CreateConVar( "sm_monoculus_boss_health_per_player_above_threshold", "100", "The additional health the Boss MONOCULUS should get per player above the threshold set by sm_monoculus_boss_health_player_threshold.", FCVAR_PLUGIN, true, 0.0, true, 5000.0 );
 	sm_monoculus_boss_health_player_threshold = CreateConVar( "sm_monoculus_boss_health_player_threshold", "10", "The number of players required to start adding additional health to the Boss MONOCULUS.", FCVAR_PLUGIN, true, 0.0 );
 	sm_monoculus_boss_max_duration = CreateConVar( "sm_monoculus_boss_max_duration", "125", "The maximum duration in seconds that the Boss MONOCULUS should remain in the realm after being summoned.", FCVAR_PLUGIN, true, 30.0, true, 300.0 );
 	sm_monoculus_spectral_summon_cooldown = CreateConVar( "sm_monoculus_spectral_summon_cooldown", "60", "The number of seconds you must wait between summoning Spectral Monoculi.", FCVAR_PLUGIN, true, 0.0 );
-	sm_monoculus_boss_team_summon_cooldown = CreateConVar( "sm_monoculus_boss_team_summon_cooldown", "300", "The number of seconds your team must wait after summoning the Boss MONOCULUS before summoning him again.", FCVAR_PLUGIN, true, 0.0 );
-	sm_monoculus_boss_enemy_summon_cooldown = CreateConVar( "sm_monoculus_boss_enemy_summon_cooldown", "125", "The number of seconds the enemy team must wait to summon the Boss MONOCULUS after your team has summoned him. For best results, set to the value of sm_monoculus_boss_max_duration to prevent more than one at a time.", FCVAR_PLUGIN, true, 0.0 );
+	sm_monoculus_boss_team_summon_cooldown = CreateConVar( "sm_monoculus_boss_team_summon_cooldown", "180", "The number of seconds your team must wait after summoning the Boss MONOCULUS before summoning him again.", FCVAR_PLUGIN, true, 0.0 );
+	sm_monoculus_boss_enemy_summon_cooldown = CreateConVar( "sm_monoculus_boss_enemy_summon_cooldown", "90", "The number of seconds the enemy team must wait to summon the Boss MONOCULUS after your team has summoned him. For best results, set to the value of sm_monoculus_boss_max_duration to prevent more than one at a time.", FCVAR_PLUGIN, true, 0.0 );
 
 	HookConVarChange( sm_monoculus_max_summon_distance, OnConVarChanged );
 	HookConVarChange( sm_monoculus_min_distance_player_spawn, OnConVarChanged );
