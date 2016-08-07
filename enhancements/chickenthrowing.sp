@@ -11,7 +11,7 @@ public Plugin myinfo = {
 	name = "Chicken Throwing",
 	author = "WhiteThunder",
 	description = "Chicken throwing lel",
-	version = "1.3.0",
+	version = "1.3.1",
 	url = "www.reflex-gamers.com"
 };
 
@@ -148,7 +148,12 @@ public Action Command_SlayChickens(int client, int args) {
 	}
 	
 	char player_name[64];
-	GetClientName(client, player_name, sizeof player_name);
+	
+	if (client == 0) {
+		player_name = "Console";
+	} else {
+		GetClientName(client, player_name, sizeof player_name);
+	}
 	
 	for (int i = 1; i <= MaxClients; i++) {
 		if (!IsClientInGame(i)) {
@@ -285,6 +290,9 @@ bool ThrowChicken(int client, float scale, float speed, float gravity) {
 	SetEntityMoveType(chicken, MOVETYPE_FLYGRAVITY);
 	SetEntPropFloat(chicken, Prop_Data, "m_flGravity", gravity / GRAVITY);
 	TeleportEntity(chicken, eye_pos, angles, velocity);
+	
+	// make the chicken follow the player
+	SetEntPropEnt(chicken, Prop_Send, "m_leader", client);
 	
 	//Create timer to stop the chicken
 	CreateTimer(time, StopChicken, EntIndexToEntRef(chicken));
