@@ -10,13 +10,14 @@ public Plugin:myinfo = {
 	name = "scrim1",
 	author = "mukunda",
 	description = "scrim features",
-	version = "1.0.0",
+	version = "1.1.0",
 	url = "www.mukunda.com"
 };
 
 
 
 new Handle:scrim_official;
+new bool:in_lobby = false;
 
 //----------------------------------------------------------------------------------------------------------------------
 public OnPluginStart() {
@@ -24,17 +25,36 @@ public OnPluginStart() {
 	RegConsoleCmd( "set_scrim_official", Command_scrim );
 	RegConsoleCmd( "say", Command_say );
 	
+	HookEvent( "player_spawn", Event_PlayerSpawn );
 }
 
+public OnMapStart() {
+	decl String:map[64];
+	GetCurrentMap( map, sizeof(map) );
+	in_lobby = strncmp( "rxglobby", map, 8, false ) == 0;
+}
 
+public Action:Event_PlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast ) {
+	
+	if( in_lobby ) return;
+	
+	new client = GetClientOfUserId( GetEventInt( event, "userid" ) );
+	if( client == 0 ) return;
+	
+	bool in_warmup = !!GameRules_GetProp( "m_bWarmupPeriod" );
+	
+	if( in_warmup ) {
+		SetEntProp( client, Prop_Send, "m_iAccount", 16000 );
+	}
+}
 
 public Action:Command_say( client, args ) {
 	decl String:text[64];
 	GetCmdArgString( text, sizeof text );
 	StripQuotes(text);
-	if( StrEqual(text,"pause",false) ) {
+	if( StrEqual(text,"pause",false) || StrEqual(text,"paws",false) ) {
 		ServerCommand( "mp_pause_match" );
-	} else if( StrEqual(text,"unpause",false) ) {
+	} else if( StrEqual(text,"unpause",false) || StrEqual(text,"unpaws",false) ) {
 		ServerCommand( "mp_unpause_match" );
 	}
 	return Plugin_Continue;
