@@ -6,11 +6,11 @@
 #pragma semicolon 1
 
 //-----------------------------------------------------------------------------
-public Plugin:myinfo = {
+public Plugin myinfo = {
 	name = "Airblast Ammo Refund",
 	author = "WhiteThunder",
 	description = "Refunds ammo after successful airblast with stock flamethrower",
-	version = "1.0.1",
+	version = "1.0.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -26,22 +26,22 @@ public OnPluginStart() {
 }
 
 //-----------------------------------------------------------------------------
-public Action:Event_AirBlast( Handle:event, const String:name[], bool:dontBroadcast ) {
+public Action Event_AirBlast( Handle event, const char name[], bool dontBroadcast ) {
 	
-	new client = GetClientOfUserId( GetEventInt( event, "userid" ) );
-	new weapon = GetPlayerWeaponSlot( client, TFWeaponSlot_Primary );
+	int client = GetClientOfUserId( GetEventInt( event, "userid" ) );
+	int weapon = GetPlayerWeaponSlot( client, TFWeaponSlot_Primary );
 	
-	new index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
+	int index = ( IsValidEntity(weapon) ? GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" ) : -1 );
 	
 	if( index != WEAPON_INDEX ) {
 		return Plugin_Continue;
 	}
 	
-	new iOffset = GetEntProp( weapon, Prop_Send, "m_iPrimaryAmmoType", 1 ) * 4;
-	new iAmmoTable = FindSendPropInfo( "CTFPlayer", "m_iAmmo" );
-	new currentAmmo = GetEntData( client, iAmmoTable + iOffset, 4 );
+	int iOffset = GetEntProp( weapon, Prop_Send, "m_iPrimaryAmmoType", 1 ) * 4;
+	int iAmmoTable = FindSendPropInfo( "CTFPlayer", "m_iAmmo" );
+	int currentAmmo = GetEntData( client, iAmmoTable + iOffset, 4 );
 	
-	new newAmmo = currentAmmo > AMMO_MAX ? AMMO_MAX : currentAmmo;
+	int newAmmo = currentAmmo > AMMO_MAX ? AMMO_MAX : currentAmmo;
 	SetEntData( client, iAmmoTable + iOffset, newAmmo + AMMO_COST * REFUND_MULTIPLIER, 4, true );
 	
 	int maxHealth = GetEntProp(client, Prop_Data, "m_iMaxHealth");
