@@ -55,7 +55,7 @@ int g_blu_spectral_count;
 int g_client_userid[MAXPLAYERS+1];
 
 int g_spawn_count;
-float g_player_spawns[100][3];
+float g_player_spawns[200][3];
 
 //-------------------------------------------------------------------------------------------------
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, err_max) {
