@@ -11,7 +11,7 @@ public Plugin myinfo =
 	name = "RXG Tracker",
 	author = "Roker",
 	description = "WE'RE WATCHING YOU",
-	version = "1.2.3",
+	version = "1.2.4",
 	url = "www.reflex-gamers.com"
 };
 
@@ -145,6 +145,8 @@ public void cmCheckMember( Handle owner, Handle results, const char [] error, an
 	ReadPackString(data, steamID, sizeof(steamID));
 	
 	char query[1024];
+	
+	if(timePoints[client] == 0) return;
 	
 	FormatEx( query, sizeof query,
 	"INSERT INTO sourcebans_tracker.points( account, timepoints, killassistpoints ) VALUES ( %s, %i, %i ) ON DUPLICATE KEY UPDATE timepoints = timepoints + %i, killassistpoints = killassistpoints + %i",
