@@ -31,6 +31,7 @@ new bool:c_rxglobby_nospecs;
 new String:c_rxglobby_hostprefix[64];
 
 new Float:round_start_time;
+new Float:c_round_time;
 new bool:round_terminated;
 
 #define RESPAWN_TIME 2.0
@@ -210,6 +211,7 @@ public OnPluginStart() {
 	sm_rxglobby_minplayers = CreateConVar( "sm_rxglobby_minplayers", "5", "requires this many people on each team for ready buttons to work", FCVAR_PLUGIN );
 	sm_rxglobby_nospecs = CreateConVar( "sm_rxglobby_nospecs", "0", "dont allow spectating and kick non participants from live games", FCVAR_PLUGIN );
 	c_rxglobby_nospecs = GetConVarBool( sm_rxglobby_nospecs );
+	c_round_time = GetConVarFloat( FindConVar("mp_roundtime_hostage") );
 	GetConVarString( sm_rxglobby_hostprefix, c_rxglobby_hostprefix, sizeof(c_rxglobby_hostprefix) );
 	HookConVarChange( sm_rxglobby_hostprefix, CacheConVar );
 	HookConVarChange( sm_rxglobby_nospecs, CacheConVar );
@@ -322,7 +324,22 @@ public Action:TimerCountdown( Handle:timer ) {
 }
 
 //-------------------------------------------------------------------------------------------------
+AddRoundTime( float seconds ) {
+	float start = GameRules_GetPropFloat( "m_fRoundStartTime" );
+	start += seconds;
+	float gt = GetGameTime();
+	if( start > (gt - 0.1) ) start = gt - 0.1;
+	GameRules_SetPropFloat( "m_fRoundStartTime", start );
+}
+
+//-------------------------------------------------------------------------------------------------
 StartCountdown() {
+	float start = GameRules_GetPropFloat( "m_fRoundStartTime" );
+	float time_left = c_round_time * 60.0 - ( GetGameTime() - start );
+	if( time_left < 60.0 ) {
+		AddRoundTime( 60.0 - time_left );
+	}
+	
 	PrintToChatAll( "\x01\x0B\x04Both teams are ready." );
 	PrintToChatAll( "\x01\x0B\x04Game begins in 10 seconds..." );
 	
