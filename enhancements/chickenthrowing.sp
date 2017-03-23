@@ -11,7 +11,7 @@ public Plugin myinfo = {
 	name = "Chicken Throwing",
 	author = "WhiteThunder",
 	description = "Chicken throwing lel",
-	version = "1.3.1",
+	version = "1.3.2",
 	url = "www.reflex-gamers.com"
 };
 
@@ -292,7 +292,7 @@ bool ThrowChicken(int client, float scale, float speed, float gravity) {
 	TeleportEntity(chicken, eye_pos, angles, velocity);
 	
 	// make the chicken follow the player
-	SetEntPropEnt(chicken, Prop_Send, "m_leader", client);
+	AcceptEntityInput(chicken, "Use", client);
 	
 	//Create timer to stop the chicken
 	CreateTimer(time, StopChicken, EntIndexToEntRef(chicken));
