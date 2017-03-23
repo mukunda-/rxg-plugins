@@ -52,13 +52,13 @@ new Handle:radio_loop_timer;
 
 // weapons range-----------------------------------------------------------------------------------
 
-new button_weaponsrange;
-new bool:wr_active;
-new Float:wr_start_time;
-new Handle:wr_targets;
-new wr_tick;
-new wr_target_spawndelay;
-new wr_alive_targets;
+//new button_weaponsrange;
+//new bool:wr_active;
+//new Float:wr_start_time;
+//new Handle:wr_targets;
+//new wr_tick;
+//new wr_target_spawndelay;
+//new wr_alive_targets;
 
 // practice range ---------------------------------------------------------------------------------
 
@@ -196,7 +196,7 @@ public CacheConVar( Handle:convar, const String:oldValue[], const String:newValu
 
 //-------------------------------------------------------------------------------------------------
 public OnPluginStart() {
-	wr_targets = CreateArray(8);
+	//wr_targets = CreateArray(8);
 	RegConsoleCmd( "jointeam", Command_jointeam );
 	RegConsoleCmd( "sm_cointoss", Command_cointoss );
 	RegConsoleCmd( "scrim_map", Command_map );
@@ -460,7 +460,7 @@ FindButtons() {
 		
 		// weapons range
 		if( StrEqual( name, "button_weaponsrange" ) ) {
-			button_weaponsrange = ent;
+			//button_weaponsrange = ent;
 			HookSingleEntityOutput( ent, "OnPressed", OnButtonWeaponsRange );
 		}
 	}
