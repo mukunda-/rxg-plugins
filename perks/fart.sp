@@ -12,7 +12,7 @@ public Plugin:myinfo = {
 	name = "fart",
 	author = "mukunda",
 	description = "slashfart",
-	version = "1.1.0",
+	version = "1.1.1",
 	url = "www.mukunda.com"
 };
 
@@ -64,6 +64,13 @@ public Event_RoundStart( Handle:event, const String:name[], bool:dontBroadcast )
 public OnMapStart() {
 	PrecacheSound( SOUND );
 	AddFileToDownloadsTable( "sound/fart/smokenweewalt_fart.mp3" );
+	
+	// preload steam to prevent lag
+	int ent = CreateEntityByName( "env_steam" );
+	DispatchSpawn(ent);
+	if( IsValidEntity(ent) ) {
+		AcceptEntityInput( ent, "Kill" );
+	}
 }
 
 //----------------------------------------------------------------------------------------
