@@ -881,7 +881,8 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 	
 	if( attacker == victim ) return Plugin_Continue;
 	 
-	if( player_zone[attacker] != ZONE_PRACTICE || player_zone[victim] != ZONE_PRACTICE ) {
+	if( player_zone[attacker] != ZONE_PRACTICE || player_zone[victim] != ZONE_PRACTICE ||
+			pr_team[attacker] == pr_team[victim] ) {
 		damage = 0.0;
 		return Plugin_Changed;
 	}
