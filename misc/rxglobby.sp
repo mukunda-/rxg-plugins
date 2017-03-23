@@ -730,6 +730,9 @@ public Action:PlayerSpawnDelayed( Handle:timer, any:userid ) {
 	
 	SetEntProp( client, Prop_Send, "m_iHideHUD", HIDEHUD );
 	
+	// give moneys
+	SetEntProp( client, Prop_Send, "m_iAccount", 15000 );
+	
 	death_time[client] = GetGameTime();
 }
 
@@ -742,9 +745,6 @@ public Event_PlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast 
 	new client = GetClientOfUserId( userid );
 	if( client == 0 ) return;
 	CreateTimer( 0.1, PlayerSpawnDelayed, userid, TIMER_FLAG_NO_MAPCHANGE );
-	
-	// give moneys
-	SetEntProp( client, Prop_Send, "m_iAccount", 15000 );
 	
 	// if player dies in practice zone, respawn nearby
 	if( player_zone[client] == ZONE_PRACTICE ){
