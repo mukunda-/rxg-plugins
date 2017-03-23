@@ -564,7 +564,7 @@ public OnMapStart() {
 public OnConfigsExecuted() {
 	decl String:map[64];
 	GetCurrentMap( map, sizeof(map) );
-	if( strncmp( "rxglobby", map, 8 ) == 0 ) {
+	if( strncmp( "rxglobby", map, 8, false ) == 0 ) {
 		//ServerCommand( "exec rxglobby.cfg" );
 		OnRxgLobbyLoaded();
 	}
