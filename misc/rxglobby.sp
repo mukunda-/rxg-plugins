@@ -685,12 +685,13 @@ public Action:Timer_Update( Handle:timer ) {
 				LeaveTeamZone( client );
 			}
 		}
-		
-		if( GetGameTime() - round_start_time > 60.0 * 10.0 && !round_terminated ) {
-			CS_TerminateRound( 5.0, CSRoundEnd_Draw );
-			round_terminated =true;
-		}
 	}
+	
+	if( time - round_start_time > 60.0 * c_round_time && !round_terminated ) {
+		CS_TerminateRound( 5.0, CSRoundEnd_Draw );
+		round_terminated = true;
+	}
+	
 	return Plugin_Continue;
 }
 
