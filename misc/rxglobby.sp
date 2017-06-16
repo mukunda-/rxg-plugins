@@ -319,15 +319,16 @@ StartMatch() {
 //-------------------------------------------------------------------------------------------------
 public Action:TimerCountdown( Handle:timer ) {
 	countdown--;
-	if( countdown <= 5 ) {
+	if( countdown <= 10 ) {
 		if( countdown == 0 ){
 			// start map
 			StartMatch();
 			countdown_timer = INVALID_HANDLE;
 			return Plugin_Stop;
 		} else {
-			EmitSoundToAll( COUNTDOWN_SOUND );
-			PrintCenterTextAll( "Game begins in %d seconds...", countdown );
+			if( countdown <= 5 ) {
+				EmitSoundToAll( COUNTDOWN_SOUND );
+			}
 			PrintCenterTextAll( "Game begins in %d seconds...\nMap: %s", countdown, selected_map_name );
 		}
 	}
