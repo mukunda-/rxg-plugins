@@ -868,7 +868,7 @@ HookExistingClients() {
 }
 
 
-//----------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damagetype, &weapon,
 		Float:damageForce[3], Float:damagePosition[3]) {
 
@@ -891,7 +891,7 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 	return Plugin_Continue;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 public OnButtonWeaponsRange( const String:output[], caller, activator, Float:delay ) {
 	PrintToChat( activator, "\x01\x0B\x09I'm sorry to be the one to tell you this, but the weapons range program isn't implemented yet." );
 }
@@ -901,7 +901,7 @@ bool:SteamIDMatch( const String:a[], const String:b[] ) {
 	return StrEqual( a[8], b[8] );
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 public Action:OnClientPutInServerDelayed( Handle:timer, any:userid ) {
 	new client = GetClientOfUserId( userid );
 	if( !client ) return Plugin_Handled;
@@ -929,7 +929,7 @@ public Action:OnClientPutInServerDelayed( Handle:timer, any:userid ) {
 	return Plugin_Handled;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 public OnClientPutInServer( client ) {
 	if( IsFakeClient(client) ) return;
 	if( hooked ) {
@@ -958,7 +958,7 @@ public OnClientPutInServer( client ) {
 	CreateTimer( 3.0, OnClientPutInServerDelayed, GetClientUserId( client ), TIMER_FLAG_NO_MAPCHANGE );
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 public OnGameFrame() {
 	if( !hooked ) return;
 
@@ -968,7 +968,7 @@ public OnGameFrame() {
 	
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 ScreenFade( client, duration, hold, flags, r,g,b,a ) {
 	new clients[2];
 	clients[0] = client;
@@ -986,7 +986,7 @@ ScreenFade( client, duration, hold, flags, r,g,b,a ) {
 	EndMessage();
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 ScarePlayer( client ) {
 	scare_userid = GetClientUserId(client);
 	scare_time = GetGameTime();
@@ -1026,7 +1026,7 @@ ScarePlayer( client ) {
 	scare_sprite=ent;
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 UpdateScare() {
 	if( !scare_active ) return;
 	
@@ -1076,7 +1076,7 @@ UpdateScare() {
 	}
 }
 
-//----------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------
 public Action:Command_jointeam( client, args ) {
 
 	if( IsFakeClient(client) ) return Plugin_Continue;
