@@ -584,6 +584,8 @@ public OnMapStart() {
 		
 		AddFileToDownloadsTable( RADIO_SOUND_DL );
 		PrecacheSound( RADIO_SOUND );
+	} else {
+		ServerCommand( "exec sourcemod/rxglobby_reset.cfg" );
 	}
 	returning_to_lobby = false;
 	match_halftime_passed = false;
