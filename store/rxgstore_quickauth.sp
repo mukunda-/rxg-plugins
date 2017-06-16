@@ -12,7 +12,7 @@ public Plugin myinfo = {
     name        = "RXG Store QuickAuth",
     author      = "WhiteThunder",
     description = "Adds !store and related commands",
-    version     = "1.0.0",
+    version     = "1.0.1",
     url         = "www.reflex-gamers.com"
 };
 
@@ -23,6 +23,7 @@ KeyValues kv_config;
 
 char g_database[65];
 char g_url[256];
+char g_protocol[8];
 
 // the ip for this server (hostip converted into ipv4 format)
 char c_ip[32];
@@ -87,6 +88,7 @@ void LoadConfigFile() {
 	
 	kv_config.GetString( "database", g_database, sizeof g_database );
 	kv_config.GetString( "url", g_url, sizeof g_url );
+	kv_config.GetString( "protocol", g_protocol, sizeof g_protocol, "http" );
 	
 	delete kv_config;
 }
@@ -116,7 +118,8 @@ public void ShowStorePage( int client, int id, int token, const char[] page ) {
 	
 	char url[512];
 	FormatEx( url, sizeof url,
-		"http://%s/quickauth?id=%d&token=%d&game=%s%s",
+		"%s://%s/quickauth?id=%d&token=%d&game=%s%s",
+		g_protocol,
 		g_url,
 		id,
 		token,
