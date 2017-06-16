@@ -7,7 +7,7 @@ public Plugin myinfo =
     name = "MOTD Weapon List",
     author = "Roker",
     description = "Opens MOTD with Mayhem Weapon list",
-    version = "1.1.0",
+    version = "1.1.1",
     url = "http://www.reflex-gamers.com"
 }
 public OnPluginStart()
@@ -22,7 +22,7 @@ public OnPluginStart()
 
 //Displays WEAPON LIST
 public Action viewList(client,args) {
-    ShowMOTDPanel(client, "WeaponList", "http://reflex-gamers.com/weaponlist/pages/home-game", MOTDPANEL_TYPE_URL);
+    ShowMOTDPanel(client, "WeaponList", "https://reflex-gamers.com/weaponlist/pages/home-game", MOTDPANEL_TYPE_URL);
     return Plugin_Handled;
 }
 
@@ -32,7 +32,7 @@ public Action viewLoadout(client,args) {
 	GetLoadout(client, loadout);
 	
 	char url[128];
-	Format(url, sizeof(url), "http://reflex-gamers.com/weaponlist/pages/view-weapons/%i/%i/%i/%i", loadout[0], loadout[1] , loadout[2], loadout[3]);
+	Format(url, sizeof(url), "https://reflex-gamers.com/weaponlist/pages/view-weapons/%i/%i/%i/%i", loadout[0], loadout[1] , loadout[2], loadout[3]);
 	ShowMOTDPanel(client, "Loadout", url , MOTDPANEL_TYPE_URL);
 	return Plugin_Handled;
 }
