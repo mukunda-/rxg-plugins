@@ -346,21 +346,21 @@ StartCountdown() {
 		AddRoundTime( 60.0 - time_left );
 	}
 	
-	PrintToChatAll( "\x01\x0B\x04Both teams are ready." );
-	PrintToChatAll( "\x01\x0B\x04Game begins in 10 seconds..." );
+	PrintToChatAll( "\x01 \x0B\x04Both teams are ready." );
+	PrintToChatAll( "\x01 \x0B\x04Game begins in 10 seconds..." );
 	
 	if( dep_team_count[0] < 5 ) {
-		PrintToChatAll( "\x01\x0B\x09Warning: CT only has %d human player%s.", dep_team_count[0], dep_team_count[0] != 1 ? "s":"" );
+		PrintToChatAll( "\x01 \x0B\x09Warning: CT only has %d human player%s.", dep_team_count[0], dep_team_count[0] != 1 ? "s":"" );
 	}
 	
 	if( dep_team_count[1] < 5 ) {
-		PrintToChatAll( "\x01\x0B\x09Warning: Terrorist only has %d human player%s.", dep_team_count[1],dep_team_count[1] != 1 ? "s":"" );
+		PrintToChatAll( "\x01 \x0B\x09Warning: Terrorist only has %d human player%s.", dep_team_count[1],dep_team_count[1] != 1 ? "s":"" );
 	}
 	
 	for( new i = 1; i <= MaxClients; i++ ) {
 		if( !IsClientInGame(i) ) continue;
 		if( dep_team[i] == 0 ) {
-			PrintToChat( i, "\x01\x0B\x09Warning: You are not assigned a team. Get to the departure zone if you want to play!" );
+			PrintToChat( i, "\x01 \x0B\x09Warning: You are not assigned a team. Get to the departure zone if you want to play!" );
 		}
 	}
 	
@@ -371,7 +371,7 @@ StartCountdown() {
 //-------------------------------------------------------------------------------------------------
 StopCountdown() {
 	if( countdown_timer ) {
-		PrintToChatAll( "\x01\x0B\x08The countdown was cancelled." );
+		PrintToChatAll( "\x01 \x0B\x08The countdown was cancelled." );
 		KillTimer( countdown_timer );
 		countdown_timer = INVALID_HANDLE;
 	}
@@ -395,7 +395,7 @@ SetReadyState( index ) {
 			
 			if( dep_team_count[index] > 5 ) {
 				
-				PrintToChat( last_player_ready_pressed[index], "\x01\x0B\x09More than 5 players on team." );
+				PrintToChat( last_player_ready_pressed[index], "\x01 \x0B\x09More than 5 players on team." );
 				ResetReadyButton(index);
 				return;
 				
@@ -404,9 +404,9 @@ SetReadyState( index ) {
 				
 				
 				if( team_min < 5 ) {
-					PrintToChat( last_player_ready_pressed[index], "\x01\x0B\x09Only %d/5 players on team. Need at least %d.", dep_team_count[index], team_min );
+					PrintToChat( last_player_ready_pressed[index], "\x01 \x0B\x09Only %d/5 players on team. Need at least %d.", dep_team_count[index], team_min );
 				} else {
-					PrintToChat( last_player_ready_pressed[index], "\x01\x0B\x09Only %d/5 players on team.", dep_team_count[index] );
+					PrintToChat( last_player_ready_pressed[index], "\x01 \x0B\x09Only %d/5 players on team.", dep_team_count[index] );
 				}
 				
 				ResetReadyButton(index);
@@ -630,7 +630,7 @@ EnterTeamZone( client, index ) {
 	
 	dep_team[client] = index+1;
 	player_zone[client] = index ==0 ? ZONE_TEAM_A : ZONE_TEAM_B;
-	PrintToChatAll( "\x01\x0B\x01%N has joined %s\x01.", client, index == 0 ? "\x03Counter-Terrorist" : "\x09Terrorist" );
+	PrintToChatAll( "\x01 \x0B\x01%N has joined %s\x01.", client, index == 0 ? "\x03Counter-Terrorist" : "\x09Terrorist" );
 	ResetReadyState();
 }
 
@@ -640,7 +640,7 @@ LeaveTeamZone( client ) {
 	if( match_locked ) return;
 	
 	if( dep_team[client] ) {
-		PrintToChatAll( "\x01\x0B\x01%N has left %s\x01.", client, dep_team[client] == 1 ? "\x03Counter-Terrorist" : "\x09Terrorist" );
+		PrintToChatAll( "\x01 \x0B\x01%N has left %s\x01.", client, dep_team[client] == 1 ? "\x03Counter-Terrorist" : "\x09Terrorist" );
 		player_zone[client] = ZONE_OTHER;
 		dep_team[client] = 0;
 	}
@@ -724,7 +724,7 @@ public Action:Command_map( client, args ) {
 	
 	GetCmdArg( 1, custom_map_name, sizeof custom_map_name );
 	
-	PrintToChatAll( "\x01\x0B\x09%N selected custom map: %s", client, custom_map_name );
+	PrintToChatAll( "\x01 \x0B\x09%N selected custom map: %s", client, custom_map_name );
 	
 	ChangeMap( MAP_CUSTOM );
 	return Plugin_Handled;
@@ -899,7 +899,7 @@ public Action:OnTakeDamage(victim, &attacker, &inflictor, &Float:damage, &damage
 
 //-------------------------------------------------------------------------------------------------
 public OnButtonWeaponsRange( const String:output[], caller, activator, Float:delay ) {
-	PrintToChat( activator, "\x01\x0B\x09I'm sorry to be the one to tell you this, but the weapons range program isn't implemented yet." );
+	PrintToChat( activator, "\x01 \x0B\x09I'm sorry to be the one to tell you this, but the weapons range program isn't implemented yet." );
 }
 
 bool:SteamIDMatch( const String:a[], const String:b[] ) {
@@ -1162,7 +1162,7 @@ bool:ProcessLobbyVotes() {
 	}
 	lobby_votes_required = RoundToCeil( float(lobby_votes_clients) * 0.6 );
 	if( lobby_votes_total >= lobby_votes_required ) {
-		PrintToChatAll( "\x01\x0B\x09Returning to lobby..." );
+		PrintToChatAll( "\x01 \x0B\x09Returning to lobby..." );
 		returning_to_lobby = true;
 		CreateTimer( 3.0, ReturnToLobby, _, TIMER_FLAG_NO_MAPCHANGE );
 		return true;
@@ -1183,7 +1183,7 @@ public Action:Command_say( client, args ) {
 			
 			client_lobby_vote[client] = 1;
 			if( !ProcessLobbyVotes() ) {
-				PrintToChatAll( "\x01\x0B\x09%N wants to return to the lobby, %d more vote%s needed.", client, lobby_votes_required-lobby_votes_total, (lobby_votes_required-lobby_votes_total) != 1 ? "s":"" );
+				PrintToChatAll( "\x01 \x0B\x09%N wants to return to the lobby, %d more vote%s needed.", client, lobby_votes_required-lobby_votes_total, (lobby_votes_required-lobby_votes_total) != 1 ? "s":"" );
 			}
 		}
 	}
@@ -1285,7 +1285,7 @@ public Action:debug1( args ) {
 		if( IsFakeClient(i) ) continue;
 		SetEntProp( i, Prop_Send, "m_iHideHUD", 0 );
 	}
-	PrintToChatAll( "\x01\x0B\x03***running debug1 command" );
+	PrintToChatAll( "\x01 \x0B\x03***running debug1 command" );
 	return Plugin_Handled;
 }
 
