@@ -88,6 +88,7 @@ new match_locked;
 new String:match_player_ids[10][32]; // steam IDs first 5 start as T, second 5 start as CT
 
 new String:custom_map_name[64];
+new String:selected_map_name[64];
 
 #define READY_SOUND "buttons/button3.wav"
 #define READY_SOUND_RESET "buttons/button10.wav"
@@ -233,6 +234,13 @@ ChangeMap( newmap ) {
 	newmap = newmap + MAP_TOTAL;
 	newmap = newmap % MAP_TOTAL;
 	selected_map = newmap;
+	
+	if( selected_map == MAP_CUSTOM ) {
+		strcopy( selected_map_name, sizeof selected_map_name, custom_map_name );
+	} else {
+		strcopy( selected_map_name, sizeof selected_map_name, map_names[selected_map] );
+	}
+	
 	SetEntProp( mapscreen_picture, Prop_Send, "m_iTextureFrameIndex", selected_map );
 	ResetReadyState();
 }
@@ -304,12 +312,8 @@ StartMatch() {
 				GetClientAuthString( i, match_player_ids[5+write_2++], sizeof(match_player_ids[]) );
 		}
 	}
-
-	if( selected_map != MAP_CUSTOM ) {
-		ForceChangeLevel( map_names[selected_map], "Starting Scrim" );
-	} else {
-		ForceChangeLevel( custom_map_name, "Starting Scrim" );
-	}
+	
+	ForceChangeLevel( selected_map_name, "Starting Scrim" );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -324,6 +328,7 @@ public Action:TimerCountdown( Handle:timer ) {
 		} else {
 			EmitSoundToAll( COUNTDOWN_SOUND );
 			PrintCenterTextAll( "Game begins in %d seconds...", countdown );
+			PrintCenterTextAll( "Game begins in %d seconds...\nMap: %s", countdown, selected_map_name );
 		}
 	}
 	return Plugin_Continue;
@@ -348,6 +353,8 @@ StartCountdown() {
 	
 	PrintToChatAll( "\x01 \x0B\x04Both teams are ready." );
 	PrintToChatAll( "\x01 \x0B\x04Game begins in 10 seconds..." );
+	
+	PrintToChatAll( "\x01 \x0B\x04Selected Map: %s", selected_map_name );
 	
 	if( dep_team_count[0] < 5 ) {
 		PrintToChatAll( "\x01 \x0B\x09Warning: CT only has %d human player%s.", dep_team_count[0], dep_team_count[0] != 1 ? "s":"" );
