@@ -19,7 +19,7 @@ public Plugin:myinfo = {
 	name="rxglobby",
 	author="mukunda",
 	description="rxg scrim lobby scripting",
-	version="1.0.2",
+	version="1.1.0",
 	url="www.mukunda.com"
 };
 
@@ -65,8 +65,13 @@ new Handle:radio_loop_timer;
 // practice range ---------------------------------------------------------------------------------
 
 new pr_team[MAXPLAYERS+1];
+new pr_team_count[MAXPLAYERS+1];
 
 new bool:hooked;
+
+#define CT_MODEL "models/player/ctm_st6.mdl"
+#define PR_CT_MODEL "models/player/ctm_sas.mdl"
+#define PR_T_MODEL "models/player/tm_pirate.mdl"
 
 // departure --------------------------------------------------------------------------------------
 
@@ -165,6 +170,15 @@ enum {
 	ZONE_TEAM_A,
 	ZONE_TEAM_B
 };
+
+//-------------------------------------------------------------------------------------------------
+enum {
+	SCORE_T = 400,
+	SCORE_CT = 300,
+	SCORE_T_PR = 200,
+	SCORE_CT_PR = 100,
+	SCORE_NONE = 0
+}
 
 //-------------------------------------------------------------------------------------------------
 new Float:zone_list[] = {
@@ -270,6 +284,23 @@ CountTeamPlayers() {
 			dep_team_count[0]++;
 		} else if( dep_team[i] == 2 ) {
 			dep_team_count[1]++;
+		}
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+PR_CountTeamPlayers() {
+	pr_team_count[0] = 0;
+	pr_team_count[1] = 0;
+	for( new i = 1; i <= MaxClients; i++ ) {
+		if( !IsClientInGame(i) ) continue;
+		if( IsFakeClient(i) ) continue;
+		if( !IsPlayerAlive(i) ) continue;
+		
+		if( pr_team[i] == 1 ) {
+			pr_team_count[0]++;
+		} else if( pr_team[i] == 2 ) {
+			pr_team_count[1]++;
 		}
 	}
 }
@@ -526,6 +557,7 @@ AddHooks() {
 	hooked = true;
 	HookEvent( "player_spawn", Event_PlayerSpawn );
 	HookEvent( "player_death", Event_PlayerDeath );
+	HookEvent( "player_team", Event_PlayerTeam );
 	HookEvent( "round_start", Event_RoundStart, EventHookMode_PostNoCopy );
 	HookEvent( "hostage_follows", Event_HostageFollows );
 	
@@ -542,6 +574,7 @@ RemoveHooks() {
 	hooked = false;
 	UnhookEvent( "player_spawn", Event_PlayerSpawn );
 	UnhookEvent( "player_death", Event_PlayerDeath );
+	UnhookEvent( "player_team", Event_PlayerTeam );
 	UnhookEvent( "round_start", Event_RoundStart, EventHookMode_PostNoCopy );
 	UnhookEvent( "hostage_follows", Event_HostageFollows );
 	
@@ -582,6 +615,10 @@ public OnMapStart() {
 		
 		PrecacheModel( SCARE_MATERIAL );
 		
+		PrecacheModel( CT_MODEL );
+		PrecacheModel( PR_CT_MODEL );
+		PrecacheModel( PR_T_MODEL );
+		
 		AddFileToDownloadsTable( RADIO_SOUND_DL );
 		PrecacheSound( RADIO_SOUND );
 	} else {
@@ -620,18 +657,47 @@ PlayerInZone( client, zone ) {
 
 //-------------------------------------------------------------------------------------------------
 EnterPracticeZone( client, index ) {
-	pr_team[client] = index;
+	pr_team[client] = index+1;
 	player_zone[client] = ZONE_PRACTICE;
-	SetEntityRenderColor( client, index==0?255:0, 0, index==1? 255:0 );
-	PrintCenterText( client, "Entering Live Fire Zone" );
+	
+	char team_name[3];
+	
+	if( index == 0 ) {
+		SetEntityModel( client, PR_CT_MODEL );
+		CS_SetClientClanTag( client, "[ARENA] CT" );
+		CS_SetClientContributionScore( client, SCORE_CT_PR );
+		team_name = "CT";
+	} else if ( index == 1 ) {
+		SetEntityModel( client, PR_T_MODEL );
+		CS_SetClientClanTag( client, "[ARENA] T" );
+		CS_SetClientContributionScore( client, SCORE_T_PR );
+		team_name = "T";
+	}
+	
+	PR_UpdateTeamScores( index );
+	
+	//SetEntityRenderColor( client, index==0?255:0, 0, index==1? 255:0 );
+	PrintCenterText( client, "Entering Live Fire Zone as %s", team_name );
 }
 
 //-------------------------------------------------------------------------------------------------
-LeavePracticeZone( client ) {
-	player_zone[client] = ZONE_OTHER;
-	SetEntityRenderColor( client, 255,255,255 );
-	PrintCenterText( client, "Leaving Live Fire Zone" );
-	SetEntityHealth( client, 100 );
+LeavePracticeZone( int client, bool connected = true, bool alive = true ) {
+	// if dead, don't change zone yet so they can be respawned outside the practice range
+	if( alive ) {
+		player_zone[client] = ZONE_OTHER;
+		pr_team[client] = 0;
+		PR_UpdateTeamScores();
+		
+		SetEntityModel( client, CT_MODEL );
+		PrintCenterText( client, "Leaving Live Fire Zone" );
+		SetEntityHealth( client, 100 );
+	}
+	
+	if( connected ) {
+		//SetEntityRenderColor( client, 255,255,255 );
+		CS_SetClientClanTag( client, "" );
+		CS_SetClientContributionScore( client, SCORE_NONE );
+	}
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -641,20 +707,73 @@ EnterTeamZone( client, index ) {
 	dep_team[client] = index+1;
 	player_zone[client] = index ==0 ? ZONE_TEAM_A : ZONE_TEAM_B;
 	PrintToChatAll( "\x01 \x0B\x01%N has joined %s\x01.", client, index == 0 ? "\x03Counter-Terrorist" : "\x09Terrorist" );
+	CS_SetClientClanTag( client, index == 0 ? "CT" : "T" );
+	CS_SetClientContributionScore( client, index == 0 ? SCORE_CT : SCORE_T );
+	DZ_UpdateTeamScores();
 	ResetReadyState();
 }
 
 //-------------------------------------------------------------------------------------------------
-LeaveTeamZone( client ) {
-	
+LeaveTeamZone( int client, bool connected = true ) {
 	if( match_locked ) return;
 	
 	if( dep_team[client] ) {
 		PrintToChatAll( "\x01 \x0B\x01%N has left %s\x01.", client, dep_team[client] == 1 ? "\x03Counter-Terrorist" : "\x09Terrorist" );
 		player_zone[client] = ZONE_OTHER;
 		dep_team[client] = 0;
+		DZ_UpdateTeamScores();
+		
+		if( connected ) {
+			CS_SetClientClanTag( client, "" );
+			CS_SetClientContributionScore( client, SCORE_NONE );
+		}
 	}
+	
 	ResetReadyState();
+}
+
+//-------------------------------------------------------------------------------------------------
+PR_UpdateTeamScores( int index = -1 ) {
+	// departure zone gets precedence for using score mechanic
+	if( dep_team_count[0] > 0 || dep_team_count[1] > 0 ) {
+		return;
+	}
+	
+	PR_CountTeamPlayers();
+	
+	if( index > -1 ) {
+		SetTeamScore( index == 0 ? CS_TEAM_CT : CS_TEAM_T, pr_team_count[index] );
+	} else {
+		SetTeamScore( CS_TEAM_CT, pr_team_count[0] );
+		SetTeamScore( CS_TEAM_T, pr_team_count[1] );
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+DZ_UpdateTeamScores( int index = -1 ) {
+	CountTeamPlayers();
+	
+	if( index > -1 ) {
+		SetTeamScore( index == 0 ? CS_TEAM_CT : CS_TEAM_T, dep_team_count[index] );
+	} else {
+		if( dep_team_count[0] > 0 || dep_team_count[1] > 0 ) {
+			SetTeamScore( CS_TEAM_CT, dep_team_count[0] );
+			SetTeamScore( CS_TEAM_T, dep_team_count[1] );
+		} else {
+			PR_UpdateTeamScores();
+		}
+	}
+}
+
+//-------------------------------------------------------------------------------------------------
+CleanupDisplacedClient( int client, bool connected = true ) {
+	int zone = player_zone[client];
+	
+	if( zone == ZONE_TEAM_A || zone == ZONE_TEAM_B ) {
+		LeaveTeamZone( client, connected );
+	} else if( zone == ZONE_PRACTICE ) {
+		LeavePracticeZone( client, connected, connected && IsPlayerAlive(client) );
+	}
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -731,7 +850,6 @@ public Action:Command_map( client, args ) {
 		return Plugin_Handled;
 	}
 	
-	
 	GetCmdArg( 1, custom_map_name, sizeof custom_map_name );
 	
 	PrintToChatAll( "\x01 \x0B\x09%N selected custom map: %s", client, custom_map_name );
@@ -765,13 +883,13 @@ public Event_PlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast 
 	
 	// if player dies in practice zone, respawn nearby
 	if( player_zone[client] == ZONE_PRACTICE ){
-		SetEntityRenderColor( client, 255,255,255 );
-		if( pr_team[client] == 0 ) {
+		//SetEntityRenderColor( client, 255,255,255 );
+		if( pr_team[client] == 1 ) {
 			new Float:pos[3] = {-75.227623, -482.942261, 0.031250};
 			new Float:ang[3] = {0.000000, -133.067993, 0.000000};
 			new Float:vel[3];
 			TeleportEntity( client, pos,ang,vel );
-		} else {
+		} else if( pr_team[client] == 2 ) {
 			new Float:pos[3] = {-125.256409, -2064.427734 ,0.020500};
 			new Float:ang[3] = {0.000000 ,136.649811 ,0.000000};
 			new Float:vel[3];
@@ -781,7 +899,15 @@ public Event_PlayerSpawn( Handle:event, const String:name[], bool:dontBroadcast 
 	
 	death_time[client] = GetGameTime();
 	player_zone[client] = ZONE_OTHER;
+	pr_team[client] = 0;
 	dep_team[client] = 0;
+	
+	// wait to update scores until after the player spawns since we need to keep their team set
+	// until they spawn to change their spawn location
+	PR_UpdateTeamScores();
+	
+	CS_SetClientClanTag( client, "" );
+	CS_SetClientContributionScore( client, SCORE_NONE );
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -793,7 +919,20 @@ public Event_PlayerDeath( Handle:event, const String:name[], bool:dontBroadcast 
 	if( client == 0 ) return;
 	
 	death_time[client] = GetGameTime();
-	LeaveTeamZone(client);
+	CleanupDisplacedClient(client);
+}
+
+//-------------------------------------------------------------------------------------------------
+public Event_PlayerTeam( Handle event, const char[] name, bool dontBroadcast ) {
+	int userid = GetEventInt( event, "userid" );
+	if( userid == 0 ) return;
+	int client = GetClientOfUserId(userid);
+	if( client == 0 ) return;
+	
+	int team = GetEventInt( event, "team" );
+	if( team < 2 ) {
+		CleanupDisplacedClient(client);
+	}
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -1313,6 +1452,11 @@ public Event_Halftime( Handle:event, const String:name[], bool:dontBroadcast ) {
 
 public Action Event_PlayerDisconnect( Handle:event, const String:name[], bool:dontBroadcast ) {
 	if( hooked ) {
+		int userid = GetEventInt( event, "userid" );
+		if( userid == 0 ) return Plugin_Continue;
+		int client = GetClientOfUserId(client);
+		if( client == 0 ) return Plugin_Continue;
+		CleanupDisplacedClient(client, false);
 		return Plugin_Continue;
 	}
 	
