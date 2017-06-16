@@ -1301,8 +1301,10 @@ public Event_Halftime( Handle:event, const String:name[], bool:dontBroadcast ) {
 	}
 }
 
-public Event_PlayerDisconnect( Handle:event, const String:name[], bool:dontBroadcast ) {
-	if( hooked ) return;
+public Action Event_PlayerDisconnect( Handle:event, const String:name[], bool:dontBroadcast ) {
+	if( hooked ) {
+		return Plugin_Continue;
+	}
 	
 	/* do not allow people who have been kicked to rejoin the match */
 	decl String:reason[64];
@@ -1316,10 +1318,12 @@ public Event_PlayerDisconnect( Handle:event, const String:name[], bool:dontBroad
 		for( new i = 0; i < 10; i++ ) {
 			if( SteamIDMatch( steamid, match_player_ids[i] ) ) {
 				match_player_ids[i][0] = 0;
-				return;
+				return Plugin_Continue;
 			}
 		}
 	}
+	
+	return Plugin_Continue;
 }
 
 //-------------------------------------------------------------------------------------------------
