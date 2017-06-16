@@ -27,6 +27,7 @@ new Handle:sm_rxglobby_map;
 new Handle:sm_rxglobby_minplayers;
 new Handle:sm_rxglobby_hostprefix;
 new Handle:sm_rxglobby_nospecs;
+new Handle:mp_roundtime_hostage;
 new bool:c_rxglobby_nospecs;
 new String:c_rxglobby_hostprefix[64];
 
@@ -192,6 +193,8 @@ public CacheConVar( Handle:convar, const String:oldValue[], const String:newValu
 		GetConVarString( sm_rxglobby_hostprefix, c_rxglobby_hostprefix, sizeof(c_rxglobby_hostprefix) );
 	} else if( convar == sm_rxglobby_nospecs ) {
 		c_rxglobby_nospecs = GetConVarBool( sm_rxglobby_nospecs );
+	} else if( convar == mp_roundtime_hostage ) {
+		c_round_time = GetConVarFloat( mp_roundtime_hostage );
 	}
 }
 
@@ -206,15 +209,18 @@ public OnPluginStart() {
 	RegServerCmd( "rxg_debug1", debug1 );
 	g_FadeUserMsgId = GetUserMessageId("Fade");
 	
+	mp_roundtime_hostage = FindConVar("mp_roundtime_hostage");
+	
 	sm_rxglobby_map = CreateConVar( "sm_rxglobby_map", "rxglobby", "rxglobby map name", FCVAR_PLUGIN );
 	sm_rxglobby_hostprefix = CreateConVar( "sm_rxglobby_hostprefix", " rxg | SCRIMS | ", "prefix for hostname", FCVAR_PLUGIN );
 	sm_rxglobby_minplayers = CreateConVar( "sm_rxglobby_minplayers", "5", "requires this many people on each team for ready buttons to work", FCVAR_PLUGIN );
 	sm_rxglobby_nospecs = CreateConVar( "sm_rxglobby_nospecs", "0", "dont allow spectating and kick non participants from live games", FCVAR_PLUGIN );
 	c_rxglobby_nospecs = GetConVarBool( sm_rxglobby_nospecs );
-	c_round_time = GetConVarFloat( FindConVar("mp_roundtime_hostage") );
+	c_round_time = GetConVarFloat( mp_roundtime_hostage );
 	GetConVarString( sm_rxglobby_hostprefix, c_rxglobby_hostprefix, sizeof(c_rxglobby_hostprefix) );
 	HookConVarChange( sm_rxglobby_hostprefix, CacheConVar );
 	HookConVarChange( sm_rxglobby_nospecs, CacheConVar );
+	HookConVarChange( mp_roundtime_hostage, CacheConVar );
 	
 	HookEvent( "announce_phase_end", Event_Halftime );
 	HookEvent( "player_disconnect", Event_PlayerDisconnect );
