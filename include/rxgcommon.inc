@@ -16,7 +16,7 @@ stock WritePackHandle( Handle pack, Handle hndl ) {
 
 //-----------------------------------------------------------------------------
 stock Handle ReadPackHandle( Handle pack ) {
-	return view_as<Handle>ReadPackCell( pack );
+	return view_as<Handle>( ReadPackCell(pack) );
 }
 
 //-----------------------------------------------------------------------------

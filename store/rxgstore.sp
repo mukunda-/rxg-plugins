@@ -478,8 +478,8 @@ public void OnTakeCash( Handle owner, Handle hndl, const char[] error,
 	int userid    = data.ReadCell();
 	int amount    = data.ReadCell();
 	int account   = data.ReadCell();
-	Handle plugin = view_as<Handle>(data.ReadCell());
-	TakeCashCB cb = view_as<TakeCashCB>data.ReadFunction();
+	Handle plugin = view_as<Handle>( data.ReadCell() );
+	TakeCashCB cb = view_as<TakeCashCB>( data.ReadFunction() );
 	any cbdata    = data.ReadCell();
 	
 	delete data;

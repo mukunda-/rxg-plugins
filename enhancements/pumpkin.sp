@@ -224,7 +224,7 @@ bool SpawnPumpkin(int client, float end[3]){
 	}
 	
 	char team_color[7];
-	TFTeam client_team = view_as<TFTeam>GetClientTeam(client);
+	TFTeam client_team = view_as<TFTeam>( GetClientTeam(client) );
 	
 	if( client_team == TFTeam_Red ){
 		team_color = "ff3d3d";

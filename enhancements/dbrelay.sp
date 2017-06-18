@@ -278,7 +278,7 @@ public OnQueryResult( Handle owner, Handle hndl, const char[] error, any data ) 
 	
 	ResetPack(data);
 	Handle plugin = ReadPackHandle(data);
-	SQLTCallback callback = view_as<SQLTCallback>ReadPackFunction(data);
+	SQLTCallback callback = view_as<SQLTCallback>( ReadPackFunction(data) );
 	Handle inner_data = ReadPackHandle(data);
 	CloseHandle(data);
 	
