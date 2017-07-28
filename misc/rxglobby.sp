@@ -73,6 +73,10 @@ new bool:hooked;
 #define PR_CT_MODEL "models/player/ctm_sas.mdl"
 #define PR_T_MODEL "models/player/tm_pirate.mdl"
 
+#define CT_MODEL_ARMS "models/weapons/ct_arms_st6.mdl"
+#define PR_CT_MODEL_ARMS "models/weapons/ct_arms_sas.mdl"
+#define PR_T_MODEL_ARMS "models/weapons/t_arms_pirate.mdl"
+
 // departure --------------------------------------------------------------------------------------
 
 new dep_team[MAXPLAYERS+1];
@@ -619,6 +623,10 @@ public OnMapStart() {
 		PrecacheModel( PR_CT_MODEL );
 		PrecacheModel( PR_T_MODEL );
 		
+		PrecacheModel( CT_MODEL_ARMS );
+		PrecacheModel( PR_CT_MODEL_ARMS );
+		PrecacheModel( PR_T_MODEL_ARMS );
+		
 		AddFileToDownloadsTable( RADIO_SOUND_DL );
 		PrecacheSound( RADIO_SOUND );
 	} else {
@@ -664,11 +672,13 @@ EnterPracticeZone( client, index ) {
 	
 	if( index == 0 ) {
 		SetEntityModel( client, PR_CT_MODEL );
+		SetEntPropString( client, Prop_Send, "m_szArmsModel", PR_CT_MODEL_ARMS );
 		CS_SetClientClanTag( client, "[ARENA] CT" );
 		CS_SetClientContributionScore( client, SCORE_CT_PR );
 		team_name = "CT";
 	} else if ( index == 1 ) {
 		SetEntityModel( client, PR_T_MODEL );
+		SetEntPropString( client, Prop_Send, "m_szArmsModel", PR_T_MODEL_ARMS );
 		CS_SetClientClanTag( client, "[ARENA] T" );
 		CS_SetClientContributionScore( client, SCORE_T_PR );
 		team_name = "T";
@@ -689,6 +699,7 @@ LeavePracticeZone( int client, bool connected = true, bool alive = true ) {
 		PR_UpdateTeamScores();
 		
 		SetEntityModel( client, CT_MODEL );
+		SetEntPropString( client, Prop_Send, "m_szArmsModel", CT_MODEL_ARMS );
 		PrintCenterText( client, "Leaving Live Fire Zone" );
 		SetEntityHealth( client, 100 );
 	}
