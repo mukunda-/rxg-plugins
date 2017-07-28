@@ -26,6 +26,12 @@ native bool DBRELAY_IsConnected();
 native DBRELAY_TQuery( SQLTCallback callback, const char[] query, any data = 0, DBPriority prio = DBPrio_Normal );
 
 //-----------------------------------------------------------------------------
+// Returns a direct handle to the database
+// handle: the handle to which the database will be set 
+//
+native DBRELAY_GetDatabase( Handle &handle );
+
+//-----------------------------------------------------------------------------
 public SharedPlugin __pl_dbrelay = 
 {
 	name = "dbrelay",

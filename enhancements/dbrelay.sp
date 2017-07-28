@@ -7,13 +7,14 @@
 #include <sourceirc>
 
 #pragma semicolon 1
+#pragma newdecls required
 
 //-----------------------------------------------------------------------------
 public Plugin myinfo = {
 	name = "Database Relay",
 	author = "WhiteThunder",
 	description = "Relays database queries through a single connection",
-	version = "1.2.0",
+	version = "1.3.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -39,40 +40,41 @@ int g_reconnect_tries;
 
 bool use_irc;
 
-public OnAllPluginsLoaded() {
+public void OnAllPluginsLoaded() {
 	if (LibraryExists("sourceirc"))
 		use_irc = true;
 }
-public OnLibraryAdded(const char[] name) {
+public void OnLibraryAdded(const char[] name) {
 	if (StrEqual(name, "sourceirc"))
 		use_irc = true;
 }
-public OnLibraryRemoved(const char[] name) {
+public void OnLibraryRemoved(const char[] name) {
 	if (StrEqual(name, "sourceirc"))
 		use_irc = false;
 }
 
 //-----------------------------------------------------------------------------
-public APLRes AskPluginLoad2( Handle myself, bool late, char[] error, err_max ) {
+public APLRes AskPluginLoad2( Handle myself, bool late, char[] error, int err_max ) {
 	CreateNative( "DBRELAY_IsConnected", Native_IsConnected );
 	CreateNative( "DBRELAY_TQuery", Native_TQuery );
+	CreateNative( "DBRELAY_GetDatabase", Native_GetDatabase );
 	RegPluginLibrary("dbrelay");
 }
 
 //-----------------------------------------------------------------------------
-RecacheConvars() {
+void RecacheConvars() {
 	c_auto_reconnect = GetConVarBool( sm_dbrelay_auto_reconnect );
 	c_retry_delay = GetConVarFloat( sm_dbrelay_retry_delay );
 	c_max_retries = GetConVarInt( sm_dbrelay_max_retries );
 }
 
 //-----------------------------------------------------------------------------
-public OnConVarChanged( Handle cvar, const char[] oldval, const char[] newval ) {
+public void OnConVarChanged( Handle cvar, const char[] oldval, const char[] newval ) {
 	RecacheConvars();
 }
 
 //-----------------------------------------------------------------------------
-public OnPluginStart() {
+public void OnPluginStart() {
 
 	sm_dbrelay_auto_reconnect = CreateConVar( "sm_dbrelay_auto_reconnect", "1", "Whether to automatically reconnect when there is a database connection problem.", FCVAR_PLUGIN );
 	sm_dbrelay_retry_delay = CreateConVar( "sm_dbrelay_retry_delay", "30.0", "Seconds between attempts to retry when the database connection failed.", FCVAR_PLUGIN, true, 1.0 );
@@ -93,7 +95,7 @@ public OnPluginStart() {
 }
 
 //-----------------------------------------------------------------------------
-public Action Command_connect( args ) {
+public Action Command_connect( int args ) {
 	
 	if( g_connected ) {
 		PrintToServer( "Already connected." );
@@ -106,7 +108,7 @@ public Action Command_connect( args ) {
 }
 
 //-----------------------------------------------------------------------------
-public Action Command_disonnect( args ) {
+public Action Command_disonnect( int args ) {
 	
 	if( g_connected ) {
 		PrintToServer( "[DBRELAY] Closing database connection." );
@@ -119,7 +121,7 @@ public Action Command_disonnect( args ) {
 }
 
 //-----------------------------------------------------------------------------
-public Action Command_status( args ) {
+public Action Command_status( int args ) {
 	
 	char reply[256];
 	char status_content[128];
@@ -190,7 +192,7 @@ bool DB_Open( bool first = true ) {
 }
 
 //-----------------------------------------------------------------------------
-public DB_OnConnect( Handle owner, Handle hndl, const char[] error, any data ) {
+public void DB_OnConnect( Handle owner, Handle hndl, const char[] error, any data ) {
 	
 	if( hndl == INVALID_HANDLE ) {
 		LogError( "sql connection error: %s", error );
@@ -225,7 +227,7 @@ public Action DB_ReconnectTimer( Handle timer ) {
 }
 
 //-----------------------------------------------------------------------------
-public DB_Close() {
+public void DB_Close() {
 	IRCMessage( "\x030,4[DBRELAY] Database connection closed." );
 	PrintToServer( "[DBRELAY] Database connection closed." );
 	if( !g_connected ) return;
@@ -236,7 +238,7 @@ public DB_Close() {
 }
 
 //-----------------------------------------------------------------------------
-public DB_Fault() {
+public void DB_Fault() {
 	DB_Close();
 	g_last_error = GetTime();
 	if( c_auto_reconnect ) {
@@ -245,12 +247,17 @@ public DB_Fault() {
 }
 
 //-----------------------------------------------------------------------------
-public Native_IsConnected( Handle plugin, numParams ) {
+public int Native_IsConnected( Handle plugin, int numParams ) {
 	return g_connected;
 }
 
 //-----------------------------------------------------------------------------
-public Native_TQuery( Handle plugin, numParams ) {
+public int Native_GetDatabase( Handle plugin, int numParams ) {
+	SetNativeCellRef( 1, g_db );
+}
+
+//-----------------------------------------------------------------------------
+public int Native_TQuery( Handle plugin, int numParams ) {
 	
 	SQLTCallback callback = GetNativeCell(1);
 	
@@ -274,7 +281,7 @@ public Native_TQuery( Handle plugin, numParams ) {
 }
 
 //-----------------------------------------------------------------------------
-public OnQueryResult( Handle owner, Handle hndl, const char[] error, any data ) {
+public void OnQueryResult( Handle owner, Handle hndl, const char[] error, any data ) {
 	
 	ResetPack(data);
 	Handle plugin = ReadPackHandle(data);
@@ -298,7 +305,7 @@ public OnQueryResult( Handle owner, Handle hndl, const char[] error, any data ) 
 }
 
 //-----------------------------------------------------------------------------
-public IRCMessage( const char[] msg ) {
+public void IRCMessage( const char[] msg ) {
 	if( use_irc ) {
 		IRC_MsgFlaggedChannels( "relay", msg );
 	}
