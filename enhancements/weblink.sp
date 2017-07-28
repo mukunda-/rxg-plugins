@@ -1,6 +1,5 @@
 
 #include <sourcemod>
-#include <rxgstore>
 #include <dbrelay>
 #include <rxgcommon>
 
