@@ -107,3 +107,16 @@ stock GetIPv4( char[] buffer, int buffer_size ) {
 	FormatEx( buffer, buffer_size, "%d.%d.%d.%d",
               pieces[0], pieces[1], pieces[2], pieces[3] );
 }
+
+//-----------------------------------------------------------------------------
+stock URLEncode( const char[] input_str, char[] output_str, int len ) {
+	strcopy( output_str, len, input_str );
+	
+	// Make sure % is first to avoid collisions.
+	char ReplaceThis[20][] = {"%", " ", "!", "*", "'", "(", ")", ";", ":", "@", "&", "=", "+", "$", ",", "/", "?", "#", "[", "]"};
+	char ReplaceWith[20][] = {"%25", "%20", "%21", "%2A", "%27", "%28", "%29", "%3B", "%3A", "%40", "%26", "%3D", "%2B", "%24", "%2C", "%2F", "%3F", "%23", "%5B", "%5D"};
+	
+	for( new i = 0; i < 20; i++ ) {
+		ReplaceString( output_str, len, ReplaceThis[i], ReplaceWith[i] );
+	}
+}

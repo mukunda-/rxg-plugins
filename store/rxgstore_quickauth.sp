@@ -3,6 +3,7 @@
 #include <rxgstore>
 #include <dbrelay>
 #include <rxgcommon>
+#include <weblink>
 
 #pragma semicolon 1
 #pragma newdecls required
@@ -12,7 +13,7 @@ public Plugin myinfo = {
     name        = "RXG Store QuickAuth",
     author      = "WhiteThunder",
     description = "Adds !store and related commands",
-    version     = "1.0.1",
+    version     = "1.1.0",
     url         = "www.reflex-gamers.com"
 };
 
@@ -64,7 +65,6 @@ public void OnPluginStart() {
 	}
 	
 	GetIPv4( c_ip, sizeof c_ip );
-	PrintToServer(c_ip);
 	LoadConfigFile();
 }
 
@@ -126,14 +126,14 @@ public void ShowStorePage( int client, int id, int token, const char[] page ) {
 		game_abbr,
 		(page[0] != EOS) ? page_param : "" );
 	
-	KeyValues kv = new KeyValues( "motd" );
-	kv.SetString( "title", "RXG Store" );
-	kv.SetNum( "type", MOTDPANEL_TYPE_URL );
-	kv.SetString( "msg", url );
+	WEBLINK_OpenUrl( client, url );
 	
-	ShowVGUIPanel( client, "info", kv, true );
-	
-	delete kv;
+	//KeyValues kv = new KeyValues( "motd" );
+	//kv.SetString( "title", "RXG Store" );
+	//kv.SetNum( "type", MOTDPANEL_TYPE_URL );
+	//kv.SetString( "msg", url );
+	//ShowVGUIPanel( client, "info", kv, true );
+	//delete kv;
 }
 
 //-----------------------------------------------------------------------------
@@ -399,6 +399,4 @@ public void ConVar_QueryClient( QueryCookie cookie, int client,
 	} else {
 		PrintToChat( client, "\x01Visit our store at \x04store.reflex-gamers.com");
 	}
-	
-	//ReplyToCommand( client, "Visit our store at store.reflex-gamers.com" );
 }
