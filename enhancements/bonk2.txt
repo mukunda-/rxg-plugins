@@ -1,0 +1,84 @@
+#include <sourcemod>
+#include <sdktools>
+#include <sdkhooks>
+#include <rxgcommon>
+#include <tf2_stocks>
+
+#pragma semicolon 1
+#pragma newdecls required
+
+public Plugin myinfo = {
+	name = "Bonk",
+	author = "Dooby Skoo",
+	description = "Sandman Bonks",
+	version = "1",
+	url = "www.reflex-gamers.com"
+};
+
+int validWeapons[] =  { 44 };
+
+//-----------------------------------------------------------------------------
+public void OnPluginStart() {
+	for( int client = 1; client <= MaxClients; client++ ) {
+		if (!IsValidClient(client)) { continue; }
+		SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+	}
+}
+
+//-----------------------------------------------------------------------------
+public void OnClientPutInServer( int client ) {
+	SDKHook(client, SDKHook_OnTakeDamage, OnTakeDamage);
+}
+
+//-----------------------------------------------------------------------------
+public Action OnTakeDamage( int victim, int &attacker, int &inflictor,
+							float &damage, int &damagetype, int &weapon,
+							float damageForce[3], float damagePosition[3],
+							int damagecustom) {
+	
+	if( !IsValidClient(attacker) || !IsValidClient(victim) || !IsValidEntity(weapon) ) {return Plugin_Continue;}
+	
+	char weapon_classname[64];
+	GetEntityClassname( weapon, weapon_classname, sizeof weapon_classname );
+	if( strncmp( weapon_classname, "tf_weapon", 9 ) != 0 ) {return Plugin_Continue;} // must be a client weapon, not an eyeball boss or something
+	
+	int index = GetEntProp( weapon, Prop_Send, "m_iItemDefinitionIndex" );
+	if (!IntArrayContains(index, validWeapons, sizeof(validWeapons))) {
+		return Plugin_Continue;
+	}
+	
+	float fClientLocation[3]; float fClientEyePosition[3];
+	GetClientAbsOrigin(attacker, fClientEyePosition);
+	GetClientAbsOrigin(victim, fClientLocation);
+	
+	float fDistance[3];
+	MakeVectorFromPoints(fClientLocation, fClientEyePosition, fDistance);
+	float dist = GetVectorLength(fDistance);
+	//PrintToChat(attacker, "\x04Distance: %2.f", dist); //See the distances between the ball and the client.
+	if (dist >= 128.0 && dist <= 256.0) {
+		TF2_StunPlayer(victim, 1.0, 0.0, TF_STUNFLAGS_SMALLBONK, attacker);
+	}
+	else if (dist >= 256.0 && dist < 512.0) {
+		TF2_StunPlayer(victim, 2.0, 0.0, TF_STUNFLAGS_SMALLBONK, attacker);
+	}
+	else if (dist >= 512.0 && dist < 768.0) {
+		TF2_StunPlayer(victim, 3.0, 0.0, TF_STUNFLAGS_SMALLBONK, attacker);
+	}
+	else if (dist >= 768.0 && dist < 1024.0) {
+		TF2_StunPlayer(victim, 4.0, 0.0, TF_STUNFLAGS_SMALLBONK, attacker);
+	}
+	else if (dist >= 1024.0 && dist < 1280.0) {
+		TF2_StunPlayer(victim, 5.0, 0.0, TF_STUNFLAGS_SMALLBONK, attacker);
+	}
+	else if (dist >= 1280.0 && dist < 1536.0) {
+		TF2_StunPlayer(victim, 6.0, 0.0, TF_STUNFLAGS_SMALLBONK, attacker);
+	}
+	else if (dist >= 1536.0 && dist < 1792.0) {
+		TF2_StunPlayer(victim, 7.0, 0.0, TF_STUNFLAGS_SMALLBONK, attacker);
+	}
+	else if (dist >= 1792.0) {
+		TF2_StunPlayer(victim, 7.0, 0.0, TF_STUNFLAGS_BIGBONK, attacker);
+	}
+	
+ 	return Plugin_Continue;
+}
