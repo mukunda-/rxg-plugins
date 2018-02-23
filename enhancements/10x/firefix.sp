@@ -10,8 +10,8 @@
 public Plugin myinfo = {
 	name = "Fire Fix",
 	author = "Dooby Skoo",
-	description = "Fire on any weapon",
-	version = "1",
+	description = "Ignites players who are hit with specified weapons.",
+	version = "1.0.0",
 	url = "www.reflex-gamers.com"
 };
 
@@ -47,8 +47,7 @@ public Action OnTakeDamage( int victim, int &attacker, int &inflictor,
 		return Plugin_Continue;
 	}
 	
-	//TF2_IgnitePlayer(victim, attacker); //attempt 1
-	//TF2_AddCondition(victim, TFCond_OnFire, 10.0, attacker); //attempt 2
+
 	TF2_AddCondition(victim, TFCond_Gas, 0.1, attacker); //more conditions can be found in tf2.inc
  	return Plugin_Continue;
 }
