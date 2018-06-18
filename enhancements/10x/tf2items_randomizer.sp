@@ -4229,7 +4229,7 @@ stock Handle:PrepareItemHandle(weaponLookupIndex, TFClassType:classbased = TFCla
 	new String:weaponAttribsArray[32][32];
 	new attribCount = ExplodeString(weaponAttribs, " ; ", weaponAttribsArray, 32, 32);
 
-	new flags = OVERRIDE_CLASSNAME | OVERRIDE_ITEM_DEF | OVERRIDE_ITEM_LEVEL | OVERRIDE_ITEM_QUALITY | OVERRIDE_ATTRIBUTES;
+	new flags = OVERRIDE_CLASSNAME | OVERRIDE_ITEM_DEF | OVERRIDE_ITEM_LEVEL | OVERRIDE_ITEM_QUALITY | PRESERVE_ATTRIBUTES;
 	if (strcmp(weaponClassname, "saxxy", false) != 0) flags |= FORCE_GENERATION;
 	new Handle:hWeapon = TF2Items_CreateItem(flags);
 //will switch this to use the FORCE_GENERATION bit later
