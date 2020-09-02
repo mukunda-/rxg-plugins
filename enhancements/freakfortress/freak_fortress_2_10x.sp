@@ -2965,21 +2965,6 @@ public Action TF2Items_OnGiveNamedItem(int client, char[] classname, int iItemDe
 	{
 		return Plugin_Continue;
 	}
-	else
-	{
-		switch(iItemDefinitionIndex)
-		{
-		case 444:  //Mantreads
-			{
-				#if defined _tf2attributes_included
-				if(tf2attributes)
-				{
-					TF2Attrib_SetByDefIndex(client, 58, 1.5);
-				}
-				#endif
-			}
-		}	
-	}
 	return Plugin_Continue;
 }
 
