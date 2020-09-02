@@ -3140,66 +3140,17 @@ public Action Timer_CheckItems(Handle timer, any userid)
 	}
 
 	SetEntityRenderColor(client, 255, 255, 255, 255);
-	int index=-1;
 	int[] civilianCheck=new int[MaxClients+1];
 	
-	//Cloak and Dagger is NEVER allowed, even in Medieval mode
-	int weapon=GetPlayerWeaponSlot(client, 4);
-	if(IsValidEntity(weapon) && GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex")==60)  //Cloak and Dagger
-	{
-		TF2_RemoveWeaponSlot(client, 4);
-		FF2_SpawnWeapon(client, "tf_weapon_invis", 30, 1, 0, "");
-	}
 	
 	if(bMedieval)
 	{
 		return Plugin_Continue;
 	}
 
-	weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Primary);
+	int weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
 	if(IsValidEntity(weapon))
 	{
-		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
-		switch(index)
-		{
-		case 41:  //Natascha
-			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-				FF2_SpawnWeapon(client, "tf_weapon_minigun", 15, 1, 0, "");
-			}
-		case 237:  //Rocket Jumper
-			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-				FF2_SpawnWeapon(client, "tf_weapon_rocketlauncher", 18, 1, 0, "114 ; 1");
-				//114: Mini-crits targets launched airborne by explosions, grapple hooks or enemy attacks
-				FF2_SetAmmo(client, weapon, 20);
-			}
-		case 402:  //Bazaar Bargain
-			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Primary);
-				FF2_SpawnWeapon(client, "tf_weapon_sniperrifle", 14, 1, 0, "");
-			}
-		}
-	}
-	else
-	{
-		civilianCheck[client]++;
-	}
-
-	weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Secondary);
-	if(IsValidEntity(weapon))
-	{
-		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
-		switch(index)
-		{
-		case 265:  //Stickybomb Jumper
-			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Secondary);
-				FF2_SpawnWeapon(client, "tf_weapon_pipebomblauncher", 20, 1, 0, "");
-				FF2_SetAmmo(client, weapon, 24);
-			}
-		}
-
 		if(TF2_GetPlayerClass(client)==TFClass_Medic)
 		{
 			if(GetIndexOfWeaponSlot(client, TFWeaponSlot_Melee)==142)  //Gunslinger (Randomizer, etc. compatability)
@@ -3214,54 +3165,7 @@ public Action Timer_CheckItems(Handle timer, any userid)
 		civilianCheck[client]++;
 	}
 
-	#if defined _tf2attributes_included
-	if(tf2attributes)
-	{
-		if(IsValidEntity(FindPlayerBack(client, 444)))  //Mantreads
-		{
-			TF2Attrib_SetByDefIndex(client, 58, 1.5);  //+50% increased push force
-		}
-		else
-		{
-			TF2Attrib_RemoveByDefIndex(client, 58);
-		}
-	}
-	#endif
 
-	weapon=GetPlayerWeaponSlot(client, TFWeaponSlot_Melee);
-	if(IsValidEntity(weapon))
-	{
-		index=GetEntProp(weapon, Prop_Send, "m_iItemDefinitionIndex");
-		switch(index)
-		{
-		case 43:  //KGB
-			{
-				TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-				FF2_SpawnWeapon(client, "tf_weapon_fists", 239, 1, 6, "1 ; 0.5 ; 107 ; 1.5 ; 128 ; 1 ; 191 ; -7 ; 772 ; 1.5");  //GRU
-				//1: -50% damage
-				//107: +50% move speed
-				//128: Only when weapon is active
-				//191: -7 health/second
-				//772: Holsters 50% slower
-			}
-		case 357:  //Half-Zatoichi
-			{
-				CreateTimer(1.0, Timer_NoHonorBound, GetClientUserId(client), TIMER_FLAG_NO_MAPCHANGE);
-			}
-		case 589:  //Eureka Effect
-			{
-				if(!GetConVarBool(cvarEnableEurekaEffect))
-				{
-					TF2_RemoveWeaponSlot(client, TFWeaponSlot_Melee);
-					FF2_SpawnWeapon(client, "tf_weapon_wrench", 7, 1, 0, "");
-				}
-			}
-		}
-	}
-	else
-	{
-		civilianCheck[client]++;
-	}
 
 	if(civilianCheck[client]==3)
 	{
@@ -8757,9 +8661,9 @@ public int CheckRoundState()
 			return 2;
 		}
 	}
-	#if SOURCEMOD_V_MAJOR==1 && SOURCEMOD_V_MINOR<=9
+	//#if SOURCEMOD_V_MAJOR==1 && SOURCEMOD_V_MINOR<=9
 	return -1;  //Compiler bug-doesn't recognize 'default' as a valid catch-all
-	#endif
+	//#endif
 }
 
 void FindHealthBar()
